@@ -1,0 +1,272 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Dashboard — EduExam Pro{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    /* Dashboard specific layout override */
+    .dashboard-header {
+      border-bottom: 2px solid var(--rule-strong);
+      padding: 1.5rem 0;
+      background-color: var(--paper);
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+    }
+    .user-role-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      background-color: var(--ink);
+      color: var(--bg);
+      border-radius: 2px;
+      font-weight: 600;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 2rem;
+      margin: 3rem 0;
+    }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .sidebar-menu {
+      list-style: none;
+      border: 1px solid var(--rule-strong);
+      background-color: var(--paper);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 2px 2px 0px rgba(29, 39, 51, 0.05);
+    }
+    .sidebar-menu li a {
+      display: block;
+      padding: 1rem 1.5rem;
+      color: var(--ink-soft);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid var(--rule);
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+    }
+    .sidebar-menu li:last-child a {
+      border-bottom: none;
+    }
+    .sidebar-menu li a:hover, .sidebar-menu li.active a {
+      background-color: var(--bg);
+      color: var(--ink);
+    }
+    .main-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+    /* Stats display grid */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    .stat-card {
+      background-color: var(--paper);
+      border: 1px solid var(--rule-strong);
+      padding: 1.5rem;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 2px 0px rgba(29, 39, 51, 0.05);
+    }
+    .stat-val {
+      font-family: var(--font-serif);
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .stat-lbl {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      letter-spacing: 0.02em;
+    }
+    /* Lists and ledger rows */
+    .ledger {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--rule-strong);
+      background-color: var(--paper);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .ledger-header {
+      display: grid;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      background-color: var(--bg);
+      padding: 1rem 1.5rem;
+      border-bottom: 2px solid var(--rule-strong);
+    }
+    .ledger-row {
+      display: grid;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--rule);
+      align-items: center;
+      font-size: 0.95rem;
+    }
+    .ledger-row:last-child {
+      border-bottom: none;
+    }
+    /* Forms inside dashboards */
+    .dash-form {
+      background-color: var(--paper);
+      border: 1px solid var(--rule-strong);
+      border-radius: 4px;
+      padding: 2rem;
+      box-shadow: 2px 2px 0px rgba(29, 39, 51, 0.05);
+    }
+    .dash-form h3 {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px dashed var(--rule);
+      padding-bottom: 0.5rem;
+    }
+    .dash-form .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .dash-form .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1.25rem;
+    }
+    .dash-form .form-group.full-width {
+      grid-column: span 2;
+    }
+    .dash-form label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 0.5rem;
+    }
+    .dash-form input, .dash-form select, .dash-form textarea {
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--rule-strong);
+      border-radius: 2px;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      background-color: var(--paper);
+      color: var(--ink);
+    }
+    .dash-form input:focus, .dash-form select:focus, .dash-form textarea:focus {
+      outline: none;
+      border-color: var(--ink);
+    }
+    .alert-container {
+      margin-top: 1.5rem;
+    }
+    .alert {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 2px;
+      margin-bottom: 1rem;
+      border: 1px solid transparent;
+    }
+    .alert-success {
+      background-color: rgba(46, 110, 96, 0.06);
+      color: var(--pass-teal);
+      border-color: var(--pass-teal);
+    }
+    .alert-error {
+      background-color: rgba(178, 58, 46, 0.06);
+      color: var(--red-pen);
+      border-color: var(--red-pen);
+    }
+    /* General styles */
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 760px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+      .dash-form .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .dash-form .form-group.full-width {
+        grid-column: span 1;
+      }
+    }
+  </style>
+  {% block extra_style %}{% endblock %}
+</head>
+<body>
+
+  <!-- Top Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <a href="/" class="logo">
+        <div class="logo-stamp">A+</div>
+        <span>EduExam Pro</span>
+      </a>
+      <div class="user-info">
+        <span class="user-role-badge">{{ request.user.role }}</span>
+        <span>{{ request.user.username }}</span>
+        <a href="{% url 'signout' %}" class="btn btn-ghost" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages Alert box -->
+  <div class="container alert-container">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- Dashboard Scaffold -->
+  <div class="container">
+    <div class="dashboard-grid">
+      
+      <!-- Left Sidebar navigation -->
+      <div class="sidebar">
+        <ul class="sidebar-menu">
+          {% block sidebar_menu %}
+          <!-- Overwritten dynamically -->
+          {% endblock %}
+        </ul>
+      </div>
+
+      <!-- Right Main Panel -->
+      <div class="main-panel">
+        {% block main_content %}
+        <!-- Overwritten dynamically -->
+        {% endblock %}
+      </div>
+
+    </div>
+  </div>
+
+{% block extra_script %}{% endblock %}
+</body>
+</html>

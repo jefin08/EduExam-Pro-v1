@@ -1,0 +1,333 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduExam Pro — Graded Paper Exam & Coding Assessment Platform</title>
+  <meta name="description" content="A role-based web platform for educational institutions to conduct MCQ-based examinations, programming/coding assessments, and self-paced practice sessions.">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+  <!-- Header / Navigation -->
+  <header>
+    <div class="container nav-wrapper">
+      <a href="#" class="logo" id="nav-logo">
+        <div class="logo-stamp">A+</div>
+        <span>EduExam Pro</span>
+      </a>
+      <nav aria-label="Main Navigation">
+        <ul>
+          <li><a href="#modes" id="link-modes">Two Modes</a></li>
+          <li><a href="#roll-call" id="link-roll-call">Roll Call</a></li>
+          <li><a href="#judge" id="link-judge">Coding Sandbox</a></li>
+          <li><a href="#analytics" id="link-analytics">Analytics</a></li>
+        </ul>
+      </nav>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="{% url 'signin' %}" class="btn btn-ghost" id="header-signin">Sign In</a>
+        <a href="{% url 'signup_selection' %}" class="btn btn-primary" id="header-signup">Sign Up</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero revealed" id="hero">
+    <div class="container">
+      <div class="hero-content">
+        <span class="eyebrow" id="hero-eyebrow">For institutions — exams & coding</span>
+        <h1 id="hero-title">Conduct fair MCQ exams and real coding assessments <span class="underline-highlight">on a single gradebook</span>.</h1>
+        <p class="lead" id="hero-lead">Separate exam grades and practice attempts automatically. Monitor cheating in real-time, execute programming scripts safely, and track institutional performance analytics.</p>
+        <div class="hero-ctas">
+          <a href="{% url 'signup_selection' %}" class="btn btn-primary" id="hero-primary-cta">Sign Up Now</a>
+          <a href="#modes" class="btn btn-ghost" id="hero-secondary-cta">See how a session runs</a>
+        </div>
+      </div>
+
+      <!-- Hero Visual: Side by Side Cards -->
+      <div class="hero-visual">
+        
+        <!-- Exam Sheet Card (MCQ Mode) -->
+        <div class="card" id="card-exam-sheet">
+          <div class="clip" aria-hidden="true"></div>
+          <div class="card-header">
+            <span class="mode-tag exam-tag">Exam Mode</span>
+            <span class="timer-display mono-text" id="hero-timer">01:29:59</span>
+          </div>
+          <div class="mcq-question-wrapper">
+            <p class="mcq-title" id="mcq-title-text">Q1. What is the average time complexity of searching in a balanced Binary Search Tree (BST)?</p>
+            <div class="mcq-options">
+              <div class="mcq-option" id="opt-a" role="radio" aria-checked="false" tabindex="0">
+                <span class="mcq-circle-icon"><span class="mcq-red-circle" aria-hidden="true"></span></span>
+                <span class="mono-text">O(1)</span>
+              </div>
+              <div class="mcq-option" id="opt-b" role="radio" aria-checked="false" tabindex="0">
+                <span class="mcq-circle-icon"><span class="mcq-red-circle" aria-hidden="true"></span></span>
+                <span class="mono-text">O(n)</span>
+              </div>
+              <div class="mcq-option correct circled" id="opt-c" role="radio" aria-checked="true" tabindex="0">
+                <span class="mcq-circle-icon"><span class="mcq-red-circle" aria-hidden="true"></span></span>
+                <span class="mono-text">O(log n)</span>
+              </div>
+              <div class="mcq-option" id="opt-d" role="radio" aria-checked="false" tabindex="0">
+                <span class="mcq-circle-icon"><span class="mcq-red-circle" aria-hidden="true"></span></span>
+                <span class="mono-text">O(n log n)</span>
+              </div>
+            </div>
+          </div>
+          <div style="border-top: 1px dashed var(--rule); padding-top: 1rem;">
+            <p class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft); letter-spacing: 0.05em; text-align: center;">
+              &bull; TAB-SWITCH DETECTION ACTIVE &bull; COPY-PASTE LOCKED &bull; AUTO-SUBMIT ON TIMEOUT
+            </p>
+          </div>
+        </div>
+
+        <!-- Coding Sandbox Card (Terminal Simulation) -->
+        <div class="card" id="card-sandbox-console">
+          <div class="card-header">
+            <span class="mode-tag practice-tag">Judge Engine</span>
+            <span class="mono-text" style="color: var(--pass-teal); font-weight: 600;">python 3.11</span>
+          </div>
+          <div class="console-body" id="judge-console">
+            <div class="console-line"><span class="console-text-gold">&gt;</span> python run_tests.py</div>
+            <div class="console-line">Compiling source code...</div>
+            <div class="console-line">Compilation successful!</div>
+            <div class="console-line">Running sample test case 1/2...</div>
+            <div class="console-line"><span class="console-text-green">PASS</span> [0.08s] Input: [3, 2, 4], Target: 6</div>
+            <div class="console-line">Running hidden test case 2/2...</div>
+            <div class="console-line"><span class="console-text-green">PASS</span> [0.12s] Output matched expected value.</div>
+            <div class="console-line">Summary: <span class="console-text-green">All tests passed!</span> (2/2)</div>
+            <div class="console-line"><span class="console-text-gold">Grading complete. Writing Official Grade...</span></div>
+            <div class="stamp-grade" id="console-seal">A+</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="perf" aria-hidden="true"></div>
+
+  <!-- Two Modes Section -->
+  <section id="modes">
+    <div class="container">
+      <div class="section-header">
+        <h2>Two Modes, Total Integrity</h2>
+        <p>Conduct high-stakes examinations and open practice sessions from the same question bank without letting data paths cross.</p>
+      </div>
+
+      <div class="modes-grid">
+        <!-- Exam Mode Column -->
+        <div class="mode-column card" id="col-exam-mode">
+          <div class="card-header">
+            <h3 class="card-title">Exam Mode</h3>
+            <span class="mode-tag exam-tag">At Stake</span>
+          </div>
+          <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1rem;">Rigorous, secure environments configured to audit student performance.</p>
+          <div class="mode-features-list">
+            <div class="mode-feature-row">
+              <span class="feature-label">Access</span>
+              <span class="feature-value">Gated by unique Exam Codes</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Attempts</span>
+              <span class="feature-value">Exactly one attempt allowed</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Ordering</span>
+              <span class="feature-value">Randomized questions & answers</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Monitoring</span>
+              <span class="feature-value">Live tab-switch & copy-paste audit</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Feedback</span>
+              <span class="feature-value">Released after exam ends by teacher</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Gradebook</span>
+              <span class="feature-value">Writes to official grade records</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Practice Mode Column -->
+        <div class="mode-column card" id="col-practice-mode">
+          <div class="card-header">
+            <h3 class="card-title">Practice Mode</h3>
+            <span class="mode-tag practice-tag">Self-Paced</span>
+          </div>
+          <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1rem;">Flexible practice environments designed to foster student improvement.</p>
+          <div class="mode-features-list">
+            <div class="mode-feature-row">
+              <span class="feature-label">Access</span>
+              <span class="feature-value">Open visibility on class topics</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Attempts</span>
+              <span class="feature-value">Unlimited retries and restarts</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Ordering</span>
+              <span class="feature-value">Topic-based ordered lists</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Monitoring</span>
+              <span class="feature-value">None (Safe self-study sandbox)</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Feedback</span>
+              <span class="feature-value">Immediate code execution results</span>
+            </div>
+            <div class="mode-feature-row">
+              <span class="feature-label">Gradebook</span>
+              <span class="feature-value">Kept separate (Zero grade weight)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="perf" aria-hidden="true"></div>
+
+  <!-- Roll Call Section -->
+  <section id="roll-call">
+    <div class="container">
+      <div class="section-header">
+        <h2>Class Roll Call</h2>
+        <p>The system defines three distinct user roles with cleanly isolated permissions.</p>
+      </div>
+
+      <div class="roll-call-list">
+        <!-- Admin Row -->
+        <div class="roll-row" id="roll-admin">
+          <span class="roll-num mono-text">01</span>
+          <span class="roll-role">Admin</span>
+          <div class="roll-description">
+            <p><strong>Platform management and enrollment.</strong> Creates institutional classes, registers teacher accounts, manages bulk CSV enrollments, and reviews institution-wide performance reports.</p>
+            <span>No question authoring or grade manipulation privileges.</span>
+          </div>
+        </div>
+        <!-- Teacher Row -->
+        <div class="roll-row" id="roll-teacher">
+          <span class="roll-num mono-text">02</span>
+          <span class="roll-role">Teacher</span>
+          <div class="roll-description">
+            <p><strong>Topic ownership and exam control.</strong> Authors MCQ and coding problems, coordinates class visibility, schedules exams, and watches real-time student anti-cheating streams.</p>
+            <span>Complete control over topic mapping and grade release.</span>
+          </div>
+        </div>
+        <!-- Student Row -->
+        <div class="roll-row" id="roll-student">
+          <span class="roll-num mono-text">03</span>
+          <span class="roll-role">Student</span>
+          <div class="roll-description">
+            <p><strong>Secure attendance and coding.</strong> Joins timed examinations using generated codes, uses the in-browser code editor, and accesses assigned topics for self-paced practice.</p>
+            <span>Sees only topics assigned to their designated class.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="perf" aria-hidden="true"></div>
+
+  <!-- Coding Judge Section -->
+  <section id="judge">
+    <div class="container">
+      <div class="section-header">
+        <h2>Isolated Sandbox Judge</h2>
+        <p>Run and evaluate code submissions cleanly inside a secure environment.</p>
+      </div>
+
+      <div class="runtimes-container">
+        <span class="stamp">Python 3.11</span>
+        <span class="stamp">C++ 17</span>
+        <span class="stamp">Java 17</span>
+      </div>
+
+      <div class="judge-feature-grid">
+        <div class="judge-feature-item" id="feat-sandbox">
+          <h3>Sandboxed Execution</h3>
+          <p>Each code submission runs inside a fresh Docker container. Network interfaces are shut down to prevent exfiltration or external payloads.</p>
+        </div>
+        <div class="judge-feature-item" id="feat-testcases">
+          <h3>Hidden Test Cases</h3>
+          <p>Students test code against public test cases for reference, while grading evaluates solutions against hidden test cases to prevent hardcoded outputs.</p>
+        </div>
+        <div class="judge-feature-item" id="feat-limits">
+          <h3>Container-level Limits</h3>
+          <p>CPU execution timers and RAM limits (e.g. 256MB) are enforced directly at the container level to safely terminate infinite loops and leaks.</p>
+        </div>
+        <div class="judge-feature-item" id="feat-mixed">
+          <h3>Mixed Question Papers</h3>
+          <p>Teachers assemble assessment formats combining multiple-choice questions and complex programming editor prompts under a single timer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="perf" aria-hidden="true"></div>
+
+  <!-- Analytics Section -->
+  <section id="analytics">
+    <div class="container">
+      <div class="section-header">
+        <h2>System Capacity</h2>
+        <p>EduExam Pro is engineered for institutional performance auditing.</p>
+      </div>
+
+      <div class="analytics-grid">
+        <div class="tally-cell" id="stat-modes">
+          <div class="tally-num">2</div>
+          <div class="tally-label">Working Modes</div>
+        </div>
+        <div class="tally-cell" id="stat-languages">
+          <div class="tally-num">3</div>
+          <div class="tally-label">Supported Languages</div>
+        </div>
+        <div class="tally-cell" id="stat-roles">
+          <div class="tally-num">3</div>
+          <div class="tally-label">Isolated System Roles</div>
+        </div>
+        <div class="tally-cell" id="stat-attempts">
+          <div class="tally-num">&infin;</div>
+          <div class="tally-label">Practice Attempts</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="perf" aria-hidden="true"></div>
+
+  <!-- Final CTA -->
+  <section class="final-cta" id="cta">
+    <div class="container">
+      <h2>Deploy secure evaluations at your institution.</h2>
+      <p style="color: var(--ink-soft); font-size: 1.1rem;">Coordinate exams and open programming study modules under a single interface.</p>
+      <div class="hero-ctas">
+        <a href="{% url 'signup_selection' %}" class="btn btn-primary" id="cta-button-primary">Get Started Now</a>
+        <a href="#modes" class="btn btn-ghost" id="cta-button-secondary">Explore Capabilities</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>EduExam Pro &mdash; Institutional Online Examination and Coding Assessment System</p>
+      <p style="color: var(--ink-soft); font-size: 0.8rem; margin-top: 0.5rem;">Built for Academic Integrity. Python, C++, and Java Sandboxing Ready.</p>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+django>=4.2,<5.0
+djangorestframework
+djangorestframework-simplejwt
+channels[daphne]
+channels-redis
+celery
+redis
+django-storages
+django-simple-history
+psycopg2-binary

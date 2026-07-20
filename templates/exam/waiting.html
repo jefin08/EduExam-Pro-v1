@@ -1,0 +1,79 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Waiting Room — {{ exam.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .waiting-container {
+    max-width: 600px;
+    margin: 4rem auto;
+    background: var(--surface-default);
+    padding: 3rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    text-align: center;
+    border-top: 4px solid var(--red-pen);
+  }
+  .countdown {
+    font-family: var(--font-mono);
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--pass-teal);
+    margin: 1.5rem 0;
+  }
+  .waiting-subtitle {
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="waiting-container">
+  <h2 class="serif-text" style="color: var(--ink-main); margin-bottom: 0.5rem;">Exam Waiting Room</h2>
+  <h3 style="color: var(--red-pen); font-weight: 600; margin-bottom: 1.5rem;">{{ exam.name }}</h3>
+  
+  <p class="waiting-subtitle">
+    You have successfully joined the session early.<br>
+    The exam questions will automatically appear when the scheduled start time is reached.
+  </p>
+
+  <div class="countdown" id="countdown">--:--</div>
+  <p style="font-size: 0.85rem; color: var(--ink-soft); font-family: var(--font-mono);">
+    Start Time: {{ exam.start_time|date:"h:i A" }}
+  </p>
+</div>
+
+<script>
+  // Get exam start time from Django (in ISO format, UTC)
+  // exam.start_time.isoformat is a bit tricky, but we can pass the timestamp directly
+  const startTimeMs = {{ exam.start_time.timestamp }} * 1000;
+
+  function updateCountdown() {
+    const nowMs = Date.now();
+    const diff = startTimeMs - nowMs;
+
+    if (diff <= 0) {
+      document.getElementById('countdown').innerHTML = "00:00";
+      // Auto-reload to enter the exam
+      window.location.reload();
+      return;
+    }
+
+    // Calculate minutes and seconds
+    const minutes = Math.floor(diff / 1000 / 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+
+    const mStr = minutes < 10 ? '0' + minutes : minutes;
+    const sStr = seconds < 10 ? '0' + seconds : seconds;
+
+    document.getElementById('countdown').innerHTML = mStr + ":" + sStr;
+  }
+
+  // Update every second
+  setInterval(updateCountdown, 1000);
+  updateCountdown(); // initial call
+</script>
+{% endblock %}

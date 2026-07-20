@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — EduExam Pro</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .auth-wrapper {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem 1.5rem;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 3rem 2.5rem;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .auth-header h1 {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    .form-group label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      border: 1px solid var(--rule-strong);
+      border-radius: 2px;
+      color: var(--ink);
+      background-color: var(--paper);
+      transition: border-color var(--transition-fast);
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--ink);
+    }
+    .error-list {
+      color: var(--red-pen);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      list-style: none;
+    }
+    .auth-footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+    }
+    .auth-footer a {
+      color: var(--ink);
+      text-decoration: underline;
+      font-weight: 500;
+    }
+    .alert-box {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 0.75rem 1rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+    }
+    .alert-success {
+      background-color: rgba(46, 110, 96, 0.08);
+      color: var(--pass-teal);
+      border: 1px solid var(--pass-teal);
+    }
+    .alert-error {
+      background-color: rgba(178, 58, 46, 0.08);
+      color: var(--red-pen);
+      border: 1px solid var(--red-pen);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="card auth-card">
+      <div class="clip" aria-hidden="true"></div>
+      
+      <div class="auth-header">
+        <a href="/" class="logo" style="justify-content: center; margin-bottom: 1rem;">
+          <div class="logo-stamp">A+</div>
+          <span>EduExam Pro</span>
+        </a>
+        <h1>Sign In</h1>
+        <p style="color: var(--ink-soft); font-size: 0.95rem;">Enter your credentials to enter the platform.</p>
+      </div>
+
+      <!-- Messages / Errors -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-box {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="POST">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div class="alert-box alert-error">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div class="form-group">
+          <label for="{{ form.username.id_for_label }}">Username</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <ul class="error-list">{% for err in form.username.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.password.id_for_label }}">Password</label>
+          {{ form.password }}
+          {% if form.password.errors %}
+            <ul class="error-list">{% for err in form.password.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; font-size: 0.95rem; padding: 0.85rem;">Sign In</button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Need an account? <a href="{% url 'signup_selection' %}">Sign Up</a></p>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

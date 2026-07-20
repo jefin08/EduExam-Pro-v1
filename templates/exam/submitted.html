@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Completed — EduExam Pro</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .auth-wrapper {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem 1.5rem;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 440px;
+      padding: 3rem 2.5rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="card auth-card">
+      <div class="clip" aria-hidden="true"></div>
+      
+      <div class="logo-stamp" style="width: 50px; height: 50px; border-color: var(--red-pen); color: var(--red-pen); font-size: 1.5rem; margin-bottom: 1.5rem; transform: rotate(-10deg); display: inline-flex; align-items: center; justify-content: center;">A+</div>
+      <h2 class="serif-text" style="font-size: 1.8rem; margin-bottom: 1rem;">Exam Completed</h2>
+      <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 2rem;">You have already submitted answers for: <strong>{{ exam.name }}</strong>.</p>
+      
+      <div class="ledger" style="margin-bottom: 2.5rem;">
+        <div class="ledger-row" style="grid-template-columns: 1fr auto;">
+          <span>Submitted At:</span>
+          <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft);">{{ grade.submitted_at|date:"Y-m-d H:i" }}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 1fr auto; background-color: var(--bg); border-top: 2px solid var(--rule-strong);">
+          <span>Score Received:</span>
+          <strong class="mono-text" style="color: var(--red-pen); font-size: 1.1rem;">{{ grade.score }} pt</strong>
+        </div>
+      </div>
+
+      <a href="/dashboard/student/" class="btn btn-primary" style="width: 100%;">Back to Dashboard</a>
+    </div>
+  </div>
+
+</body>
+</html>

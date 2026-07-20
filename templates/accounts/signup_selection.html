@@ -1,0 +1,96 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choose Your Registration — EduExam Pro</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .auth-wrapper {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem 1.5rem;
+    }
+    .selection-container {
+      width: 100%;
+      max-width: 600px;
+      text-align: center;
+    }
+    .selection-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+    .role-card {
+      padding: 2.5rem 1.5rem;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+    }
+    .role-card:hover {
+      transform: translateY(-4px);
+    }
+    .role-icon {
+      width: 60px;
+      height: 60px;
+      border: 2px solid var(--rule-strong);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+      background-color: var(--bg);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="selection-container">
+      
+      <a href="/" class="logo" style="justify-content: center; margin-bottom: 1.5rem;">
+        <div class="logo-stamp">A+</div>
+        <span>EduExam Pro</span>
+      </a>
+      
+      <h1 class="serif-text" style="font-size: 2.2rem; margin-bottom: 0.5rem;">Join EduExam Pro</h1>
+      <p style="color: var(--ink-soft); font-size: 1.05rem;">Select your role to start setting up your profile account.</p>
+
+      <div class="selection-grid">
+        <!-- Teacher Card Option -->
+        <a href="{% url 'signup' %}" class="card role-card" style="border-color: var(--red-pen);">
+          <div class="clip" aria-hidden="true"></div>
+          <div class="role-icon" style="color: var(--red-pen); border-color: var(--red-pen);">T</div>
+          <h2 class="serif-text" style="font-size: 1.4rem; margin-bottom: 0.5rem;">I am a Teacher</h2>
+          <p style="color: var(--ink-soft); font-size: 0.85rem;">Author custom assessments, manage class Visibility, and review grading logs.</p>
+        </a>
+
+        <!-- Student Card Option -->
+        <a href="{% url 'signup_student' %}" class="card role-card" style="border-color: var(--pass-teal);">
+          <div class="clip" aria-hidden="true"></div>
+          <div class="role-icon" style="color: var(--pass-teal); border-color: var(--pass-teal);">S</div>
+          <h2 class="serif-text" style="font-size: 1.4rem; margin-bottom: 0.5rem;">I am a Student</h2>
+          <p style="color: var(--ink-soft); font-size: 0.85rem;">Attend official timed examinations and complete open practice modules.</p>
+        </a>
+      </div>
+
+      <div style="margin-top: 2.5rem; font-size: 0.95rem; color: var(--ink-soft);">
+        Already registered? <a href="{% url 'signin' %}" style="color: var(--ink); text-decoration: underline;">Sign In here</a>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,220 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Admin Portal — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li class="active"><a href="#">Admin Overview</a></li>
+<li><a href="#classes-sec">Class Groups</a></li>
+<li><a href="#pending-teachers-sec">Pending Teachers</a></li>
+<li><a href="#pending-students-sec">Pending Students</a></li>
+<li><a href="#teachers-sec">Teachers Directory</a></li>
+<li><a href="#students-sec">Students Register</a></li>
+<li><a href="/admin/">Django Site Admin</a></li>
+{% endblock %}
+
+{% block main_content %}
+
+  <!-- Overview Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-val">{{ total_classes }}</span>
+      <span class="stat-lbl">Active Classes</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-val">{{ total_teachers }}</span>
+      <span class="stat-lbl">Registered Teachers</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-val">{{ total_students }}</span>
+      <span class="stat-lbl">Enrolled Students</span>
+    </div>
+  </div>
+
+  <!-- Class Group Creation Form -->
+  <div class="dash-form">
+    <h3>Create Class / Section</h3>
+    <form action="{% url 'admin_create_class' %}" method="POST">
+      {% csrf_token %}
+      <div class="form-grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="class_name">Class Name / Title</label>
+          <input type="text" id="class_name" name="class_name" placeholder="e.g. Grade 10 - Section A" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center;">Create Class</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Add Teacher Form -->
+  <div class="dash-form">
+    <h3>Onboard New Teacher</h3>
+    <form action="{% url 'admin_create_teacher' %}" method="POST">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="teacher_username">Username</label>
+          <input type="text" id="teacher_username" name="username" placeholder="e.g. prof_john" required>
+        </div>
+        <div class="form-group">
+          <label for="teacher_email">Email Address</label>
+          <input type="email" id="teacher_email" name="email" placeholder="e.g. john@university.edu" required>
+        </div>
+        <div class="form-group full-width">
+          <label for="teacher_password">Account Password</label>
+          <input type="password" id="teacher_password" name="password" placeholder="System-generated password placeholder" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Register Teacher</button>
+    </form>
+  </div>
+
+  <!-- Enroll Student Form -->
+  <div class="dash-form">
+    <h3>Enroll Student</h3>
+    <form action="{% url 'admin_create_student' %}" method="POST">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="student_username">Username / Roll No.</label>
+          <input type="text" id="student_username" name="username" placeholder="e.g. student_101" required>
+        </div>
+        <div class="form-group">
+          <label for="student_email">Email Address</label>
+          <input type="email" id="student_email" name="email" placeholder="e.g. student101@university.edu" required>
+        </div>
+        <div class="form-group">
+          <label for="student_class">Assign Class</label>
+          <select id="student_class" name="class_id" required>
+            <option value="" disabled selected>Select class group...</option>
+            {% for class in classes %}
+              <option value="{{ class.id }}">{{ class.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="student_password">Account Password</label>
+          <input type="password" id="student_password" name="password" placeholder="Define student login password" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Enroll Student</button>
+    </form>
+  </div>
+
+  <!-- Existing Classes Ledger -->
+  <div id="classes-sec">
+    <h3 class="section-title">Current Classes Register</h3>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 80px 1fr 150px;">
+        <span>ID</span>
+        <span>Class Name</span>
+        <span>Enrolled Count</span>
+      </div>
+      {% for class in classes %}
+        <div class="ledger-row" style="grid-template-columns: 80px 1fr 150px;">
+          <span class="mono-text" style="color: var(--ink-soft);">#{{ class.id }}</span>
+          <strong>{{ class.name }}</strong>
+          <span class="mono-text">{{ class.students.count }} students</span>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No classes registered yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Pending Teacher Approvals -->
+  <div id="pending-teachers-sec">
+    <h3 class="section-title" style="color: var(--red-pen);">Pending Teacher Registrations</h3>
+    <div class="ledger" style="border-color: var(--red-pen);">
+      <div class="ledger-header" style="background-color: rgba(178, 58, 46, 0.03); border-bottom-color: var(--red-pen); grid-template-columns: 1fr 1fr 1fr auto;">
+        <span>Username</span>
+        <span>Department</span>
+        <span>Email</span>
+        <span>Action</span>
+      </div>
+      {% for pt in pending_teachers %}
+        <div class="ledger-row" style="grid-template-columns: 1fr 1fr 1fr auto;">
+          <strong>{{ pt.username }}</strong>
+          <span class="mono-text" style="font-size: 0.85rem;">{{ pt.department }}</span>
+          <span>{{ pt.email }}</span>
+          <form action="{% url 'admin_approve_teacher' pt.id %}" method="POST" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background-color: var(--pass-teal); border-color: var(--pass-teal);">Approve & Activate</button>
+          </form>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No pending teacher registration requests.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Pending Student Approvals -->
+  <div id="pending-students-sec">
+    <h3 class="section-title" style="color: var(--pass-teal);">Pending Student Registrations</h3>
+    <div class="ledger" style="border-color: var(--pass-teal);">
+      <div class="ledger-header" style="background-color: rgba(46, 110, 96, 0.03); border-bottom-color: var(--pass-teal); grid-template-columns: 1fr 1fr 1fr auto;">
+        <span>Username</span>
+        <span>Class Group</span>
+        <span>Email</span>
+        <span>Action</span>
+      </div>
+      {% for ps in pending_students %}
+        <div class="ledger-row" style="grid-template-columns: 1fr 1fr 1fr auto;">
+          <strong>{{ ps.username }}</strong>
+          <span class="mode-tag practice-tag" style="display: inline-block; width: fit-content; font-size: 0.75rem;">{{ ps.class_group.name }}</span>
+          <span>{{ ps.email }}</span>
+          <form action="{% url 'admin_approve_student' ps.id %}" method="POST" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background-color: var(--pass-teal); border-color: var(--pass-teal);">Approve & Activate</button>
+          </form>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No pending student registration requests.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Existing Teachers Ledger -->
+  <div id="teachers-sec">
+    <h3 class="section-title">Teachers Directory</h3>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 1fr 1fr 1fr 120px;">
+        <span>Username</span>
+        <span>Department</span>
+        <span>Email</span>
+        <span>Date Joined</span>
+      </div>
+      {% for teacher in teachers %}
+        <div class="ledger-row" style="grid-template-columns: 1fr 1fr 1fr 120px;">
+          <strong>{{ teacher.username }}</strong>
+          <span class="mono-text" style="font-size: 0.85rem;">{{ teacher.department }}</span>
+          <span>{{ teacher.email }}</span>
+          <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft);">{{ teacher.date_joined|date:"Y-m-d" }}</span>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No active teachers registered yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Existing Students Ledger -->
+  <div id="students-sec">
+    <h3 class="section-title">Enrolled Students Register</h3>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 1fr 1.5fr 1.5fr;">
+        <span>Username</span>
+        <span>Class Assignment</span>
+        <span>Email Address</span>
+      </div>
+      {% for student in students %}
+        <div class="ledger-row" style="grid-template-columns: 1fr 1.5fr 1.5fr;">
+          <strong>{{ student.username }}</strong>
+          <span class="mode-tag practice-tag" style="display: inline-block; width: fit-content;">{{ student.class_group.name }}</span>
+          <span>{{ student.email }}</span>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No students enrolled yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+{% endblock %}

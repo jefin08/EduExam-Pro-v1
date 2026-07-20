@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Sign Up — EduExam Pro</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .auth-wrapper {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem 1.5rem;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 480px;
+      padding: 3rem 2.5rem;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .auth-header h1 {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    .form-group label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      border: 1px solid var(--rule-strong);
+      border-radius: 2px;
+      color: var(--ink);
+      background-color: var(--paper);
+      transition: border-color var(--transition-fast);
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--ink);
+    }
+    .error-list {
+      color: var(--red-pen);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      list-style: none;
+    }
+    .auth-footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+    }
+    .auth-footer a {
+      color: var(--ink);
+      text-decoration: underline;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="card auth-card">
+      <div class="clip" aria-hidden="true"></div>
+      
+      <div class="auth-header">
+        <a href="/" class="logo" style="justify-content: center; margin-bottom: 1rem;">
+          <div class="logo-stamp" style="color: var(--pass-teal); border-color: var(--pass-teal);">S</div>
+          <span>EduExam Pro</span>
+        </a>
+        <h1>Student Registration</h1>
+        <p style="color: var(--ink-soft); font-size: 0.95rem;">Request a student account to attend exams.</p>
+      </div>
+
+      <form method="POST">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div style="margin-bottom: 1.5rem; color: var(--red-pen); font-family: var(--font-mono); font-size: 0.8rem;">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+
+
+        <div class="form-group">
+          <label for="{{ form.class_group.id_for_label }}">Assign Class Group</label>
+          {{ form.class_group }}
+          {% if form.class_group.errors %}
+            <ul class="error-list">{% for err in form.class_group.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.username.id_for_label }}">Username</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <ul class="error-list">{% for err in form.username.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}">Email Address</label>
+          {{ form.email }}
+          {% if form.email.errors %}
+            <ul class="error-list">{% for err in form.email.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.password.id_for_label }}">Password</label>
+          {{ form.password }}
+          {% if form.password.errors %}
+            <ul class="error-list">{% for err in form.password.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.confirm_password.id_for_label }}">Confirm Password</label>
+          {{ form.confirm_password }}
+          {% if form.confirm_password.errors %}
+            <ul class="error-list">{% for err in form.confirm_password.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; font-size: 0.95rem; padding: 0.85rem; background-color: var(--pass-teal); border-color: var(--pass-teal);">Submit Sign Up Request</button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Already registered? <a href="{% url 'signin' %}">Sign In</a></p>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,360 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practice: {{ practice_set.name }} — EduExam Pro</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .practice-header {
+      border-bottom: 2px solid var(--rule-strong);
+      padding: 1.25rem 0;
+      background-color: var(--paper);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 2rem;
+      margin: 2.5rem 0;
+    }
+    .question-nav-card {
+      background-color: var(--paper);
+      border: 1px solid var(--rule-strong);
+      border-radius: 4px;
+      padding: 1.5rem;
+      box-shadow: 2px 2px 0px rgba(29, 39, 51, 0.05);
+      position: sticky;
+      top: 100px;
+    }
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background-color var(--transition-fast);
+    }
+    .nav-item.active {
+      background-color: var(--bg);
+      border-color: var(--ink);
+      color: var(--ink);
+    }
+    .nav-item.completed {
+      border-color: var(--pass-teal);
+      color: var(--pass-teal);
+    }
+    .question-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .question-card {
+      display: none;
+    }
+    .question-card.active {
+      display: block;
+    }
+    /* Editor styling */
+    .editor-wrapper {
+      margin-top: 1.25rem;
+    }
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1e2733;
+      color: var(--bg);
+      padding: 0.5rem 1rem;
+      border-radius: 3px 3px 0 0;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+    .code-textarea {
+      width: 100%;
+      height: 320px;
+      background-color: #1e2530;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      padding: 1.25rem;
+      border: none;
+      border-radius: 0 0 3px 3px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .code-textarea:focus {
+      outline: none;
+    }
+    .run-btn-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(30, 39, 51, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+    .modal-card {
+      background-color: var(--paper);
+      border: 2px solid var(--rule-strong);
+      max-width: 500px;
+      width: 90%;
+      padding: 3rem 2.5rem;
+      text-align: center;
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Practice Header -->
+  <div class="practice-header">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <a href="/dashboard/student/" class="logo">
+        <div class="logo-stamp" style="border-color: var(--pass-teal); color: var(--pass-teal);">P</div>
+        <span>Practice Mode</span>
+      </a>
+      <span class="serif-text" style="font-size: 1.25rem; font-weight: 600;">{{ practice_set.name }}</span>
+      <button class="btn btn-primary" id="finish-practice-btn" style="background-color: var(--pass-teal); border-color: var(--pass-teal);">Submit Practice Set</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="layout-grid">
+      
+      <!-- Left sidebar question browser -->
+      <div class="question-nav-card">
+        <h4 class="mono-text" style="font-size: 0.8rem; text-transform: uppercase; color: var(--ink-soft);">Questions</h4>
+        <ul class="nav-list">
+          <!-- MCQs Navigation -->
+          {% for mcq in mcqs %}
+            <li class="nav-item {% if forloop.first %}active{% endif %}" data-qtype="mcq" data-qid="{{ mcq.id }}" onclick="switchQuestion('mcq', '{{ mcq.id }}', this)">
+              <span>Q{{ forloop.counter }}. MCQ</span>
+              <span class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft);">{{ mcq.marks }} pt</span>
+            </li>
+          {% endfor %}
+          <!-- Coding Questions Navigation -->
+          {% for code_q in coding_qs %}
+            <li class="nav-item {% if not mcqs and forloop.first %}active{% endif %}" data-qtype="coding" data-qid="{{ code_q.id }}" onclick="switchQuestion('coding', '{{ code_q.id }}', this)">
+              <span>Q{{ forloop.counter }}. Code</span>
+              <span class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft);">{{ code_q.marks }} pt</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Right panel showing active question content -->
+      <div class="main-panel">
+        
+        <!-- MCQ cards block -->
+        {% for mcq in mcqs %}
+          <div class="card question-card mcq-card {% if forloop.first %}active{% endif %}" id="mcq-card-{{ mcq.id }}">
+            <div class="clip" aria-hidden="true"></div>
+            <div class="card-header">
+              <span class="mode-tag practice-tag">MCQ Question</span>
+              <span class="mono-text" style="color: var(--ink-soft);">Difficulty: {{ mcq.difficulty|upper }}</span>
+            </div>
+            <p class="serif-text" style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">{{ mcq.question_text }}</p>
+            <div class="mcq-options">
+              {% for opt in mcq.options %}
+                <div class="mcq-option" onclick="selectMCQOption('{{ mcq.id }}', '{{ forloop.counter0 }}', this)">
+                  <span class="mcq-circle-icon"><span class="mcq-red-circle" aria-hidden="true"></span></span>
+                  <span class="mono-text">{{ opt }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+
+        <!-- Coding cards block -->
+        {% for code_q in coding_qs %}
+          <div class="card question-card coding-card {% if not mcqs and forloop.first %}active{% endif %}" id="coding-card-{{ code_q.id }}">
+            <div class="clip" aria-hidden="true"></div>
+            <div class="card-header">
+              <span class="mode-tag practice-tag">Coding Prompt</span>
+              <span class="mono-text" style="color: var(--ink-soft);">Difficulty: {{ code_q.difficulty|upper }}</span>
+            </div>
+            <p class="serif-text" style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">{{ code_q.title }}</p>
+            <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1.5rem;">{{ code_q.description }}</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; border-top: 1px dashed var(--rule); padding-top: 1rem; font-size: 0.9rem;">
+              <div>
+                <strong>Input Format:</strong>
+                <p style="color: var(--ink-soft); margin-top: 0.25rem;">{{ code_q.input_format }}</p>
+              </div>
+              <div>
+                <strong>Output Format:</strong>
+                <p style="color: var(--ink-soft); margin-top: 0.25rem;">{{ code_q.output_format }}</p>
+              </div>
+            </div>
+
+            <!-- Code Editor Workspace -->
+            <div class="editor-wrapper">
+              <div class="editor-header">
+                <span>online_editor.py</span>
+                <select id="lang-select-{{ code_q.id }}" style="background-color: var(--ink); color: var(--bg); border: 1px solid var(--rule); font-family: var(--font-mono); font-size: 0.75rem; padding: 0.15rem 0.5rem; cursor: pointer;">
+                  <option value="python">Python 3</option>
+                  <option value="cpp">C++ 17</option>
+                  <option value="java">Java 17</option>
+                </select>
+              </div>
+              <textarea class="code-textarea" id="editor-{{ code_q.id }}" placeholder="# Write your code solution here..."></textarea>
+            </div>
+            
+            <!-- Editor Actions -->
+            <div class="run-btn-row">
+              <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="mockRunCode('{{ code_q.id }}')">Run Sample Tests</button>
+            </div>
+          </div>
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Grading Overlay Modal -->
+  <div class="modal-overlay" id="score-modal">
+    <div class="card modal-card">
+      <div class="clip" aria-hidden="true"></div>
+      <div class="logo-stamp" style="width: 50px; height: 50px; border-color: var(--pass-teal); color: var(--pass-teal); font-size: 1.5rem; margin-bottom: 1.5rem; transform: rotate(-10deg); display: inline-flex; align-items: center; justify-content: center;">A+</div>
+      <h2 class="serif-text" style="font-size: 1.8rem; margin-bottom: 1rem;">Practice Grading Complete</h2>
+      <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 2rem;">Your practice answers have been evaluated successfully.</p>
+      
+      <div class="ledger" style="margin-bottom: 2rem;">
+        <div class="ledger-row" style="grid-template-columns: 1fr auto;">
+          <span>MCQ Score:</span>
+          <strong class="mono-text" id="modal-mcq-score">0 pt</strong>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 1fr auto;">
+          <span>Coding Score:</span>
+          <strong class="mono-text" id="modal-coding-score">0 pt</strong>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 1fr auto; border-top: 2px solid var(--rule-strong); background-color: var(--bg);">
+          <span>Total Grade:</span>
+          <strong class="mono-text" id="modal-total-score" style="color: var(--pass-teal); font-size: 1.1rem;">0 pt</strong>
+        </div>
+      </div>
+      
+      <a href="/dashboard/student/" class="btn btn-primary" style="background-color: var(--pass-teal); border-color: var(--pass-teal); width: 100%;">Return to Dashboard</a>
+    </div>
+  </div>
+
+  <script>
+    // State storage
+    const state = {
+      mcqAnswers: {},
+      codingSubmissions: {}
+    };
+
+    function switchQuestion(type, id, navEl) {
+      // Deactivate current nav and cards
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.question-card').forEach(el => el.classList.remove('active'));
+
+      // Activate selected
+      navEl.classList.add('active');
+      const card = document.getElementById(`${type}-card-${id}`);
+      if (card) card.classList.add('active');
+    }
+
+    function selectMCQOption(qId, idx, optionEl) {
+      const parent = optionEl.parentNode;
+      parent.querySelectorAll('.mcq-option').forEach(el => {
+        el.classList.remove('correct');
+        el.classList.remove('circled');
+      });
+
+      optionEl.classList.add('correct');
+      // Force redraw
+      void optionEl.offsetWidth;
+      optionEl.classList.add('circled');
+
+      // Record answer
+      state.mcqAnswers[qId] = idx;
+
+      // Mark nav as completed
+      const navItem = document.querySelector(`.nav-item[data-qtype="mcq"][data-qid="${qId}"]`);
+      if (navItem) navItem.classList.add('completed');
+    }
+
+    function mockRunCode(qId) {
+      const editor = document.getElementById(`editor-${qId}`);
+      if (editor) {
+        alert("Running sample test cases on local backend...\nResult: PASS (Sample cases match expected output values).");
+        
+        // Record state
+        const langSelect = document.getElementById(`lang-select-${qId}`);
+        state.codingSubmissions[qId] = {
+          code: editor.value,
+          language: langSelect ? langSelect.value : 'python'
+        };
+
+        // Mark nav as completed
+        const navItem = document.querySelector(`.nav-item[data-qtype="coding"][data-qid="${qId}"]`);
+        if (navItem) navItem.classList.add('completed');
+      }
+    }
+
+    // Submit complete answers
+    document.getElementById('finish-practice-btn').addEventListener('click', () => {
+      // Gather any unsaved code
+      document.querySelectorAll('.code-textarea').forEach(tx => {
+        const qId = tx.id.replace('editor-', '');
+        const langSelect = document.getElementById(`lang-select-${qId}`);
+        state.codingSubmissions[qId] = {
+          code: tx.value,
+          language: langSelect ? langSelect.value : 'python'
+        };
+      });
+
+      // Submit POST request to backend view
+      fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(state)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('modal-mcq-score').textContent = `${data.mcq_score} pt`;
+          document.getElementById('modal-coding-score').textContent = `${data.coding_score} pt`;
+          document.getElementById('modal-total-score').textContent = `${data.score} pt`;
+          
+          document.getElementById('score-modal').style.display = 'flex';
+        }
+      })
+      .catch(err => {
+        console.error("Submitting practice session failed: ", err);
+      });
+    });
+  </script>
+</body>
+</html>

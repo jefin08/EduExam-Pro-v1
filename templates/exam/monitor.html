@@ -1,0 +1,84 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Live Exam Monitor — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="/dashboard/teacher/">Return to Dashboard</a></li>
+<li class="active"><a href="#">Live Monitoring Feed</a></li>
+{% endblock %}
+
+{% block main_content %}
+
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--rule-strong); padding-bottom: 1rem; margin-bottom: 2rem;">
+    <div>
+      <h3 class="serif-text" style="font-size: 1.8rem; margin: 0; font-weight: 600;">Live Feed: {{ exam.name }}</h3>
+      <span class="mono-text" style="font-size: 0.85rem; color: var(--ink-soft);">Scheduled: {{ exam.start_time }} to {{ exam.end_time }}</span>
+    </div>
+    <button onclick="window.location.reload();" class="btn btn-ghost" style="font-size: 0.8rem; padding: 0.4rem 1rem;">Refresh Feed</button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem;">
+    
+    <!-- Student Sessions Status -->
+    <div>
+      <h4 class="serif-text" style="font-size: 1.3rem; margin-bottom: 1rem;">Student Activity Status</h4>
+      <div class="ledger">
+        <div class="ledger-header" style="grid-template-columns: 1.2fr 1fr 100px;">
+          <span>Student</span>
+          <span>Status</span>
+          <span>Score</span>
+        </div>
+        {% for grade in grades %}
+          <div class="ledger-row" style="grid-template-columns: 1.2fr 1fr 100px;">
+            <strong>{{ grade.student.username }}</strong>
+            <div>
+              {% if grade.is_submitted %}
+                <span class="mode-tag practice-tag" style="font-size: 0.75rem;">Submitted</span>
+                <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">At: {{ grade.submitted_at|date:"H:i:s" }}</span>
+              {% else %}
+                <span class="mode-tag exam-tag" style="font-size: 0.75rem; background-color: rgba(180, 132, 42, 0.08); color: var(--gold); border-color: var(--gold);">In Progress</span>
+                <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">Started: {{ grade.started_at|date:"H:i:s" }}</span>
+              {% endif %}
+            </div>
+            <span class="mono-text" style="font-weight: 600; font-size: 0.95rem;">
+              {% if grade.is_submitted %}{{ grade.score }} pt{% else %}&mdash;{% endif %}
+            </span>
+          </div>
+        {% empty %}
+          <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No students have entered this exam yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Live Event Cheating Log -->
+    <div>
+      <h4 class="serif-text" style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--red-pen);">Integrity Logs (Cheating Alerts)</h4>
+      <div class="ledger" style="border-color: var(--red-pen);">
+        <div class="ledger-header" style="background-color: rgba(178, 58, 46, 0.03); border-bottom-color: var(--red-pen); grid-template-columns: 1fr 1.5fr;">
+          <span style="color: var(--red-pen);">Student & Event</span>
+          <span style="color: var(--red-pen);">Details</span>
+        </div>
+        {% for ev in events %}
+          <div class="ledger-row" style="grid-template-columns: 1fr 1.5fr; font-size: 0.85rem;">
+            <div>
+              <strong style="color: var(--red-pen);">{{ ev.student.username }}</strong>
+              <span class="mono-text" style="display: block; font-size: 0.7rem; font-weight: 600; color: var(--gold); text-transform: uppercase;">
+                {{ ev.get_event_type_display }}
+              </span>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem;">{{ ev.details }}</p>
+              <span class="mono-text" style="display: block; font-size: 0.65rem; color: var(--ink-soft); margin-top: 0.25rem;">
+                Time: {{ ev.timestamp|date:"H:i:s" }}
+              </span>
+            </div>
+          </div>
+        {% empty %}
+          <div style="padding: 2rem; text-align: center; color: var(--ink-soft); font-size: 0.85rem;">No integrity violations logged. All clear.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+{% endblock %}

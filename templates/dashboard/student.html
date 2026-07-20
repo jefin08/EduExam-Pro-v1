@@ -1,0 +1,165 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Student Portal — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li class="active"><a href="#dashboard-sec">Student Dashboard</a></li>
+<li><a href="#scheduled-exams-sec">Scheduled Exams</a></li>
+<li><a href="#practice-list-sec">Practice Sets</a></li>
+<li><a href="#history-sec">Assessment History</a></li>
+{% endblock %}
+
+{% block main_content %}
+
+  <!-- Overview Stats Grid -->
+  <div class="stats-row" id="dashboard-sec">
+    <div class="stat-card">
+      <span class="stat-val">{{ visible_topics.count }}</span>
+      <span class="stat-lbl">Visible Topics</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-val">{{ practice_sets.count }}</span>
+      <span class="stat-lbl">Practice Sessions</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-val" style="color: var(--pass-teal);">{{ attempts.count }}</span>
+      <span class="stat-lbl">Attempts Completed</span>
+    </div>
+  </div>
+
+  <!-- Join Timed Exam Code Entry Form -->
+  <div class="dash-form" style="border: 2px solid var(--red-pen); background-color: rgba(178, 58, 46, 0.01);">
+    <h3 style="color: var(--red-pen); border-bottom-color: var(--red-pen);">Join Official Examination</h3>
+    <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1.5rem;">Enter the unique 6-digit access code provided by your instructor to begin a timed exam session.</p>
+    <form action="{% url 'student_join_exam' %}" method="POST">
+      {% csrf_token %}
+      <div class="form-grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="exam_code" style="color: var(--red-pen);">Exam Access Code</label>
+          <input type="text" id="exam_code" name="exam_code" placeholder="e.g. EXM87A" style="font-family: var(--font-mono); font-weight: 600; text-transform: uppercase;" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="background-color: var(--red-pen); border-color: var(--red-pen); height: 42px; display: inline-flex; align-items: center; justify-content: center;">Attend Exam</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Scheduled Exams for this Class -->
+  <div id="scheduled-exams-sec" style="margin-top: 1.5rem;">
+    <h3 class="section-title">Scheduled Exams</h3>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 2fr 1.2fr 1fr 1fr;">
+        <span>Exam</span>
+        <span>Window</span>
+        <span>Duration</span>
+        <span>Status</span>
+      </div>
+      {% for ec in upcoming_exams %}
+        {% with exam=ec.exam %}
+        <div class="ledger-row" style="grid-template-columns: 2fr 1.2fr 1fr 1fr; align-items: center; {% if exam.end_time < now %}opacity:0.65;{% endif %}">
+          <div>
+            <strong>{{ exam.name }}</strong>
+            <span style="display:block; font-size:0.72rem; color:var(--ink-soft);">Code: <span class="mono-text" style="font-weight:700; color:var(--red-pen);">{{ ec.code }}</span></span>
+          </div>
+          <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--ink-soft);">
+            <span style="display:block;">▶ {{ exam.start_time|date:"d M, H:i" }}</span>
+            <span style="display:block;">■ {{ exam.end_time|date:"d M, H:i" }}</span>
+          </div>
+          <span class="mono-text" style="font-size:0.85rem;">{{ exam.duration_minutes }} mins</span>
+          <div>
+            {% if exam.end_time < now %}
+              <span style="display:inline-block; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.15rem 0.5rem; border-radius:2px; background:rgba(178,58,46,0.09); color:var(--red-pen); border:1px solid var(--red-pen);">● ENDED</span>
+            {% elif exam.start_time <= now and now <= exam.end_time %}
+              <span style="display:inline-block; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.15rem 0.5rem; border-radius:2px; background:rgba(46,110,96,0.09); color:var(--pass-teal); border:1px solid var(--pass-teal);">● LIVE — enter now!</span>
+            {% else %}
+              <span style="display:inline-block; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.15rem 0.5rem; border-radius:2px; background:rgba(0,0,0,0.04); color:var(--ink-soft); border:1px solid var(--rule-strong);">○ UPCOMING</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endwith %}
+      {% empty %}
+        <div style="padding:2rem; text-align:center; color:var(--ink-soft); font-size:0.9rem;">No exams scheduled for your class yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Visible Practice Sets Section -->
+  <div id="practice-list-sec">
+    <h3 class="section-title">Available Practice Sets</h3>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 1.5fr 2fr 100px;">
+        <span>Set Name</span>
+        <span>Topics Included</span>
+        <span>Action</span>
+      </div>
+      {% for set in practice_sets %}
+        <div class="ledger-row" style="grid-template-columns: 1.5fr 2fr 100px;">
+          <strong>{{ set.name }}</strong>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            {% for topic in set.topics.all %}
+              <span class="mode-tag practice-tag" style="font-size: 0.7rem;">{{ topic.name }}</span>
+            {% endfor %}
+          </div>
+          <div>
+            <a href="/practice/{{ set.id }}/" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background-color: var(--pass-teal); border-color: var(--pass-teal);">Practice</a>
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No practice sessions assigned to your class.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- History & Gradebook lists -->
+  <div id="history-sec">
+    <h3 class="section-title">Assessment History</h3>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+      
+      <!-- Practice Session Logs -->
+      <div>
+        <h4 class="serif-text" style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--pass-teal);">Practice History</h4>
+        <div class="ledger">
+          <div class="ledger-header" style="grid-template-columns: 1.2fr 1fr;">
+            <span>Practice Set</span>
+            <span>Date & Score</span>
+          </div>
+          {% for attempt in attempts %}
+            <div class="ledger-row" style="grid-template-columns: 1.2fr 1fr; font-size: 0.85rem;">
+              <strong>{{ attempt.practice_set.name }}</strong>
+              <div>
+                <span class="mono-text" style="font-weight: 600; color: var(--pass-teal);">Grade: {{ attempt.score }}</span>
+                <span style="display: block; font-size: 0.7rem; color: var(--ink-soft);">{{ attempt.attempted_at|date:"Y-m-d H:i" }}</span>
+              </div>
+            </div>
+          {% empty %}
+            <div style="padding: 1.5rem; text-align: center; color: var(--ink-soft); font-size: 0.85rem;">No practice history logged yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Exam Session Logs -->
+      <div>
+        <h4 class="serif-text" style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--red-pen);">Exam Grades</h4>
+        <div class="ledger">
+          <div class="ledger-header" style="grid-template-columns: 1.2fr 1fr;">
+            <span>Exam Paper</span>
+            <span>Date & Score</span>
+          </div>
+          {% for og in official_grades %}
+            <div class="ledger-row" style="grid-template-columns: 1.2fr 1fr; font-size: 0.85rem;">
+              <strong>{{ og.exam.name }}</strong>
+              <div>
+                <span class="mono-text" style="font-weight: 600; color: var(--red-pen);">Grade: {{ og.score }}</span>
+                <span style="display: block; font-size: 0.7rem; color: var(--ink-soft);">{{ og.submitted_at|date:"Y-m-d H:i" }}</span>
+              </div>
+            </div>
+          {% empty %}
+            <div style="padding: 1.5rem; text-align: center; color: var(--ink-soft); font-size: 0.85rem;">No exam grades recorded yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+{% endblock %}
