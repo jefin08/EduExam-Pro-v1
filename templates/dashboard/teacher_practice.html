@@ -1,0 +1,50 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Practice Portal — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}">← Back to Dashboard</a></li>
+<li class="active"><a href="{% url 'teacher_practice' %}">Practice Sets</a></li>
+<li><a href="{% url 'teacher_create_practice_page' %}">Create Practice Set</a></li>
+<li><a href="{% url 'teacher_practice_questions' %}">Add Practice Questions</a></li>
+<li><a href="{% url 'teacher_bulk_upload' %}">Bulk Upload Questions</a></li>
+{% endblock %}
+
+{% block main_content %}
+
+  <!-- ================= PRACTICE SETS LIST ================= -->
+  <div id="sets-ledger-sec" class="main-panel-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 class="section-title" style="margin: 0;">Practice Sets</h3>
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'teacher_create_practice_page' %}" class="btn btn-primary" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Create Practice Set</a>
+        <a href="{% url 'teacher_practice_questions' %}" class="btn btn-primary" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Add Practice Questions</a>
+        <a href="{% url 'teacher_bulk_upload' %}" class="btn btn-ghost" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Bulk Upload</a>
+      </div>
+    </div>
+    
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 1.5fr 1.2fr 2fr;">
+        <span>Set Title</span>
+        <span>Reveal Rule</span>
+        <span>Assigned Classes</span>
+      </div>
+      {% for set in practice_sets %}
+        <div class="ledger-row" style="grid-template-columns: 1.5fr 1.2fr 2fr;">
+          <strong>{{ set.name }}</strong>
+          <span class="mono-text" style="font-size: 0.85rem;">{{ set.get_solution_reveal_rule_display }}</span>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            {% for assignment in set.assignments.all %}
+              <span class="mode-tag practice-tag" style="font-size: 0.7rem;">{{ assignment.class_group.name }}</span>
+            {% empty %}
+              <span class="mode-tag exam-tag" style="font-size: 0.7rem;">No classes assigned</span>
+            {% endfor %}
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No practice sets published yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+{% endblock %}

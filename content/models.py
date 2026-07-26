@@ -6,6 +6,11 @@ class Topic(models.Model):
     subject = models.CharField(max_length=120)
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
+    purpose = models.CharField(
+        max_length=20, 
+        choices=[('exam', 'Exam'), ('practice', 'Practice'), ('both', 'Both')], 
+        default='both'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -14,6 +19,14 @@ class Topic(models.Model):
     @property
     def visible_class_ids(self):
         return list(self.visibilities.values_list('class_group_id', flat=True))
+
+    @property
+    def exam_questions_count(self):
+        return self.exam_mcq_questions.count() + self.exam_coding_questions.count()
+
+    @property
+    def practice_questions_count(self):
+        return self.practice_mcq_questions.count() + self.practice_coding_questions.count()
 
 class TopicClassVisibility(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='visibilities')

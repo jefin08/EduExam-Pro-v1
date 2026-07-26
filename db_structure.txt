@@ -1,0 +1,235 @@
+DATABASE TABLE STRUCTURE - EDUEXAM PRO (V1)
+===========================================
+
+1. APP: ACCOUNTS
+-----------------
+
+Table: accounts_class (Model: Class)
+  Fields:
+    - id: AutoField (Primary Key)
+    - name: CharField(max_length=100, unique=True)
+    - created_at: DateTimeField(auto_now_add=True)
+
+Table: accounts_user (Model: User, inherits AbstractUser)
+  Fields:
+    - id: AutoField (Primary Key)
+    - role: CharField(max_length=10, choices=[('admin', 'Admin'), ('teacher', 'Teacher'), ('student', 'Student')], default='student')
+    - department: CharField(max_length=100, blank=True, null=True)
+    - is_approved: BooleanField(default=False)
+    - class_group: ForeignKey(Class, on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
+    - [plus all standard Django AbstractUser fields: username, email, password, first_name, last_name, is_staff, is_active, date_joined, etc.]
+
+
+2. APP: CONTENT
+----------------
+
+Table: content_topic (Model: Topic)
+  Fields:
+    - id: AutoField (Primary Key)
+    - teacher: ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='topics')
+    - subject: CharField(max_length=120)
+    - name: CharField(max_length=200)
+    - is_active: BooleanField(default=True)
+    - purpose: CharField(max_length=20, choices=[('exam', 'Exam'), ('practice', 'Practice'), ('both', 'Both')], default='both')
+    - created_at: DateTimeField(auto_now_add=True)
+  Properties (Python properties):
+    - visible_class_ids: list of visibility class IDs
+    - exam_questions_count: count of exam MCQ + Coding questions
+    - practice_questions_count: count of practice MCQ + Coding questions
+
+Table: content_topicclassvisibility (Model: TopicClassVisibility)
+  Fields:
+    - id: AutoField (Primary Key)
+    - topic: ForeignKey(Topic, on_delete=models.CASCADE, related_name='visibilities')
+    - class_group: ForeignKey(Class, on_delete=models.CASCADE, related_name='visible_topics')
+  Constraints:
+    - unique_together = ('topic', 'class_group')
+
+Table: content_practicemcqquestion (Model: PracticeMCQQuestion)
+  Fields:
+    - id: AutoField (Primary Key)
+    - topic: ForeignKey(Topic, on_delete=models.CASCADE, related_name='practice_mcq_questions')
+    - question_text: TextField()
+    - options: JSONField() (list of options)
+    - correct_option_index: IntegerField()
+    - explanation: TextField(blank=True, null=True)
+    - marks: IntegerField(default=1)
+    - difficulty: CharField(max_length=10, choices=[('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')], default='easy')
+    - tags: JSONField(default=list, blank=True)
+    - created_at: DateTimeField(auto_now_add=True)
+
+Table: content_exammcqquestion (Model: ExamMCQQuestion)
+  Fields:
+    - id: AutoField (Primary Key)
+    - topic: ForeignKey(Topic, on_delete=models.CASCADE, related_name='exam_mcq_questions')
+    - question_text: TextField()
+    - options: JSONField()
+    - correct_option_index: IntegerField()
+    - explanation: TextField(blank=True, null=True)
+    - marks: IntegerField(default=1)
+    - difficulty: CharField(max_length=10, choices=[('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')], default='easy')
+    - tags: JSONField(default=list, blank=True)
+    - created_at: DateTimeField(auto_now_add=True)
+
+Table: content_practicecodingquestion (Model: PracticeCodingQuestion)
+  Fields:
+    - id: AutoField (Primary Key)
+    - topic: ForeignKey(Topic, on_delete=models.CASCADE, related_name='practice_coding_questions')
+    - title: CharField(max_length=200)
+    - description: TextField()
+    - input_format: TextField()
+    - output_format: TextField()
+    - sample_test_cases: JSONField() (list of dictionaries with input/output keys)
+    - hidden_test_cases: JSONField() (list of dictionaries with input/output keys)
+    - starter_code: TextField(blank=True, null=True)
+    - explanation: TextField(blank=True, null=True)
+    - time_limit: FloatField(default=1.0)
+    - memory_limit: IntegerField(default=256)
+    - marks: IntegerField(default=10)
+    - difficulty: CharField(max_length=10, choices=[('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')], default='easy')
+    - tags: JSONField(default=list, blank=True)
+    - created_at: DateTimeField(auto_now_add=True)
+
+Table: content_examcodingquestion (Model: ExamCodingQuestion)
+  Fields:
+    - id: AutoField (Primary Key)
+    - topic: ForeignKey(Topic, on_delete=models.CASCADE, related_name='exam_coding_questions')
+    - title: CharField(max_length=200)
+    - description: TextField()
+    - input_format: TextField()
+    - output_format: TextField()
+    - sample_test_cases: JSONField()
+    - hidden_test_cases: JSONField()
+    - starter_code: TextField(blank=True, null=True)
+    - explanation: TextField(blank=True, null=True)
+    - time_limit: FloatField(default=1.0)
+    - memory_limit: IntegerField(default=256)
+    - marks: IntegerField(default=10)
+    - difficulty: CharField(max_length=10, choices=[('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')], default='easy')
+    - tags: JSONField(default=list, blank=True)
+    - created_at: DateTimeField(auto_now_add=True)
+
+
+3. APP: EXAMS
+--------------
+
+Table: exams_exam (Model: Exam)
+  Fields:
+    - id: AutoField (Primary Key)
+    - teacher: ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='exams')
+    - topics: ManyToManyField(Topic, related_name='exams') (Mapping table: exams_exam_topics)
+    - name: CharField(max_length=200)
+    - duration_minutes: IntegerField()
+    - start_time: DateTimeField()
+    - end_time: DateTimeField()
+    - is_randomized: BooleanField(default=False)
+    - allowed_attempts: IntegerField(default=1)
+    - created_at: DateTimeField(auto_now_add=True)
+
+Table: exams_examcode (Model: ExamCode)
+  Fields:
+    - id: AutoField (Primary Key)
+    - exam: ForeignKey(Exam, on_delete=models.CASCADE, related_name='codes')
+    - code: CharField(max_length=50, unique=True)
+    - class_group: ForeignKey(Class, on_delete=models.CASCADE, related_name='exam_codes', null=True, blank=True)
+    - is_active: BooleanField(default=True)
+    - created_at: DateTimeField(auto_now_add=True)
+
+Table: exams_officialgrade (Model: OfficialGrade)
+  Fields:
+    - id: AutoField (Primary Key)
+    - student: ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='official_grades')
+    - exam: ForeignKey(Exam, on_delete=models.CASCADE, related_name='grades')
+    - score: FloatField(default=0.0)
+    - mcq_score: FloatField(default=0.0)
+    - coding_score: FloatField(default=0.0)
+    - is_submitted: BooleanField(default=False)
+    - started_at: DateTimeField(auto_now_add=True)
+    - submitted_at: DateTimeField(null=True, blank=True)
+  Constraints:
+    - unique_together = ('student', 'exam')
+
+Table: exams_monitoringevent (Model: MonitoringEvent)
+  Fields:
+    - id: AutoField (Primary Key)
+    - student: ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='monitoring_events')
+    - exam: ForeignKey(Exam, on_delete=models.CASCADE, related_name='monitoring_events')
+    - event_type: CharField(max_length=20, choices=[('tab_switch', 'Tab Switch'), ('copy_paste', 'Copy Paste'), ('blur', 'Focus Lost')])
+    - details: TextField(blank=True, null=True)
+    - timestamp: DateTimeField(auto_now_add=True)
+
+
+4. APP: PRACTICE
+-----------------
+
+Table: practice_practiceset (Model: PracticeSet)
+  Fields:
+    - id: AutoField (Primary Key)
+    - teacher: ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='practice_sets')
+    - topics: ManyToManyField(Topic, related_name='practice_sets') (Mapping table: practice_practiceset_topics)
+    - name: CharField(max_length=200)
+    - solution_reveal_rule: CharField(max_length=20, choices=[('immediate', 'After First Attempt'), ('never', 'Never')], default='immediate')
+    - created_at: DateTimeField(auto_now_add=True)
+
+Table: practice_practicesetclassassignment (Model: PracticeSetClassAssignment)
+  Fields:
+    - id: AutoField (Primary Key)
+    - practice_set: ForeignKey(PracticeSet, on_delete=models.CASCADE, related_name='assignments')
+    - class_group: ForeignKey(Class, on_delete=models.CASCADE, related_name='practice_assignments')
+    - assigned_at: DateTimeField(auto_now_add=True)
+  Constraints:
+    - unique_together = ('practice_set', 'class_group')
+
+Table: practice_practiceattempt (Model: PracticeAttempt)
+  Fields:
+    - id: AutoField (Primary Key)
+    - student: ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='practice_attempts')
+    - practice_set: ForeignKey(PracticeSet, on_delete=models.CASCADE, related_name='attempts')
+    - score: FloatField(default=0.0)
+    - mcq_score: FloatField(default=0.0)
+    - coding_score: FloatField(default=0.0)
+    - attempted_at: DateTimeField(auto_now_add=True)
+
+Table: practice_practicecomment (Model: PracticeComment)
+  Fields:
+    - id: AutoField (Primary Key)
+    - student: ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='practice_comments')
+    - question_type: CharField(max_length=10, choices=[('mcq', 'MCQ'), ('coding', 'Coding')])
+    - mcq_question: ForeignKey(PracticeMCQQuestion, on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    - coding_question: ForeignKey(PracticeCodingQuestion, on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    - comment_text: TextField()
+    - created_at: DateTimeField(auto_now_add=True)
+
+
+5. APP: JUDGE
+--------------
+
+Table: judge_submission (Model: Submission)
+  Fields:
+    - id: AutoField (Primary Key)
+    - student: ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='submissions')
+    - practice_coding_question: ForeignKey(PracticeCodingQuestion, on_delete=models.CASCADE, null=True, blank=True, related_name='submissions')
+    - exam_coding_question: ForeignKey(ExamCodingQuestion, on_delete=models.CASCADE, null=True, blank=True, related_name='submissions')
+    - code: TextField()
+    - language: CharField(max_length=20, choices=[('python', 'Python'), ('cpp', 'C++'), ('java', 'Java')], default='python')
+    - status: CharField(max_length=20, choices=[('queued', 'Queued'), ('judging', 'Judging'), ('compile_error', 'Compilation Error'), ('graded', 'Graded')], default='queued')
+    - score: FloatField(default=0.0)
+    - compile_output: TextField(blank=True, null=True)
+    - context_type: CharField(max_length=20, choices=[('exam', 'Exam'), ('practice', 'Practice'), ('standalone', 'Standalone')], default='standalone')
+    - exam: ForeignKey(Exam, on_delete=models.SET_NULL, null=True, blank=True, related_name='submissions')
+    - practice_set: ForeignKey(PracticeSet, on_delete=models.SET_NULL, null=True, blank=True, related_name='submissions')
+    - submitted_at: DateTimeField(auto_now_add=True)
+  Properties:
+    - question: returns practice_coding_question or exam_coding_question
+
+Table: judge_testcaseresult (Model: TestCaseResult)
+  Fields:
+    - id: AutoField (Primary Key)
+    - submission: ForeignKey(Submission, on_delete=models.CASCADE, related_name='testcase_results')
+    - test_case_index: IntegerField()
+    - is_hidden: BooleanField(default=False)
+    - status: CharField(max_length=30, choices=[('pass', 'Pass'), ('fail', 'Wrong Answer'), ('runtime_error', 'Runtime Error'), ('time_limit_exceeded', 'Time Limit Exceeded'), ('memory_limit_exceeded', 'Memory Limit Exceeded')])
+    - runtime_seconds: FloatField(default=0.0)
+    - memory_bytes: IntegerField(default=0)
+    - output_received: TextField(blank=True, null=True)
+    - error_message: TextField(blank=True, null=True)

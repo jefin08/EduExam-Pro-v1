@@ -223,7 +223,7 @@
             <div class="action-buttons-group" style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--rule-strong); padding-top: 1.25rem;">
               <button class="btn btn-primary" style="background-color: var(--pass-teal); border-color: var(--pass-teal); font-size: 0.85rem;" onclick="saveAndNext('mcq', '{{ mcq.id }}')">Save &amp; Next</button>
               <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="skipNext('mcq', '{{ mcq.id }}')">Skip &amp; Next</button>
-              <button class="btn btn-ghost" style="font-size: 0.85rem; color: var(--pass-teal); border-color: var(--pass-teal);" onclick="showMCQAnswer('{{ mcq.id }}')">Show Answer</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem; color: var(--pass-teal); border-color: var(--pass-teal);" onclick="showMCQAnswer('{{ mcq.id }}', this)">Show Answer</button>
               <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="toggleExplanation('mcq', '{{ mcq.id }}')">Explanation</button>
             </div>
           </div>
@@ -303,7 +303,7 @@
             <div class="action-buttons-group" style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--rule-strong); padding-top: 1.25rem;">
               <button class="btn btn-primary" style="background-color: var(--pass-teal); border-color: var(--pass-teal); font-size: 0.85rem;" onclick="saveAndNext('coding', '{{ code_q.id }}')">Save &amp; Next</button>
               <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="skipNext('coding', '{{ code_q.id }}')">Skip &amp; Next</button>
-              <button class="btn btn-ghost" style="font-size: 0.85rem; color: var(--pass-teal); border-color: var(--pass-teal);" onclick="showCodingAnswer('{{ code_q.id }}')">Show Answer</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem; color: var(--pass-teal); border-color: var(--pass-teal);" onclick="showCodingAnswer('{{ code_q.id }}', this)">Show Answer</button>
               <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="toggleExplanation('coding', '{{ code_q.id }}')">Explanation</button>
             </div>
           </div>
@@ -494,32 +494,60 @@
       }
     }
 
-    function showMCQAnswer(qId) {
+    function showMCQAnswer(qId, btnEl) {
       const card = document.getElementById(`mcq-card-${qId}`);
       const correctIdx = card.getAttribute('data-correct-idx');
       const options = card.querySelectorAll('.mcq-option');
       
-      options.forEach((el, index) => {
-        if (index == correctIdx) {
-          el.style.borderColor = 'var(--pass-teal)';
-          el.style.backgroundColor = 'rgba(46,110,96,0.06)';
-          
-          if (!el.querySelector('.correct-badge')) {
-            const badge = document.createElement('span');
-            badge.className = 'correct-badge';
-            badge.textContent = ' (Correct Answer)';
-            badge.style.color = 'var(--pass-teal)';
-            badge.style.fontSize = '0.8rem';
-            badge.style.fontWeight = 'bold';
-            el.appendChild(badge);
+      const isShowing = btnEl.getAttribute('data-showing') === 'true';
+      
+      if (isShowing) {
+        options.forEach((el, index) => {
+          if (index == correctIdx) {
+            el.style.borderColor = '';
+            el.style.backgroundColor = '';
+            const badge = el.querySelector('.correct-badge');
+            if (badge) badge.remove();
           }
-        }
-      });
+        });
+        btnEl.textContent = 'Show Answer';
+        btnEl.setAttribute('data-showing', 'false');
+      } else {
+        options.forEach((el, index) => {
+          if (index == correctIdx) {
+            el.style.borderColor = 'var(--pass-teal)';
+            el.style.backgroundColor = 'rgba(46,110,96,0.06)';
+            
+            if (!el.querySelector('.correct-badge')) {
+              const badge = document.createElement('span');
+              badge.className = 'correct-badge';
+              badge.textContent = ' (Correct Answer)';
+              badge.style.color = 'var(--pass-teal)';
+              badge.style.fontSize = '0.8rem';
+              badge.style.fontWeight = 'bold';
+              el.appendChild(badge);
+            }
+          }
+        });
+        btnEl.textContent = 'Hide Answer';
+        btnEl.setAttribute('data-showing', 'true');
+      }
     }
 
-    function showCodingAnswer(id) {
-      toggleExplanation('coding', id, true);
-      alert("The detailed answer is shown in the Explanation section below!");
+    function showCodingAnswer(id, btnEl) {
+      const box = document.getElementById(`explanation-coding-${id}`);
+      if (box) {
+        const isShowing = btnEl.getAttribute('data-showing') === 'true';
+        if (isShowing) {
+          box.style.display = 'none';
+          btnEl.textContent = 'Show Answer';
+          btnEl.setAttribute('data-showing', 'false');
+        } else {
+          box.style.display = 'block';
+          btnEl.textContent = 'Hide Answer';
+          btnEl.setAttribute('data-showing', 'true');
+        }
+      }
     }
 
     function toggleExplanation(type, id, forceOpen = false) {
@@ -529,6 +557,17 @@
           box.style.display = 'block';
         } else {
           box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Synced button toggle
+        const card = document.getElementById(`${type}-card-${id}`);
+        if (card) {
+          const btn = Array.from(card.querySelectorAll('button')).find(el => el.textContent.includes('Answer'));
+          if (btn) {
+            const isShowing = box.style.display === 'block';
+            btn.textContent = isShowing ? 'Hide Answer' : 'Show Answer';
+            btn.setAttribute('data-showing', isShowing ? 'true' : 'false');
+          }
         }
       }
     }
@@ -676,7 +715,10 @@
           'Content-Type': 'application/json',
           'X-CSRFToken': '{{ csrf_token }}'
         },
-        body: JSON.stringify(state)
+        body: JSON.stringify({
+          mcq_answers: state.mcqAnswers,
+          coding_submissions: state.codingSubmissions
+        })
       })
       .then(res => res.json())
       .then(data => {

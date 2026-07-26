@@ -1,0 +1,117 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Bulk Upload Questions — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}">← Back to Dashboard</a></li>
+<li><a href="{% url 'teacher_practice' %}">Practice Sets</a></li>
+<li><a href="{% url 'teacher_create_practice_page' %}">Create Practice Set</a></li>
+<li><a href="{% url 'teacher_practice_questions' %}">Add Practice Questions</a></li>
+<li class="active"><a href="#bulk-sec">Bulk Upload Questions</a></li>
+{% endblock %}
+
+{% block main_content %}
+
+  <div id="bulk-sec" class="main-panel-section">
+    <h3 class="section-title">Bulk Question Import</h3>
+    <div class="dash-form">
+      <h3>Bulk MCQ &amp; Coding Practice Import</h3>
+      
+      <!-- Step 1: Select Topic -->
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label for="topic_select_bulk" style="font-weight: 600;">Step 1: Select Topic to Import Questions into</label>
+        <select id="topic_select_bulk" style="margin-top: 0.5rem;" onchange="handleTopicSelection(this.value)">
+          <option value="" selected disabled>-- Choose a Topic --</option>
+          {% for topic in topics %}
+            <option value="{{ topic.id }}">{{ topic.name }} ({{ topic.subject }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Step 2: Paste or Upload Bulk Questions (Hidden by default) -->
+      <div id="bulk-form-container" style="display: none; border-top: 1px dashed var(--rule); padding-top: 1.5rem; margin-top: 1.5rem;">
+        <form action="{% url 'teacher_bulk_upload' %}" method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="topic_id" id="hidden_topic_id">
+          
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="bulk_file" style="font-weight: 600;">Step 2: Upload TXT File OR Paste Bulk Questions below</label>
+              <input type="file" id="bulk_file" name="bulk_file" accept=".txt" style="margin-top: 0.5rem; margin-bottom: 1rem; border: 1px dashed var(--rule-strong); padding: 0.5rem; border-radius: 4px; cursor: pointer; width: 100%;">
+            </div>
+            <div class="form-group full-width">
+              <label for="bulk_text" style="font-weight: 600;">TXT Question Content</label>
+              <textarea id="bulk_text" name="bulk_text" placeholder="Question No: 1&#10;Type: MCQ&#10;..." style="width: 100%; height: 280px; font-family: var(--font-mono); font-size: 0.9rem; padding: 1rem; margin-top: 0.5rem;" required></textarea>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem; padding: 1.25rem; background-color: var(--bg); border: 1px solid var(--rule-strong); border-radius: 4px;">
+            <h4 class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 0.75rem;">ACCEPTED FORMAT SCHEMAS</h4>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; font-size: 0.82rem; line-height: 1.5; font-family: var(--font-mono); color: var(--ink-soft);">
+              <div>
+                <strong style="color: var(--ink); display: block; margin-bottom: 0.5rem;">MCQ FORMAT EXAMPLE:</strong>
+                <pre style="background: var(--paper); border: 1px solid var(--rule); padding: 0.75rem; border-radius: 3px; font-size: 0.75rem; margin: 0; white-space: pre-wrap;">Question No: 1
+Type: MCQ
+Question: What is the complexity of Binary Search?
+A) O(N)
+B) O(log N)
+C) O(N log N)
+D) O(1)
+Correct: B
+Explanation: Binary search halves search space.
+Marks: 5
+Difficulty: easy</pre>
+              </div>
+              <div>
+                <strong style="color: var(--ink); display: block; margin-bottom: 0.5rem;">CODING FORMAT EXAMPLE:</strong>
+                <pre style="background: var(--paper); border: 1px solid var(--rule); padding: 0.75rem; border-radius: 3px; font-size: 0.75rem; margin: 0; white-space: pre-wrap;">Question No: 2
+Type: Coding
+Title: Sum of Two Numbers
+Description: Write a function to add two integers.
+Input Format: Two space-separated integers.
+Output Format: A single integer.
+Sample Input: 2 3
+Sample Output: 5
+Hidden Input: 10 20
+Hidden Output: 30
+Starter Code: def solve(a, b): pass
+Explanation: Simple addition.
+Marks: 10
+Difficulty: easy</pre>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem;">Parse &amp; Verify Questions</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function handleTopicSelection(val) {
+      const formContainer = document.getElementById('bulk-form-container');
+      const hiddenTopicId = document.getElementById('hidden_topic_id');
+      if (val) {
+        formContainer.style.display = 'block';
+        hiddenTopicId.value = val;
+      } else {
+        formContainer.style.display = 'none';
+        hiddenTopicId.value = '';
+      }
+    }
+
+    document.getElementById('bulk_file').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('bulk_text').value = e.target.result;
+      };
+      reader.readAsText(file);
+    });
+  </script>
+
+{% endblock %}

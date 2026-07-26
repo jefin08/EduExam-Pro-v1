@@ -363,7 +363,10 @@
           'Content-Type': 'application/json',
           'X-CSRFToken': '{{ csrf_token }}'
         },
-        body: JSON.stringify(state)
+        body: JSON.stringify({
+          mcq_answers: state.mcqAnswers,
+          coding_submissions: state.codingSubmissions
+        })
       })
       .then(res => res.json())
       .then(data => {

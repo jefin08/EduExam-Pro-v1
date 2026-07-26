@@ -1,0 +1,190 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Verify Questions — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}">← Back to Dashboard</a></li>
+<li><a href="{% url 'teacher_practice' %}">Practice Sets</a></li>
+<li><a href="{% url 'teacher_create_practice_page' %}">Create Practice Set</a></li>
+<li><a href="{% url 'teacher_practice_questions' %}">Add Practice Questions</a></li>
+<li><a href="{% url 'teacher_bulk_upload' %}">Bulk Upload Questions</a></li>
+{% endblock %}
+
+{% block main_content %}
+
+  <div class="main-panel-section">
+    <h3 class="section-title">Verify &amp; Import Questions</h3>
+    
+    <div style="margin-bottom: 1.5rem; padding: 1rem; background-color: rgba(46, 110, 96, 0.08); border: 1px solid var(--pass-teal); border-radius: 4px;">
+      <p style="margin: 0; font-weight: 600; color: var(--pass-teal);">
+        Parsed {{ questions|length }} question(s) for Topic: <strong>{{ topic.name }}</strong>
+      </p>
+      <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: var(--ink-soft);">
+        Please verify the questions below. If any question has validation warnings, edit the fields to set them correctly before confirming.
+      </p>
+    </div>
+
+    <form action="{% url 'teacher_bulk_save' %}" method="POST" style="margin: 0;">
+      {% csrf_token %}
+      <input type="hidden" name="topic_id" value="{{ topic.id }}">
+
+      {% for q in questions %}
+        <div class="card" style="margin-bottom: 2rem; border: 1px solid {% if q.has_warnings %}var(--red-pen){% else %}var(--rule-strong){% endif %}; position: relative; padding: 1.5rem;">
+          
+          <!-- Top checkbox to include/skip -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule-strong); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" name="include_{{ forloop.counter0 }}" id="include_{{ forloop.counter0 }}" value="yes" checked style="width: auto; cursor: pointer;">
+              <label for="include_{{ forloop.counter0 }}" style="font-weight: 700; font-family: var(--font-sans); text-transform: none; font-size: 1rem; color: var(--ink); margin: 0; cursor: pointer;">
+                Include Question #{{ forloop.counter }} (Type: {{ q.type }})
+              </label>
+            </div>
+            <span class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft);">STATUS: {% if q.has_warnings %}<span style="color: var(--red-pen); font-weight: 700;">REQUIRES ATTENTION</span>{% else %}<span style="color: var(--pass-teal); font-weight: 700;">VALID</span>{% endif %}</span>
+          </div>
+
+          <input type="hidden" name="type_{{ forloop.counter0 }}" value="{{ q.type }}">
+
+          <!-- Warning Banner if question has errors -->
+          {% if q.has_warnings %}
+            <div style="margin-bottom: 1.25rem; padding: 0.75rem 1rem; background-color: rgba(178,58,46,0.08); border-left: 4px solid var(--red-pen); border-radius: 2px;">
+              <strong style="color: var(--red-pen); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">⚠️ Validation Warnings:</strong>
+              <ul style="margin: 0; padding-left: 1.25rem; color: var(--red-pen); font-size: 0.85rem;">
+                {% for warn in q.warnings %}
+                  <li>{{ warn }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+
+          <div class="form-grid">
+            {% if q.type == 'MCQ' %}
+              <!-- MCQ form fields -->
+              <div class="form-group full-width">
+                <label>Question Text</label>
+                <textarea name="question_text_{{ forloop.counter0 }}" rows="2" style="width: 100%; margin-top: 0.25rem;" required>{{ q.question_text }}</textarea>
+              </div>
+
+              <!-- Options -->
+              <div class="form-group full-width">
+                <label style="font-weight: 600;">Options list (Define options below)</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+                  <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 0.75rem; color: var(--ink-soft);">Option A</label>
+                    <input type="text" name="option_{{ forloop.counter0 }}_0" value="{{ q.options.0 }}" placeholder="Option A text" required>
+                  </div>
+                  <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 0.75rem; color: var(--ink-soft);">Option B</label>
+                    <input type="text" name="option_{{ forloop.counter0 }}_1" value="{{ q.options.1 }}" placeholder="Option B text" required>
+                  </div>
+                  <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 0.75rem; color: var(--ink-soft);">Option C (Optional)</label>
+                    <input type="text" name="option_{{ forloop.counter0 }}_2" value="{{ q.options.2 }}" placeholder="Option C text">
+                  </div>
+                  <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 0.75rem; color: var(--ink-soft);">Option D (Optional)</label>
+                    <input type="text" name="option_{{ forloop.counter0 }}_3" value="{{ q.options.3 }}" placeholder="Option D text">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Correct Option</label>
+                <select name="correct_idx_{{ forloop.counter0 }}" style="margin-top: 0.25rem;">
+                  <option value="0" {% if q.correct_option_index == 0 %}selected{% endif %}>Option A</option>
+                  <option value="1" {% if q.correct_option_index == 1 %}selected{% endif %}>Option B</option>
+                  <option value="2" {% if q.correct_option_index == 2 %}selected{% endif %}>Option C</option>
+                  <option value="3" {% if q.correct_option_index == 3 %}selected{% endif %}>Option D</option>
+                </select>
+              </div>
+
+            {% else %}
+              <!-- Coding form fields -->
+              <div class="form-group">
+                <label>Title</label>
+                <input type="text" name="title_{{ forloop.counter0 }}" value="{{ q.title }}" style="margin-top: 0.25rem;" required>
+              </div>
+
+              <div class="form-group full-width">
+                <label>Description</label>
+                <textarea name="description_{{ forloop.counter0 }}" rows="3" style="width: 100%; margin-top: 0.25rem;" required>{{ q.description }}</textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Input Format</label>
+                <textarea name="input_format_{{ forloop.counter0 }}" rows="2" style="width: 100%; margin-top: 0.25rem;">{{ q.input_format }}</textarea>
+              </div>
+              <div class="form-group">
+                <label>Output Format</label>
+                <textarea name="output_format_{{ forloop.counter0 }}" rows="2" style="width: 100%; margin-top: 0.25rem;">{{ q.output_format }}</textarea>
+              </div>
+
+              <!-- Testcases -->
+              <div class="form-group full-width" style="border-top: 1px dashed var(--rule); padding-top: 1rem; margin-top: 0.5rem;">
+                <label style="font-weight: 600;">Test Cases</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 0.5rem;">
+                  <fieldset style="border: 1px solid var(--rule-strong); padding: 1rem; border-radius: 4px;">
+                    <legend style="padding: 0 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--pass-teal);">Sample Test Case</legend>
+                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                      <label style="font-size: 0.72rem; color: var(--ink-soft);">Sample Input</label>
+                      <input type="text" name="sample_input_{{ forloop.counter0 }}" value="{{ q.sample_input }}" placeholder="e.g. 2 3">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="font-size: 0.72rem; color: var(--ink-soft);">Sample Output</label>
+                      <input type="text" name="sample_output_{{ forloop.counter0 }}" value="{{ q.sample_output }}" placeholder="e.g. 5">
+                    </div>
+                  </fieldset>
+
+                  <fieldset style="border: 1px solid var(--rule-strong); padding: 1rem; border-radius: 4px;">
+                    <legend style="padding: 0 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--red-pen);">Hidden Test Case</legend>
+                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                      <label style="font-size: 0.72rem; color: var(--ink-soft);">Hidden Input</label>
+                      <input type="text" name="hidden_input_{{ forloop.counter0 }}" value="{{ q.hidden_input }}" placeholder="e.g. 10 20">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="font-size: 0.72rem; color: var(--ink-soft);">Hidden Output</label>
+                      <input type="text" name="hidden_output_{{ forloop.counter0 }}" value="{{ q.hidden_output }}" placeholder="e.g. 30">
+                    </div>
+                  </fieldset>
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label>Starter Code (Optional)</label>
+                <textarea name="starter_code_{{ forloop.counter0 }}" rows="3" style="width: 100%; font-family: var(--font-mono); margin-top: 0.25rem;">{{ q.starter_code }}</textarea>
+              </div>
+
+            {% endif %}
+
+            <!-- Common fields -->
+            <div class="form-group">
+              <label>Marks</label>
+              <input type="number" name="marks_{{ forloop.counter0 }}" value="{{ q.marks }}" style="margin-top: 0.25rem;" required>
+            </div>
+
+            <div class="form-group">
+              <label>Difficulty</label>
+              <select name="difficulty_{{ forloop.counter0 }}" style="margin-top: 0.25rem;">
+                <option value="easy" {% if q.difficulty == 'easy' %}selected{% endif %}>Easy</option>
+                <option value="medium" {% if q.difficulty == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="hard" {% if q.difficulty == 'hard' %}selected{% endif %}>Hard</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width" style="margin-bottom: 0;">
+              <label>Explanation (Optional)</label>
+              <textarea name="explanation_{{ forloop.counter0 }}" rows="2" style="width: 100%; margin-top: 0.25rem;">{{ q.explanation }}</textarea>
+            </div>
+
+          </div>
+        </div>
+      {% endfor %}
+
+      <div style="display: flex; gap: 1rem; margin-top: 2rem; border-top: 1px solid var(--rule-strong); padding-top: 1.5rem;">
+        <a href="{% url 'teacher_bulk_upload' %}" class="btn btn-ghost" style="flex: 1; text-align: center; text-decoration: none; line-height: 2.2;">Back &amp; Edit Text</a>
+        <button type="submit" class="btn btn-primary" style="flex: 2;">Confirm &amp; Save All Questions</button>
+      </div>
+
+    </form>
+  </div>
+
+{% endblock %}

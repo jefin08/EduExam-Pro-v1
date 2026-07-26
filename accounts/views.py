@@ -231,23 +231,113 @@ def teacher_dashboard_view(request):
     
     classes = Class.objects.all()
     topics = Topic.objects.filter(teacher=request.user)
-    practice_mcqs = PracticeMCQQuestion.objects.filter(topic__teacher=request.user)
-    exam_mcqs = ExamMCQQuestion.objects.filter(topic__teacher=request.user)
-    practice_coding_qs = PracticeCodingQuestion.objects.filter(topic__teacher=request.user)
-    exam_coding_qs = ExamCodingQuestion.objects.filter(topic__teacher=request.user)
-    practice_sets = PracticeSet.objects.filter(teacher=request.user)
-    exams = Exam.objects.filter(teacher=request.user)
     
     context = {
         'classes': classes,
         'topics': topics,
-        'mcqs': list(practice_mcqs) + list(exam_mcqs),
-        'coding_qs': list(practice_coding_qs) + list(exam_coding_qs),
-        'practice_sets': practice_sets,
-        'exams': exams,
-        'now': timezone.now(),
     }
     return render(request, 'dashboard/teacher.html', context)
+
+@login_required
+def teacher_exams_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+    
+    classes = Class.objects.all()
+    topics = Topic.objects.filter(teacher=request.user, purpose__in=['exam', 'both'])
+    exams = Exam.objects.filter(teacher=request.user)
+    
+    preselected_topic_id = request.GET.get('topic_id', '')
+    
+    context = {
+        'classes': classes,
+        'topics': topics,
+        'exams': exams,
+        'preselected_topic_id': preselected_topic_id,
+        'now': timezone.now(),
+    }
+    return render(request, 'dashboard/teacher_exams.html', context)
+
+@login_required
+def teacher_practice_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+    
+    classes = Class.objects.all()
+    topics = Topic.objects.filter(teacher=request.user, purpose__in=['practice', 'both'])
+    practice_sets = PracticeSet.objects.filter(teacher=request.user)
+    
+    preselected_topic_id = request.GET.get('topic_id', '')
+    
+    context = {
+        'classes': classes,
+        'topics': topics,
+        'practice_sets': practice_sets,
+        'preselected_topic_id': preselected_topic_id,
+    }
+    return render(request, 'dashboard/teacher_practice.html', context)
+
+@login_required
+def teacher_practice_questions_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+    
+    classes = Class.objects.all()
+    topics = Topic.objects.filter(teacher=request.user, purpose__in=['practice', 'both'])
+    
+    preselected_topic_id = request.GET.get('topic_id', '')
+    
+    context = {
+        'classes': classes,
+        'topics': topics,
+        'preselected_topic_id': preselected_topic_id,
+    }
+    return render(request, 'dashboard/teacher_practice_questions.html', context)
+
+@login_required
+def teacher_create_practice_page_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+    
+    classes = Class.objects.all()
+    topics = Topic.objects.filter(teacher=request.user, purpose__in=['practice', 'both'])
+    
+    context = {
+        'classes': classes,
+        'topics': topics,
+    }
+    return render(request, 'dashboard/teacher_create_practice.html', context)
+
+@login_required
+def teacher_schedule_exam_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+    
+    classes = Class.objects.all()
+    topics = Topic.objects.filter(teacher=request.user, purpose__in=['exam', 'both'])
+    
+    context = {
+        'classes': classes,
+        'topics': topics,
+    }
+    return render(request, 'dashboard/teacher_schedule_exam.html', context)
+
+@login_required
+def teacher_exams_questions_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+    
+    classes = Class.objects.all()
+    topics = Topic.objects.filter(teacher=request.user, purpose__in=['exam', 'both'])
+    
+    preselected_topic_id = request.GET.get('topic_id', '')
+    
+    context = {
+        'classes': classes,
+        'topics': topics,
+        'preselected_topic_id': preselected_topic_id,
+    }
+    return render(request, 'dashboard/teacher_exams_questions.html', context)
 
 @login_required
 def teacher_create_topic(request):
@@ -257,17 +347,40 @@ def teacher_create_topic(request):
     name = request.POST.get('name')
     subject = request.POST.get('subject')
     class_ids = request.POST.getlist('class_ids')
+    purpose = request.POST.get('purpose', 'both')
     
     if name and subject:
         topic = Topic.objects.create(
             teacher=request.user,
             name=name,
-            subject=subject
+            subject=subject,
+            purpose=purpose
         )
         for class_id in class_ids:
             class_group = Class.objects.get(id=class_id)
             TopicClassVisibility.objects.create(topic=topic, class_group=class_group)
         messages.success(request, f"Topic '{name}' created with class visibility rules.")
+    return redirect('/dashboard/teacher/')
+
+@login_required
+def teacher_edit_topic(request, topic_id):
+    if request.user.role != 'teacher' or request.method != 'POST':
+        return redirect('/dashboard/teacher/')
+    
+    topic = get_object_or_404(Topic, id=topic_id, teacher=request.user)
+    name = request.POST.get('name')
+    subject = request.POST.get('subject')
+    purpose = request.POST.get('purpose')
+    
+    if name and subject and purpose:
+        topic.name = name
+        topic.subject = subject
+        topic.purpose = purpose
+        topic.save()
+        messages.success(request, f"Topic '{name}' updated successfully.")
+    else:
+        messages.error(request, "Invalid input data.")
+        
     return redirect('/dashboard/teacher/')
 
 @login_required
@@ -305,6 +418,9 @@ def teacher_create_mcq(request):
             explanation=explanation
         )
         messages.success(request, f"{q_type.title()} multiple-choice question added successfully.")
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
     return redirect('/dashboard/teacher/')
 
 @login_required
@@ -349,6 +465,9 @@ def teacher_create_coding(request):
             kwargs['explanation'] = explanation
         ModelClass.objects.create(**kwargs)
         messages.success(request, f"{q_type.title()} coding question '{title}' added successfully.")
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
     return redirect('/dashboard/teacher/')
 
 @login_required
@@ -362,6 +481,16 @@ def teacher_create_practice(request):
     reveal_rule = request.POST.get('reveal_rule', 'immediate')
     
     if name and topic_ids:
+        # Check if selected topics contain 0 questions for practice
+        total_questions = 0
+        for t_id in topic_ids:
+            topic = Topic.objects.get(id=t_id)
+            total_questions += topic.practice_mcq_questions.count() + topic.practice_coding_questions.count()
+        
+        if total_questions == 0:
+            messages.error(request, "Cannot create practice set: The selected topics do not contain any practice questions.")
+            return redirect('/dashboard/teacher/practice/')
+
         practice_set = PracticeSet.objects.create(
             teacher=request.user,
             name=name,
@@ -377,7 +506,7 @@ def teacher_create_practice(request):
             class_group = Class.objects.get(id=c_id)
             PracticeSetClassAssignment.objects.create(practice_set=practice_set, class_group=class_group)
         messages.success(request, f"Practice Set '{name}' published successfully.")
-    return redirect('/dashboard/teacher/')
+    return redirect('/dashboard/teacher/practice/')
 
 @login_required
 def teacher_create_exam(request):
@@ -391,6 +520,16 @@ def teacher_create_exam(request):
     end_raw = request.POST.get('end_time')
     
     if name and topic_ids and start_raw and end_raw:
+        # Check if selected topics contain 0 questions for exam
+        total_questions = 0
+        for t_id in topic_ids:
+            topic = Topic.objects.get(id=t_id)
+            total_questions += topic.exam_mcq_questions.count() + topic.exam_coding_questions.count()
+        
+        if total_questions == 0:
+            messages.error(request, "Cannot schedule exam: The selected topics do not contain any exam questions.")
+            return redirect('/dashboard/teacher/exams/')
+
         from datetime import datetime
         try:
             naive_start = datetime.strptime(start_raw, '%Y-%m-%dT%H:%M')
@@ -405,7 +544,7 @@ def teacher_create_exam(request):
                 
         except ValueError:
             messages.error(request, "Invalid date/time format.")
-            return redirect('/dashboard/teacher/#exams-sec')
+            return redirect('/dashboard/teacher/exams/')
 
         exam = Exam.objects.create(
             teacher=request.user,
@@ -426,7 +565,7 @@ def teacher_create_exam(request):
             ExamCode.objects.create(exam=exam, code=code, class_group=class_group)
             
         messages.success(request, f"Exam '{name}' scheduled successfully.")
-    return redirect('/dashboard/teacher/')
+    return redirect('/dashboard/teacher/exams/')
 
 # ----------------- STUDENT DASHBOARD & ACTIONS -----------------
 
@@ -439,7 +578,13 @@ def student_dashboard_view(request):
     
     # Gating visibility check - strictly inherited from active Topic visibility mappings
     visible_topics = Topic.objects.filter(is_active=True, visibilities__class_group=class_group).distinct()
-    practice_sets = PracticeSet.objects.filter(assignments__class_group=class_group).distinct()
+    visible_topic_ids = visible_topics.values_list('id', flat=True)
+    
+    # Show practice sets only if ALL their topics are visible to the student's class group
+    practice_sets = PracticeSet.objects.filter(assignments__class_group=class_group).exclude(
+        topics__in=Topic.objects.exclude(id__in=visible_topic_ids)
+    ).distinct()
+    
     attempts = PracticeAttempt.objects.filter(student=request.user).order_by('-attempted_at')
     official_grades = OfficialGrade.objects.filter(student=request.user).order_by('-submitted_at')
     
@@ -541,7 +686,7 @@ def teacher_edit_exam_schedule(request, exam_id):
 
     if not start_raw or not end_raw:
         messages.error(request, "Both start and end date/time are required.")
-        return redirect('/dashboard/teacher/#exams-sec')
+        return redirect('/dashboard/teacher/exams/')
 
     from datetime import datetime
     try:
@@ -550,7 +695,7 @@ def teacher_edit_exam_schedule(request, exam_id):
         naive_end   = datetime.strptime(end_raw,   '%Y-%m-%dT%H:%M')
     except ValueError:
         messages.error(request, "Invalid date/time format.")
-        return redirect('/dashboard/teacher/#exams-sec')
+        return redirect('/dashboard/teacher/exams/')
 
     # Make timezone-aware
     aware_start = timezone.make_aware(naive_start)
@@ -558,7 +703,7 @@ def teacher_edit_exam_schedule(request, exam_id):
 
     if aware_end <= aware_start:
         messages.error(request, "End time must be after start time.")
-        return redirect('/dashboard/teacher/#exams-sec')
+        return redirect('/dashboard/teacher/exams/')
 
     # Auto-calculate duration from time difference
     duration_minutes = int((aware_end - aware_start).total_seconds() // 60)
@@ -569,7 +714,7 @@ def teacher_edit_exam_schedule(request, exam_id):
     exam.save()
 
     messages.success(request, f"Schedule updated for '{exam.name}' — duration set to {duration_minutes} mins.")
-    return redirect('/dashboard/teacher/#exams-sec')
+    return redirect('/dashboard/teacher/exams/')
 
 @login_required
 def teacher_topic_questions(request, topic_id):
@@ -702,3 +847,373 @@ def teacher_edit_coding(request, question_id):
         return redirect(f'/dashboard/teacher/topic/{question.topic.id}/questions/')
         
     return render(request, 'dashboard/teacher_edit_coding.html', {'question': question, 'q_type': q_type})
+
+
+def parse_bulk_text(bulk_text):
+    import re
+    # Split text into blocks by "Question No:"
+    blocks = re.split(r'(?i)Question\s+No:\s*\d*', bulk_text)
+    
+    parsed_questions = []
+    
+    for block in blocks:
+        block = block.strip()
+        if not block:
+            continue
+            
+        # Extract fields
+        q_type = None
+        q_text = ""
+        options = []
+        correct_val = ""
+        explanation = ""
+        marks = 5
+        difficulty = "easy"
+        
+        # Coding fields
+        title = ""
+        description = ""
+        input_format = ""
+        output_format = ""
+        sample_input = ""
+        sample_output = ""
+        hidden_input = ""
+        hidden_output = ""
+        starter_code = ""
+        
+        # Read line by line
+        current_multiline_field = None
+        multiline_buffer = []
+        
+        def flush_multiline():
+            nonlocal current_multiline_field, multiline_buffer, q_text, description, input_format, output_format, sample_input, sample_output, hidden_input, hidden_output, starter_code, explanation
+            val = "\n".join(multiline_buffer).strip()
+            if not val:
+                return
+            if current_multiline_field == 'question':
+                q_text = val
+            elif current_multiline_field == 'description':
+                description = val
+            elif current_multiline_field == 'input_format':
+                input_format = val
+            elif current_multiline_field == 'output_format':
+                output_format = val
+            elif current_multiline_field == 'sample_input':
+                sample_input = val
+            elif current_multiline_field == 'sample_output':
+                sample_output = val
+            elif current_multiline_field == 'hidden_input':
+                hidden_input = val
+            elif current_multiline_field == 'hidden_output':
+                hidden_output = val
+            elif current_multiline_field == 'starter_code':
+                starter_code = val
+            elif current_multiline_field == 'explanation':
+                explanation = val
+            multiline_buffer = []
+            current_multiline_field = None
+
+        for line in block.splitlines():
+            line_str = line.strip()
+            if not line_str:
+                continue
+                
+            lower_line = line_str.lower()
+            
+            # Type:
+            if lower_line.startswith('type:'):
+                flush_multiline()
+                q_type = line_str[5:].strip().upper() # MCQ or CODING
+                
+            # Question:
+            elif lower_line.startswith('question:'):
+                flush_multiline()
+                current_multiline_field = 'question'
+                multiline_buffer.append(line_str[9:].strip())
+                
+            # Correct:
+            elif lower_line.startswith('correct:'):
+                flush_multiline()
+                correct_val = line_str[8:].strip().upper()
+                
+            # Explanation:
+            elif lower_line.startswith('explanation:'):
+                flush_multiline()
+                current_multiline_field = 'explanation'
+                multiline_buffer.append(line_str[12:].strip())
+                
+            # Marks:
+            elif lower_line.startswith('marks:'):
+                flush_multiline()
+                try:
+                    marks = int(line_str[6:].strip())
+                except ValueError:
+                    marks = 5
+                    
+            # Difficulty:
+            elif lower_line.startswith('difficulty:'):
+                flush_multiline()
+                difficulty = line_str[11:].strip().lower()
+                
+            # Coding Fields:
+            elif lower_line.startswith('title:'):
+                flush_multiline()
+                title = line_str[6:].strip()
+                
+            elif lower_line.startswith('description:'):
+                flush_multiline()
+                current_multiline_field = 'description'
+                multiline_buffer.append(line_str[12:].strip())
+                
+            elif lower_line.startswith('input format:'):
+                flush_multiline()
+                current_multiline_field = 'input_format'
+                multiline_buffer.append(line_str[13:].strip())
+                
+            elif lower_line.startswith('output format:'):
+                flush_multiline()
+                current_multiline_field = 'output_format'
+                multiline_buffer.append(line_str[14:].strip())
+                
+            elif lower_line.startswith('sample input:'):
+                flush_multiline()
+                current_multiline_field = 'sample_input'
+                multiline_buffer.append(line_str[13:].strip())
+                
+            elif lower_line.startswith('sample output:'):
+                flush_multiline()
+                current_multiline_field = 'sample_output'
+                multiline_buffer.append(line_str[14:].strip())
+                
+            elif lower_line.startswith('hidden input:'):
+                flush_multiline()
+                current_multiline_field = 'hidden_input'
+                multiline_buffer.append(line_str[13:].strip())
+                
+            elif lower_line.startswith('hidden output:'):
+                flush_multiline()
+                current_multiline_field = 'hidden_output'
+                multiline_buffer.append(line_str[14:].strip())
+                
+            elif lower_line.startswith('starter code:'):
+                flush_multiline()
+                current_multiline_field = 'starter_code'
+                multiline_buffer.append(line_str[13:].strip())
+                
+            # Options (A), B), C)... or A., B., C....)
+            elif re.match(r'^[A-Z][\)\.]', line_str):
+                flush_multiline()
+                opt_match = re.match(r'^([A-Z])[\)\.]\s*(.*)$', line_str)
+                if opt_match:
+                    opt_letter = opt_match.group(1)
+                    opt_text = opt_match.group(2).strip()
+                    options.append((opt_letter, opt_text))
+            
+            # If we are inside a multiline field, continue appending
+            elif current_multiline_field:
+                multiline_buffer.append(line)
+                
+        flush_multiline()
+        
+        # Validate and prepare question dict
+        warnings = []
+        if not q_type or q_type not in ['MCQ', 'CODING']:
+            warnings.append("Invalid or missing Type. Must be 'MCQ' or 'Coding'.")
+            q_type = q_type or 'MCQ'
+            
+        if q_type == 'MCQ':
+            if not q_text:
+                warnings.append("Missing question text.")
+            if len(options) < 2:
+                warnings.append("MCQ must have at least 2 options.")
+            
+            # Resolve correct option index
+            correct_idx = -1
+            if correct_val:
+                for idx, (letter, text) in enumerate(options):
+                    if letter == correct_val:
+                        correct_idx = idx
+                        break
+                if correct_idx == -1:
+                    warnings.append(f"Correct option '{correct_val}' was not found in parsed options.")
+            else:
+                warnings.append("Missing correct option (e.g., 'Correct: B').")
+                
+            parsed_questions.append({
+                'type': 'MCQ',
+                'question_text': q_text,
+                'options': [opt[1] for opt in options],
+                'correct_option_index': correct_idx,
+                'explanation': explanation,
+                'marks': marks,
+                'difficulty': difficulty,
+                'warnings': warnings,
+                'has_warnings': len(warnings) > 0
+            })
+            
+        elif q_type == 'CODING':
+            if not title:
+                warnings.append("Missing title for coding question.")
+            if not description:
+                warnings.append("Missing description for coding question.")
+            if not sample_input or not sample_output:
+                warnings.append("Missing Sample Input or Sample Output.")
+            if not hidden_input or not hidden_output:
+                warnings.append("Missing Hidden Input or Hidden Output.")
+                
+            parsed_questions.append({
+                'type': 'CODING',
+                'title': title,
+                'description': description,
+                'input_format': input_format,
+                'output_format': output_format,
+                'sample_input': sample_input,
+                'sample_output': sample_output,
+                'hidden_input': hidden_input,
+                'hidden_output': hidden_output,
+                'starter_code': starter_code,
+                'explanation': explanation,
+                'marks': marks,
+                'difficulty': difficulty,
+                'warnings': warnings,
+                'has_warnings': len(warnings) > 0
+            })
+            
+    return parsed_questions
+
+
+@login_required
+def teacher_bulk_upload_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+        
+    topics = Topic.objects.filter(teacher=request.user, purpose__in=['practice', 'both'])
+    
+    if request.method == 'POST':
+        topic_id = request.POST.get('topic_id')
+        bulk_text = request.POST.get('bulk_text', '')
+        
+        if 'bulk_file' in request.FILES:
+            file_obj = request.FILES['bulk_file']
+            try:
+                bulk_text = file_obj.read().decode('utf-8')
+            except Exception:
+                pass
+                
+        if not topic_id:
+            messages.error(request, "Please select a topic.")
+            return redirect('teacher_bulk_upload')
+            
+        topic = get_object_or_404(Topic, id=topic_id, teacher=request.user)
+        parsed_questions = parse_bulk_text(bulk_text)
+        
+        context = {
+            'topic': topic,
+            'questions': parsed_questions,
+            'bulk_text': bulk_text,
+        }
+        return render(request, 'dashboard/teacher_bulk_upload_verify.html', context)
+        
+    context = {
+        'topics': topics,
+    }
+    return render(request, 'dashboard/teacher_bulk_upload.html', context)
+
+
+@login_required
+def teacher_bulk_save_view(request):
+    if request.user.role != 'teacher' or request.method != 'POST':
+        return redirect('/dashboard/teacher/')
+        
+    topic_id = request.POST.get('topic_id')
+    topic = get_object_or_404(Topic, id=topic_id, teacher=request.user)
+    
+    index = 0
+    created_mcq_count = 0
+    created_coding_count = 0
+    
+    while True:
+        q_type = request.POST.get(f'type_{index}')
+        if not q_type:
+            if index > 150:
+                break
+            index += 1
+            continue
+            
+        include = request.POST.get(f'include_{index}')
+        if not include:
+            index += 1
+            continue
+            
+        marks = int(request.POST.get(f'marks_{index}', 5))
+        difficulty = request.POST.get(f'difficulty_{index}', 'easy')
+        explanation = request.POST.get(f'explanation_{index}', '')
+        
+        if q_type == 'MCQ':
+            q_text = request.POST.get(f'question_text_{index}', '').strip()
+            
+            options = []
+            opt_idx = 0
+            while True:
+                opt_val = request.POST.get(f'option_{index}_{opt_idx}')
+                if opt_val is None:
+                    break
+                opt_val = opt_val.strip()
+                if opt_val:
+                    options.append(opt_val)
+                opt_idx += 1
+                
+            correct_idx = int(request.POST.get(f'correct_idx_{index}', 0))
+            
+            if q_text and len(options) >= 2:
+                if correct_idx < 0 or correct_idx >= len(options):
+                    correct_idx = 0
+                    
+                PracticeMCQQuestion.objects.create(
+                    topic=topic,
+                    question_text=q_text,
+                    options=options,
+                    correct_option_index=correct_idx,
+                    explanation=explanation,
+                    marks=marks,
+                    difficulty=difficulty
+                )
+                created_mcq_count += 1
+                
+        elif q_type == 'CODING':
+            title = request.POST.get(f'title_{index}', '').strip()
+            desc = request.POST.get(f'description_{index}', '').strip()
+            in_format = request.POST.get(f'input_format_{index}', '').strip()
+            out_format = request.POST.get(f'output_format_{index}', '').strip()
+            s_in = request.POST.get(f'sample_input_{index}', '').strip()
+            s_out = request.POST.get(f'sample_output_{index}', '').strip()
+            h_in = request.POST.get(f'hidden_input_{index}', '').strip()
+            h_out = request.POST.get(f'hidden_output_{index}', '').strip()
+            starter = request.POST.get(f'starter_code_{index}', '').strip()
+            
+            if title and desc:
+                sample_test_cases = [{"input": s_in, "output": s_out}]
+                hidden_test_cases = [{"input": h_in, "output": h_out}]
+                
+                PracticeCodingQuestion.objects.create(
+                    topic=topic,
+                    title=title,
+                    description=desc,
+                    input_format=in_format,
+                    output_format=out_format,
+                    sample_test_cases=sample_test_cases,
+                    hidden_test_cases=hidden_test_cases,
+                    starter_code=starter,
+                    explanation=explanation,
+                    marks=marks,
+                    difficulty=difficulty
+                )
+                created_coding_count += 1
+                
+        index += 1
+        
+    messages.success(
+        request, 
+        f"Bulk import completed: Created {created_mcq_count} MCQ and {created_coding_count} Coding practice questions."
+    )
+    return redirect('/dashboard/teacher/practice/questions/')

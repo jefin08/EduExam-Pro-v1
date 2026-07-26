@@ -1,0 +1,48 @@
+CHANGES MADE IN DEVELOPMENT - FULL HISTORY LOG
+=============================================
+
+1. Symmetrical Portals Split & Sidebars Sync:
+   - Split the scheduled list, schedule form, and add questions into separate modular pages for both Exam and Practice portals.
+   - Standardized and synchronized sidebar configuration configurations across all Exam/Practice templates.
+
+2. Topic Purpose & Metadata Editing:
+   - Added a 'purpose' field (choices: exam, practice, both) to the Topic model.
+   - Created and executed database migrations to apply schema changes.
+   - Integrated a floating inline 'Edit ✎' modal on the teacher's dashboard to modify Topic properties (Name, Subject, Purpose).
+   - Displayed colored badges (Exam: red, Practice: green, Both: blue) in the dashboard ledger.
+
+3. Topic Portal View Filtering:
+   - Filtered topics list in Exam creation/scheduling pages to only show topics with purpose 'exam' or 'both'.
+   - Filtered topics list in Practice creation/scheduling pages to only show topics with purpose 'practice' or 'both'.
+
+4. Zero Question Warning Validation:
+   - Added real-time frontend Javascript validation on checkboxes in 'teacher_schedule_exam.html' and 'teacher_create_practice.html' to warn the teacher and disable submission if selected topics contain 0 questions.
+   - Implemented backend post-request validation to block exam/practice creation if topics contain 0 questions, prompting a warning message.
+
+5. Student Gating Constraints:
+   - Excluded practice sets with invisible topics from the Student Dashboard.
+   - Blocked direct URL navigation to practice sets containing topics that are invisible to the student's class group.
+
+6. DB Structure Export:
+   - Dumped and updated the full database schema design to 'db_structure.txt'.
+
+7. Grading Payload Key Correction:
+   - Replaced camelCase payload key names ('mcqAnswers', 'codingSubmissions') with backend expected snake_case keys ('mcq_answers', 'coding_submissions') on student submit triggers in 'attempt.html' and 'take.html'. This fixes the grading evaluation scoring 0 marks bug.
+
+8. Student Assessment History limits:
+   - Adjusted the Practice History and Exam Grades lists on the student dashboard to display only the latest 5 entries by default.
+   - Created a toggleable 'See More' and 'See Less' button to dynamically expand or collapse the list history on the frontend.
+
+9. Bulk MCQ & Coding Question Uploader:
+   - Implemented a parser supporting custom file formatting templates:
+     - Question No: X
+     - Type: MCQ / Coding
+     - Title / Description / Input & Output format / Sample & Hidden inputs / Starter Code / Correct Option / Explanation / Marks / Difficulty
+   - Added a frontend step-by-step topic selection workflow that reveals the textarea only after selecting a topic.
+   - Added direct .txt file upload support that populates the textarea via JS FileReader, with backend fallback stream processing.
+   - Designed a verification screen highlighting question validation warnings with inline correction input fields (textareas, dropdowns) to correct faulty parsing fields before saving.
+   - Made sample/hidden inputs/outputs multiline-capable to parse arrays, matrices, and multi-line responses securely.
+
+10. Practice Question Show/Hide Answer Toggle:
+    - Updated MCQ and Coding 'Show Answer' button actions to highlight option / display explanation and toggle its label to 'Hide Answer'.
+    - Integrated sync handling so that toggle status updates when clicking the explanation block.

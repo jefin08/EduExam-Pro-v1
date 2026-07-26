@@ -1,0 +1,143 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Exam Portal — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}">← Back to Dashboard</a></li>
+<li class="active"><a href="{% url 'teacher_exams' %}">Exam Management</a></li>
+<li><a href="{% url 'teacher_schedule_exam' %}">Schedule New Exam</a></li>
+<li><a href="{% url 'teacher_exams_questions' %}">Add Exam Questions</a></li>
+{% endblock %}
+
+{% block main_content %}
+
+  <!-- ================= SCHEDULED EXAMS LIST ================= -->
+  <div id="exams-ledger-sec" class="main-panel-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 class="section-title" style="margin: 0;">Scheduled Exams</h3>
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'teacher_schedule_exam' %}" class="btn btn-primary" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Schedule New Exam</a>
+        <a href="{% url 'teacher_exams_questions' %}" class="btn btn-primary" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Add Exam Questions</a>
+      </div>
+    </div>
+    
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 1.5fr 1fr 1.2fr 1fr;">
+        <span>Exam Title</span>
+        <span>Duration</span>
+        <span>Assigned Codes</span>
+        <span>Actions</span>
+      </div>
+      {% for exam in exams %}
+        <div class="ledger-row" style="grid-template-columns: 1.5fr 1fr 1.2fr 1fr; align-items: center;{% if exam.end_time < now %} opacity: 0.7;{% endif %}">
+          <div>
+            <strong>{{ exam.name }}</strong>
+            <span style="display: block; font-size: 0.75rem; color: var(--ink-soft);">Window: {{ exam.start_time|date:"m-d H:i" }} to {{ exam.end_time|date:"m-d H:i" }}</span>
+            <!-- Status badge -->
+            {% if exam.end_time < now %}
+              <span style="display:inline-block; margin-top:0.25rem; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.1rem 0.45rem; border-radius:2px; background:rgba(178,58,46,0.09); color:var(--red-pen); border:1px solid var(--red-pen);">● ENDED</span>
+            {% elif exam.start_time <= now and now <= exam.end_time %}
+              <span style="display:inline-block; margin-top:0.25rem; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.1rem 0.45rem; border-radius:2px; background:rgba(46,110,96,0.09); color:var(--pass-teal); border:1px solid var(--pass-teal);">● LIVE</span>
+            {% else %}
+              <span style="display:inline-block; margin-top:0.25rem; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.1rem 0.45rem; border-radius:2px; background:rgba(0,0,0,0.04); color:var(--ink-soft); border:1px solid var(--rule-strong);">○ UPCOMING</span>
+            {% endif %}
+          </div>
+          <span class="mono-text">{{ exam.duration_minutes }} mins</span>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            {% for code in exam.codes.all %}
+              <span class="mono-text" style="font-size: 0.8rem; font-weight: 600; color: var(--red-pen);">
+                {{ code.class_group.name }}: {{ code.code }}
+              </span>
+            {% empty %}
+              <span style="font-size: 0.75rem; color: var(--ink-soft);">No code assigned</span>
+            {% endfor %}
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="/exam/{{ exam.id }}/monitor/" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">Live Monitor</a>
+            <button type="button" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;"
+              onclick="openVisPanel(event, 'edit-exam-{{ exam.id }}')">Edit ✎</button>
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No exams scheduled yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Floating Edit Panels for each exam -->
+  {% for exam in exams %}
+  <div id="edit-exam-{{ exam.id }}"
+       style="display:none; position:fixed; z-index:9999; background:var(--paper); border:1px solid var(--rule-strong); border-radius:4px; min-width:300px; box-shadow:0 8px 32px rgba(0,0,0,0.14); padding:1rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+      <p class="mono-text" style="font-size:0.68rem; font-weight:700; color:var(--ink-soft); margin:0; letter-spacing:0.08em;">EDIT EXAM SCHEDULE</p>
+      <button type="button" onclick="closeAllVisPanels()" style="background:none; border:none; cursor:pointer; font-size:1rem; color:var(--ink-soft);">✕</button>
+    </div>
+    <p class="serif-text" style="font-size:0.9rem; font-weight:600; margin-bottom:0.75rem; color:var(--ink);">{{ exam.name }}</p>
+    <form action="{% url 'teacher_edit_exam_schedule' exam.id %}" method="POST">
+      {% csrf_token %}
+      <div style="margin-bottom:0.6rem;">
+        <label style="font-family:var(--font-mono); font-size:0.72rem; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:0.25rem; letter-spacing:0.06em;">START DATE &amp; TIME</label>
+        <input type="datetime-local" name="start_time"
+               value="{{ exam.start_time|date:'Y-m-d' }}T{{ exam.start_time|date:'H:i' }}"
+               style="width:100%; font-family:var(--font-mono); font-size:0.85rem; padding:0.4rem 0.6rem; border:1px solid var(--rule-strong); border-radius:3px; background:var(--paper); color:var(--ink);" required>
+      </div>
+      <div style="margin-bottom:0.9rem;">
+        <label style="font-family:var(--font-mono); font-size:0.72rem; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:0.25rem; letter-spacing:0.06em;">END DATE &amp; TIME</label>
+        <input type="datetime-local" name="end_time"
+               value="{{ exam.end_time|date:'Y-m-d' }}T{{ exam.end_time|date:'H:i' }}"
+               style="width:100%; font-family:var(--font-mono); font-size:0.85rem; padding:0.4rem 0.6rem; border:1px solid var(--rule-strong); border-radius:3px; background:var(--paper); color:var(--ink);" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; font-size:0.85rem;">Save Schedule</button>
+    </form>
+  </div>
+  {% endfor %}
+
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  function openVisPanel(event, panelId) {
+    event.stopPropagation();
+    const panel = document.getElementById(panelId);
+    const isOpen = panel.style.display !== 'none';
+
+    // Close all panels first
+    closeAllVisPanels();
+
+    if (!isOpen) {
+      const btn = event.currentTarget;
+      const rect = btn.getBoundingClientRect();
+      panel.style.display = 'block';
+
+      // Position below the button, align left edge with button left
+      let left = rect.left;
+      let top  = rect.bottom + 6;
+
+      // Clamp right overflow
+      const panelW = panel.offsetWidth || 270;
+      if (left + panelW > window.innerWidth - 12) {
+        left = window.innerWidth - panelW - 12;
+      }
+      // Clamp bottom overflow
+      const panelH = panel.offsetHeight || 200;
+      if (top + panelH > window.innerHeight - 12) {
+        top = rect.top - panelH - 6;
+      }
+
+      panel.style.left = left + 'px';
+      panel.style.top  = top  + 'px';
+    }
+  }
+
+  function closeAllVisPanels() {
+    document.querySelectorAll('[id^="edit-exam-"]').forEach(p => { p.style.display = 'none'; });
+  }
+
+  // Click-away closes all panels
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('[id^="edit-exam-"]')) {
+      closeAllVisPanels();
+    }
+  });
+</script>
+{% endblock %}
