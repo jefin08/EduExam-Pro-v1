@@ -1,0 +1,72 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Edit MCQ — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_topic_questions' question.topic.id %}">← Back to Questions</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div class="main-panel-section">
+    <h3 class="section-title">Edit MCQ Question</h3>
+    
+    <div class="dash-form">
+      <form action="{% url 'teacher_edit_mcq' question.id %}" method="POST">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Topic</label>
+            <input type="text" value="{{ question.topic.name }} ({{ question.topic.subject }})" disabled style="background-color: rgba(0,0,0,0.02);">
+          </div>
+          <div class="form-group">
+            <label for="mcq_difficulty">Difficulty</label>
+            <select id="mcq_difficulty" name="difficulty" required>
+              <option value="easy" {% if question.difficulty == 'easy' %}selected{% endif %}>Easy</option>
+              <option value="medium" {% if question.difficulty == 'medium' %}selected{% endif %}>Medium</option>
+              <option value="hard" {% if question.difficulty == 'hard' %}selected{% endif %}>Hard</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label for="mcq_text">Question Text</label>
+            <textarea id="mcq_text" name="question_text" rows="2" required>{{ question.question_text }}</textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="opt_0">Option A</label>
+            <input type="text" id="opt_0" name="option_0" value="{{ question.options.0 }}" required>
+          </div>
+          <div class="form-group">
+            <label for="opt_1">Option B</label>
+            <input type="text" id="opt_1" name="option_1" value="{{ question.options.1 }}" required>
+          </div>
+          <div class="form-group">
+            <label for="opt_2">Option C (Optional)</label>
+            <input type="text" id="opt_2" name="option_2" value="{% if question.options|length > 2 %}{{ question.options.2 }}{% endif %}">
+          </div>
+          <div class="form-group">
+            <label for="opt_3">Option D (Optional)</label>
+            <input type="text" id="opt_3" name="option_3" value="{% if question.options|length > 3 %}{{ question.options.3 }}{% endif %}">
+          </div>
+          <div class="form-group">
+            <label for="correct_opt">Correct Option Index</label>
+            <select id="correct_opt" name="correct_option_index" required>
+              <option value="0" {% if question.correct_option_index == 0 %}selected{% endif %}>Option A</option>
+              <option value="1" {% if question.correct_option_index == 1 %}selected{% endif %}>Option B</option>
+              <option value="2" {% if question.correct_option_index == 2 %}selected{% endif %}>Option C</option>
+              <option value="3" {% if question.correct_option_index == 3 %}selected{% endif %}>Option D</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="mcq_marks">Marks</label>
+            <input type="number" id="mcq_marks" name="marks" value="{{ question.marks }}" min="1" required>
+          </div>
+          <div class="form-group full-width">
+            <label for="mcq_explanation">Explanation (Optional)</label>
+            <textarea id="mcq_explanation" name="explanation" rows="2" placeholder="Provide solution explanation...">{{ question.explanation }}</textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Save Changes</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

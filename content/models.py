@@ -26,13 +26,13 @@ class TopicClassVisibility(models.Model):
     def __str__(self):
         return f"{self.topic.name} visible to {self.class_group.name}"
 
-class MCQQuestion(models.Model):
+class PracticeMCQQuestion(models.Model):
     DIFFICULTY_CHOICES = (
         ('easy', 'Easy'),
         ('medium', 'Medium'),
         ('hard', 'Hard'),
     )
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='mcq_questions')
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='practice_mcq_questions')
     question_text = models.TextField()
     options = models.JSONField(help_text="A list of option strings")
     correct_option_index = models.IntegerField(help_text="0-indexed index of correct option")
@@ -43,15 +43,59 @@ class MCQQuestion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"MCQ: {self.question_text[:50]}..."
+        return f"Practice MCQ: {self.question_text[:50]}..."
 
-class CodingQuestion(models.Model):
+class ExamMCQQuestion(models.Model):
     DIFFICULTY_CHOICES = (
         ('easy', 'Easy'),
         ('medium', 'Medium'),
         ('hard', 'Hard'),
     )
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='coding_questions')
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='exam_mcq_questions')
+    question_text = models.TextField()
+    options = models.JSONField(help_text="A list of option strings")
+    correct_option_index = models.IntegerField(help_text="0-indexed index of correct option")
+    explanation = models.TextField(blank=True, null=True)
+    marks = models.IntegerField(default=1)
+    difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default='medium')
+    tags = models.JSONField(default=list, blank=True, help_text="A list of tags")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Exam MCQ: {self.question_text[:50]}..."
+
+class PracticeCodingQuestion(models.Model):
+    DIFFICULTY_CHOICES = (
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    )
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='practice_coding_questions')
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    input_format = models.TextField()
+    output_format = models.TextField()
+    sample_test_cases = models.JSONField(help_text="List of dicts with 'input' and 'output'")
+    hidden_test_cases = models.JSONField(help_text="List of dicts with 'input' and 'output'")
+    starter_code = models.TextField(blank=True, null=True)
+    explanation = models.TextField(blank=True, null=True)
+    time_limit = models.FloatField(default=1.0, help_text="Time limit in seconds")
+    memory_limit = models.IntegerField(default=256, help_text="Memory limit in MB")
+    marks = models.IntegerField(default=5)
+    difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default='medium')
+    tags = models.JSONField(default=list, blank=True, help_text="A list of tags")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Practice Code: {self.title}"
+
+class ExamCodingQuestion(models.Model):
+    DIFFICULTY_CHOICES = (
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    )
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='exam_coding_questions')
     title = models.CharField(max_length=200)
     description = models.TextField()
     input_format = models.TextField()
@@ -67,4 +111,4 @@ class CodingQuestion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Code: {self.title}"
+        return f"Exam Code: {self.title}"

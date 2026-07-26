@@ -173,7 +173,7 @@
         
         <!-- MCQ cards block -->
         {% for mcq in mcqs %}
-          <div class="card question-card mcq-card {% if forloop.first %}active{% endif %}" id="mcq-card-{{ mcq.id }}">
+          <div class="card question-card mcq-card {% if forloop.first %}active{% endif %}" id="mcq-card-{{ mcq.id }}" data-correct-idx="{{ mcq.correct_option_index }}">
             <div class="clip" aria-hidden="true"></div>
             <div class="card-header">
               <span class="mode-tag practice-tag">MCQ Question</span>
@@ -187,6 +187,44 @@
                   <span class="mono-text">{{ opt }}</span>
                 </div>
               {% endfor %}
+            </div>
+
+            <!-- Workspace and comments -->
+            <div class="workspace-section" style="margin-top: 1.5rem; border-top: 1px dashed var(--rule); padding-top: 1.5rem;">
+              <h4 class="mono-text" style="font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 0.75rem;">Scratchpad / Workspace</h4>
+              <textarea class="workspace-textarea" id="workspace-{{ mcq.id }}" placeholder="Draft your notes, ideas, or logic here. Click 'Publish as Comment' to post it as a comment below." style="width: 100%; height: 80px; padding: 0.75rem; border: 1px solid var(--rule-strong); border-radius: 4px; font-family: var(--font-sans); font-size: 0.9rem; margin-bottom: 0.75rem; resize: vertical; background-color: var(--paper); color: var(--ink);"></textarea>
+              <button class="btn btn-ghost" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="publishComment('mcq', '{{ mcq.id }}')">Publish as Comment</button>
+              
+              <div class="comments-section" style="margin-top: 1rem;">
+                <h5 class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft); margin-bottom: 0.5rem;">Comments ({{ mcq.comments.all|length }})</h5>
+                <div id="comments-list-mcq-{{ mcq.id }}" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto;">
+                  {% for comment in mcq.comments.all %}
+                    <div style="background-color: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem 0.75rem;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--ink-soft); margin-bottom: 0.25rem;">
+                        <strong>{{ comment.student.username }}</strong>
+                        <span>{{ comment.created_at|date:"Y-m-d H:i" }}</span>
+                      </div>
+                      <p style="font-size: 0.85rem; margin: 0; white-space: pre-wrap; color: var(--ink);">{{ comment.comment_text }}</p>
+                    </div>
+                  {% empty %}
+                    <p class="no-comments" style="font-size: 0.8rem; color: var(--ink-soft); font-style: italic;">No comments published yet.</p>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Explanation Box -->
+            <div class="explanation-box" id="explanation-mcq-{{ mcq.id }}" style="display: none; margin-top: 1rem; padding: 1rem; background-color: rgba(46, 110, 96, 0.05); border: 1px solid var(--pass-teal); border-radius: 4px;">
+              <strong class="mono-text" style="font-size: 0.8rem; color: var(--pass-teal);">Explanation:</strong>
+              <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--ink);">{% if mcq.explanation %}{{ mcq.explanation }}{% else %}No explanation provided by instructor.{% endif %}</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons-group" style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--rule-strong); padding-top: 1.25rem;">
+              <button class="btn btn-primary" style="background-color: var(--pass-teal); border-color: var(--pass-teal); font-size: 0.85rem;" onclick="saveAndNext('mcq', '{{ mcq.id }}')">Save &amp; Next</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="skipNext('mcq', '{{ mcq.id }}')">Skip &amp; Next</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem; color: var(--pass-teal); border-color: var(--pass-teal);" onclick="showMCQAnswer('{{ mcq.id }}')">Show Answer</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="toggleExplanation('mcq', '{{ mcq.id }}')">Explanation</button>
             </div>
           </div>
         {% endfor %}
@@ -230,6 +268,44 @@
             <div class="run-btn-row">
               <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="mockRunCode('{{ code_q.id }}')">Run Sample Tests</button>
             </div>
+
+            <!-- Workspace and comments -->
+            <div class="workspace-section" style="margin-top: 1.5rem; border-top: 1px dashed var(--rule); padding-top: 1.5rem;">
+              <h4 class="mono-text" style="font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 0.75rem;">Scratchpad / Workspace</h4>
+              <textarea class="workspace-textarea" id="workspace-{{ code_q.id }}" placeholder="Draft your notes, ideas, or logic here. Click 'Publish as Comment' to post it as a comment below." style="width: 100%; height: 80px; padding: 0.75rem; border: 1px solid var(--rule-strong); border-radius: 4px; font-family: var(--font-sans); font-size: 0.9rem; margin-bottom: 0.75rem; resize: vertical; background-color: var(--paper); color: var(--ink);"></textarea>
+              <button class="btn btn-ghost" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="publishComment('coding', '{{ code_q.id }}')">Publish as Comment</button>
+              
+              <div class="comments-section" style="margin-top: 1rem;">
+                <h5 class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft); margin-bottom: 0.5rem;">Comments ({{ code_q.comments.all|length }})</h5>
+                <div id="comments-list-coding-{{ code_q.id }}" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto;">
+                  {% for comment in code_q.comments.all %}
+                    <div style="background-color: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem 0.75rem;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--ink-soft); margin-bottom: 0.25rem;">
+                        <strong>{{ comment.student.username }}</strong>
+                        <span>{{ comment.created_at|date:"Y-m-d H:i" }}</span>
+                      </div>
+                      <p style="font-size: 0.85rem; margin: 0; white-space: pre-wrap; color: var(--ink);">{{ comment.comment_text }}</p>
+                    </div>
+                  {% empty %}
+                    <p class="no-comments" style="font-size: 0.8rem; color: var(--ink-soft); font-style: italic;">No comments published yet.</p>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Explanation Box -->
+            <div class="explanation-box" id="explanation-coding-{{ code_q.id }}" style="display: none; margin-top: 1rem; padding: 1rem; background-color: rgba(46, 110, 96, 0.05); border: 1px solid var(--pass-teal); border-radius: 4px;">
+              <strong class="mono-text" style="font-size: 0.8rem; color: var(--pass-teal);">Explanation:</strong>
+              <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--ink); white-space: pre-wrap;">{% if code_q.explanation %}{{ code_q.explanation }}{% else %}No explanation provided by instructor.{% endif %}</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons-group" style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--rule-strong); padding-top: 1.25rem;">
+              <button class="btn btn-primary" style="background-color: var(--pass-teal); border-color: var(--pass-teal); font-size: 0.85rem;" onclick="saveAndNext('coding', '{{ code_q.id }}')">Save &amp; Next</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="skipNext('coding', '{{ code_q.id }}')">Skip &amp; Next</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem; color: var(--pass-teal); border-color: var(--pass-teal);" onclick="showCodingAnswer('{{ code_q.id }}')">Show Answer</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="toggleExplanation('coding', '{{ code_q.id }}')">Explanation</button>
+            </div>
           </div>
         {% endfor %}
 
@@ -264,12 +340,41 @@
     </div>
   </div>
 
+  <!-- Submission Confirmation Modal -->
+  <div class="modal-overlay" id="confirm-modal" style="display: none; align-items: center; justify-content: center;">
+    <div class="card modal-card" style="max-width: 600px; padding: 2.5rem 2rem; text-align: center;">
+      <div class="clip" aria-hidden="true"></div>
+      <h3 class="serif-text" style="font-size: 1.6rem; margin-bottom: 1rem;">Confirm Submission</h3>
+      <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1.5rem;">Review your practice summary below before submitting.</p>
+      
+      <!-- Question Summary List -->
+      <div id="confirm-summary-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; max-height: 250px; overflow-y: auto; text-align: left;">
+        <!-- Filled dynamically by JavaScript -->
+      </div>
+      
+      <div style="display: flex; gap: 1rem;">
+        <button class="btn btn-ghost" style="flex: 1;" onclick="closeConfirmModal()">Return to Practice</button>
+        <button class="btn btn-primary" id="final-submit-btn" style="flex: 1; background-color: var(--pass-teal); border-color: var(--pass-teal);" onclick="submitPracticeSet()">Submit &amp; End</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // State storage
     const state = {
       mcqAnswers: {},
       codingSubmissions: {}
     };
+
+    // Auto-initialize correct buttons text and setup switch on DOM load
+    document.addEventListener("DOMContentLoaded", () => {
+      const activeNav = document.querySelector('.nav-item.active');
+      if (activeNav) {
+        const qtype = activeNav.getAttribute('data-qtype');
+        const qid = activeNav.getAttribute('data-qid');
+        switchQuestion(qtype, qid, activeNav);
+      }
+    });
 
     function switchQuestion(type, id, navEl) {
       // Deactivate current nav and cards
@@ -279,7 +384,22 @@
       // Activate selected
       navEl.classList.add('active');
       const card = document.getElementById(`${type}-card-${id}`);
-      if (card) card.classList.add('active');
+      if (card) {
+        card.classList.add('active');
+        
+        // Update labels for buttons if it's the last question
+        const navItems = Array.from(document.querySelectorAll('.nav-list .nav-item'));
+        const isLast = (navItems.indexOf(navEl) === navItems.length - 1);
+        const saveBtn = card.querySelector('.action-buttons-group button:nth-child(1)');
+        const skipBtn = card.querySelector('.action-buttons-group button:nth-child(2)');
+        
+        if (saveBtn) {
+          saveBtn.textContent = isLast ? "Submit" : "Save & Next";
+        }
+        if (skipBtn) {
+          skipBtn.textContent = isLast ? "Submit" : "Skip & Next";
+        }
+      }
     }
 
     function selectMCQOption(qId, idx, optionEl) {
@@ -296,10 +416,6 @@
 
       // Record answer
       state.mcqAnswers[qId] = idx;
-
-      // Mark nav as completed
-      const navItem = document.querySelector(`.nav-item[data-qtype="mcq"][data-qid="${qId}"]`);
-      if (navItem) navItem.classList.add('completed');
     }
 
     function mockRunCode(qId) {
@@ -313,25 +429,246 @@
           code: editor.value,
           language: langSelect ? langSelect.value : 'python'
         };
-
-        // Mark nav as completed
-        const navItem = document.querySelector(`.nav-item[data-qtype="coding"][data-qid="${qId}"]`);
-        if (navItem) navItem.classList.add('completed');
       }
     }
 
-    // Submit complete answers
-    document.getElementById('finish-practice-btn').addEventListener('click', () => {
-      // Gather any unsaved code
+    // Navigation and Action helpers
+    function getNextNavItem() {
+      const navItems = Array.from(document.querySelectorAll('.nav-list .nav-item'));
+      const activeIndex = navItems.findIndex(el => el.classList.contains('active'));
+      if (activeIndex !== -1 && activeIndex + 1 < navItems.length) {
+        return navItems[activeIndex + 1];
+      }
+      return null;
+    }
+
+    function navigateToNext() {
+      const nextItem = getNextNavItem();
+      if (nextItem) {
+        const qtype = nextItem.getAttribute('data-qtype');
+        const qid = nextItem.getAttribute('data-qid');
+        switchQuestion(qtype, qid, nextItem);
+      } else {
+        openConfirmationModal();
+      }
+    }
+
+    function saveAndNext(type, id) {
+      if (type === 'mcq') {
+        if (state.mcqAnswers[id] === undefined) {
+          alert("Please select an option before saving, or click Skip to continue without answering.");
+          return;
+        }
+      } else if (type === 'coding') {
+        const editor = document.getElementById(`editor-${id}`);
+        const langSelect = document.getElementById(`lang-select-${id}`);
+        if (editor) {
+          state.codingSubmissions[id] = {
+            code: editor.value,
+            language: langSelect ? langSelect.value : 'python'
+          };
+        }
+      }
+      
+      // Mark current nav item as completed
+      const navItem = document.querySelector(`.nav-item[data-qtype="${type}"][data-qid="${id}"]`);
+      if (navItem) {
+        navItem.classList.add('completed');
+      }
+      
+      // Go to next question or open submit modal if last
+      const nextItem = getNextNavItem();
+      if (!nextItem) {
+        openConfirmationModal();
+      } else {
+        navigateToNext();
+      }
+    }
+
+    function skipNext(type, id) {
+      const nextItem = getNextNavItem();
+      if (!nextItem) {
+        openConfirmationModal();
+      } else {
+        navigateToNext();
+      }
+    }
+
+    function showMCQAnswer(qId) {
+      const card = document.getElementById(`mcq-card-${qId}`);
+      const correctIdx = card.getAttribute('data-correct-idx');
+      const options = card.querySelectorAll('.mcq-option');
+      
+      options.forEach((el, index) => {
+        if (index == correctIdx) {
+          el.style.borderColor = 'var(--pass-teal)';
+          el.style.backgroundColor = 'rgba(46,110,96,0.06)';
+          
+          if (!el.querySelector('.correct-badge')) {
+            const badge = document.createElement('span');
+            badge.className = 'correct-badge';
+            badge.textContent = ' (Correct Answer)';
+            badge.style.color = 'var(--pass-teal)';
+            badge.style.fontSize = '0.8rem';
+            badge.style.fontWeight = 'bold';
+            el.appendChild(badge);
+          }
+        }
+      });
+    }
+
+    function showCodingAnswer(id) {
+      toggleExplanation('coding', id, true);
+      alert("The detailed answer is shown in the Explanation section below!");
+    }
+
+    function toggleExplanation(type, id, forceOpen = false) {
+      const box = document.getElementById(`explanation-${type}-${id}`);
+      if (box) {
+        if (forceOpen) {
+          box.style.display = 'block';
+        } else {
+          box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        }
+      }
+    }
+
+    function publishComment(type, qId) {
+      const txtArea = document.getElementById(`workspace-${qId}`);
+      if (!txtArea) return;
+      const commentText = txtArea.value.trim();
+      if (!commentText) {
+        alert("Please write something in the workspace before publishing.");
+        return;
+      }
+      
+      fetch('/practice/comment/publish/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+          question_type: type,
+          question_id: qId,
+          comment_text: commentText
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Append the comment to the comments list
+          const listDiv = document.getElementById(`comments-list-${type}-${qId}`);
+          if (listDiv) {
+            const noComments = listDiv.querySelector('.no-comments');
+            if (noComments) noComments.remove();
+            
+            const cDiv = document.createElement('div');
+            cDiv.style.backgroundColor = 'var(--bg)';
+            cDiv.style.border = '1px solid var(--rule)';
+            cDiv.style.borderRadius = '4px';
+            cDiv.style.padding = '0.5rem 0.75rem';
+            
+            cDiv.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--ink-soft); margin-bottom: 0.25rem;">
+                <strong>${data.comment.student_username}</strong>
+                <span>${data.comment.created_at}</span>
+              </div>
+              <p style="font-size: 0.85rem; margin: 0; white-space: pre-wrap; color: var(--ink);">${escapeHTML(data.comment.comment_text)}</p>
+            `;
+            
+            listDiv.appendChild(cDiv);
+            listDiv.scrollTop = listDiv.scrollHeight;
+          }
+          txtArea.value = '';
+        } else {
+          alert("Failed to publish comment: " + data.error);
+        }
+      })
+      .catch(err => {
+        console.error("Publishing comment failed: ", err);
+        alert("Error publishing comment.");
+      });
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    }
+
+    // Modal helpers
+    function openConfirmationModal() {
+      // Gather any unsaved code from currently active code textareas
       document.querySelectorAll('.code-textarea').forEach(tx => {
         const qId = tx.id.replace('editor-', '');
         const langSelect = document.getElementById(`lang-select-${qId}`);
-        state.codingSubmissions[qId] = {
-          code: tx.value,
-          language: langSelect ? langSelect.value : 'python'
-        };
+        if (tx.value) {
+          state.codingSubmissions[qId] = {
+            code: tx.value,
+            language: langSelect ? langSelect.value : 'python'
+          };
+        }
       });
 
+      const summaryList = document.getElementById('confirm-summary-list');
+      if (!summaryList) return;
+      summaryList.innerHTML = '';
+      
+      const navItems = Array.from(document.querySelectorAll('.nav-list .nav-item'));
+      navItems.forEach((item, index) => {
+        const type = item.getAttribute('data-qtype');
+        const id = item.getAttribute('data-qid');
+        
+        let answered = false;
+        if (type === 'mcq') {
+          answered = (state.mcqAnswers[id] !== undefined);
+        } else if (type === 'coding') {
+          const codeVal = document.getElementById(`editor-${id}`)?.value || '';
+          answered = (state.codingSubmissions[id] !== undefined || codeVal.trim().length > 0);
+        }
+        
+        const qNum = index + 1;
+        
+        const qBox = document.createElement('div');
+        qBox.style.border = '1px solid var(--rule-strong)';
+        qBox.style.borderRadius = '4px';
+        qBox.style.padding = '0.5rem';
+        qBox.style.textAlign = 'center';
+        qBox.style.fontSize = '0.85rem';
+        qBox.style.fontFamily = 'var(--font-mono)';
+        
+        if (answered) {
+          qBox.style.backgroundColor = 'rgba(46, 110, 96, 0.08)';
+          qBox.style.borderColor = 'var(--pass-teal)';
+          qBox.style.color = 'var(--pass-teal)';
+          qBox.innerHTML = `<div>Q${qNum}</div><strong style="font-size:0.7rem; text-transform:uppercase;">Answered</strong>`;
+        } else {
+          qBox.style.backgroundColor = 'rgba(178, 58, 46, 0.05)';
+          qBox.style.borderColor = 'var(--red-pen)';
+          qBox.style.color = 'var(--red-pen)';
+          qBox.innerHTML = `<div>Q${qNum}</div><strong style="font-size:0.7rem; text-transform:uppercase;">Unanswered</strong>`;
+        }
+        
+        summaryList.appendChild(qBox);
+      });
+      
+      document.getElementById('confirm-modal').style.display = 'flex';
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').style.display = 'none';
+    }
+
+    function submitPracticeSet() {
+      closeConfirmModal();
+      
       // Submit POST request to backend view
       fetch(window.location.pathname, {
         method: 'POST',
@@ -354,6 +691,11 @@
       .catch(err => {
         console.error("Submitting practice session failed: ", err);
       });
+    }
+
+    // Submit complete answers from top button
+    document.getElementById('finish-practice-btn').addEventListener('click', () => {
+      openConfirmationModal();
     });
   </script>
 </body>

@@ -5,7 +5,8 @@ from .views import (
     admin_create_class, admin_create_teacher, admin_create_student, admin_approve_teacher, admin_approve_student,
     teacher_create_topic, teacher_create_mcq, teacher_create_coding,
     teacher_create_practice, teacher_create_exam, student_join_exam, teacher_toggle_visibility,
-    teacher_edit_exam_schedule
+    teacher_edit_exam_schedule, teacher_topic_questions,
+    teacher_delete_mcq, teacher_delete_coding, teacher_edit_mcq, teacher_edit_coding
 )
 
 urlpatterns = [
@@ -30,9 +31,14 @@ urlpatterns = [
     
     # Teacher Actions
     path('dashboard/teacher/topic/create/', teacher_create_topic, name='teacher_create_topic'),
+    path('dashboard/teacher/topic/<int:topic_id>/questions/', teacher_topic_questions, name='teacher_topic_questions'),
     path('dashboard/teacher/topic/<int:topic_id>/toggle-visibility/<int:class_id>/', teacher_toggle_visibility, name='teacher_toggle_visibility'),
     path('dashboard/teacher/question/mcq/create/', teacher_create_mcq, name='teacher_create_mcq'),
+    path('dashboard/teacher/question/mcq/<int:question_id>/edit/', teacher_edit_mcq, name='teacher_edit_mcq'),
+    path('dashboard/teacher/question/mcq/<int:question_id>/delete/', teacher_delete_mcq, name='teacher_delete_mcq'),
     path('dashboard/teacher/question/coding/create/', teacher_create_coding, name='teacher_create_coding'),
+    path('dashboard/teacher/question/coding/<int:question_id>/edit/', teacher_edit_coding, name='teacher_edit_coding'),
+    path('dashboard/teacher/question/coding/<int:question_id>/delete/', teacher_delete_coding, name='teacher_delete_coding'),
     path('dashboard/teacher/practice/create/', teacher_create_practice, name='teacher_create_practice'),
     path('dashboard/teacher/exam/create/', teacher_create_exam, name='teacher_create_exam'),
     path('dashboard/teacher/exam/<int:exam_id>/edit-schedule/', teacher_edit_exam_schedule, name='teacher_edit_exam_schedule'),

@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from content.models import CodingQuestion
+from content.models import PracticeCodingQuestion, ExamCodingQuestion
 from exams.models import Exam
 from practice.models import PracticeSet
 
@@ -23,7 +23,8 @@ class Submission(models.Model):
     )
 
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='submissions')
-    coding_question = models.ForeignKey(CodingQuestion, on_delete=models.CASCADE, related_name='submissions')
+    practice_coding_question = models.ForeignKey(PracticeCodingQuestion, on_delete=models.CASCADE, related_name='submissions', null=True, blank=True)
+    exam_coding_question = models.ForeignKey(ExamCodingQuestion, on_delete=models.CASCADE, related_name='submissions', null=True, blank=True)
     code = models.TextField()
     language = models.CharField(max_length=20, choices=LANGUAGES, default='python')
     status = models.CharField(max_length=20, choices=STATUSES, default='queued')
@@ -34,8 +35,13 @@ class Submission(models.Model):
     practice_set = models.ForeignKey(PracticeSet, on_delete=models.SET_NULL, null=True, blank=True, related_name='submissions')
     submitted_at = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def question(self):
+        return self.practice_coding_question or self.exam_coding_question
+
     def __str__(self):
-        return f"Submission {self.id} - User: {self.student.username} - Question: {self.coding_question.title}"
+        q_title = self.question.title if self.question else "Unknown"
+        return f"Submission {self.id} - User: {self.student.username} - Question: {q_title}"
 
 class TestCaseResult(models.Model):
     STATUS_CHOICES = (

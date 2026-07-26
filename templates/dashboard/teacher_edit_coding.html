@@ -1,0 +1,76 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Edit Coding Question — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_topic_questions' question.topic.id %}">← Back to Questions</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div class="main-panel-section">
+    <h3 class="section-title">Edit Coding Question</h3>
+    
+    <div class="dash-form">
+      <form action="{% url 'teacher_edit_coding' question.id %}" method="POST">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Topic</label>
+            <input type="text" value="{{ question.topic.name }} ({{ question.topic.subject }})" disabled style="background-color: rgba(0,0,0,0.02);">
+          </div>
+          <div class="form-group">
+            <label for="code_title">Problem Title</label>
+            <input type="text" id="code_title" name="title" value="{{ question.title }}" required>
+          </div>
+          <div class="form-group">
+            <label for="code_difficulty">Difficulty</label>
+            <select id="code_difficulty" name="difficulty" required>
+              <option value="easy" {% if question.difficulty == 'easy' %}selected{% endif %}>Easy</option>
+              <option value="medium" {% if question.difficulty == 'medium' %}selected{% endif %}>Medium</option>
+              <option value="hard" {% if question.difficulty == 'hard' %}selected{% endif %}>Hard</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="code_marks">Marks</label>
+            <input type="number" id="code_marks" name="marks" value="{{ question.marks }}" min="1" required>
+          </div>
+          <div class="form-group full-width">
+            <label for="code_desc">Description</label>
+            <textarea id="code_desc" name="description" rows="3" required>{{ question.description }}</textarea>
+          </div>
+          <div class="form-group">
+            <label for="code_in">Input Format</label>
+            <textarea id="code_in" name="input_format" rows="2" required>{{ question.input_format }}</textarea>
+          </div>
+          <div class="form-group">
+            <label for="code_out">Output Format</label>
+            <textarea id="code_out" name="output_format" rows="2" required>{{ question.output_format }}</textarea>
+          </div>
+          <div class="form-group">
+            <label for="sample_in">Sample Input</label>
+            <textarea id="sample_in" name="sample_input" rows="2" required>{{ question.sample_test_cases.0.input }}</textarea>
+          </div>
+          <div class="form-group">
+            <label for="sample_out">Sample Output</label>
+            <textarea id="sample_out" name="sample_output" rows="2" required>{{ question.sample_test_cases.0.output }}</textarea>
+          </div>
+          <div class="form-group">
+            <label for="hidden_in">Hidden Test Input</label>
+            <textarea id="hidden_in" name="hidden_input" rows="2" required>{{ question.hidden_test_cases.0.input }}</textarea>
+          </div>
+          <div class="form-group">
+            <label for="hidden_out">Hidden Test Output</label>
+            <textarea id="hidden_out" name="hidden_output" rows="2" required>{{ question.hidden_test_cases.0.output }}</textarea>
+          </div>
+          {% if q_type != 'exam' %}
+          <div class="form-group full-width">
+            <label for="code_explanation">Explanation (Optional)</label>
+            <textarea id="code_explanation" name="explanation" rows="2" placeholder="Provide correct solution and explanation...">{{ question.explanation }}</textarea>
+          </div>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Save Changes</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

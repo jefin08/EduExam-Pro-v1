@@ -306,6 +306,12 @@ nav ul a:hover {
   border: 1px solid var(--pass-teal);
 }
 
+.mode-tag.medium-tag {
+  color: var(--gold);
+  background-color: rgba(180, 132, 42, 0.08);
+  border: 1px solid var(--gold);
+}
+
 .timer-display {
   color: var(--red-pen);
   font-weight: 600;

@@ -1,0 +1,185 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Topic Questions — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}#topics-sec">← Back to Topics</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div class="main-panel-section">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 class="section-title">Questions for "{{ topic.name }}"</h3>
+      <a href="{% url 'teacher_dashboard' %}#questions-sec" class="btn btn-primary" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Add New Question</a>
+    </div>
+    
+    <div class="perf" aria-hidden="true" style="margin: 1.5rem 0;"></div>
+
+    <!-- Stats Summary -->
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2.5rem;">
+      <div style="background: rgba(0,0,0,0.02); border: 1px solid var(--rule); padding: 1rem; border-radius: 4px; flex: 1; min-width: 100px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; color: var(--ink);">{{ stats.total }}</div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-top: 0.25rem;">Total</div>
+      </div>
+      <div style="background: rgba(0,0,0,0.02); border: 1px solid var(--rule); padding: 1rem; border-radius: 4px; flex: 1; min-width: 100px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; color: var(--ink);">{{ stats.mcq }}</div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-top: 0.25rem;">MCQ</div>
+      </div>
+      <div style="background: rgba(0,0,0,0.02); border: 1px solid var(--rule); padding: 1rem; border-radius: 4px; flex: 1; min-width: 100px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; color: var(--ink);">{{ stats.coding }}</div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-top: 0.25rem;">Coding</div>
+      </div>
+      <div style="background: rgba(46, 110, 96, 0.05); border: 1px solid rgba(46, 110, 96, 0.2); padding: 1rem; border-radius: 4px; flex: 1; min-width: 100px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; color: var(--pass-teal);">{{ stats.easy }}</div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--pass-teal); letter-spacing: 0.05em; margin-top: 0.25rem;">Easy</div>
+      </div>
+      <div style="background: rgba(180, 132, 42, 0.05); border: 1px solid rgba(180, 132, 42, 0.2); padding: 1rem; border-radius: 4px; flex: 1; min-width: 100px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; color: var(--gold);">{{ stats.medium }}</div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--gold); letter-spacing: 0.05em; margin-top: 0.25rem;">Medium</div>
+      </div>
+      <div style="background: rgba(178, 58, 46, 0.05); border: 1px solid rgba(178, 58, 46, 0.2); padding: 1rem; border-radius: 4px; flex: 1; min-width: 100px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; color: var(--red-pen);">{{ stats.hard }}</div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--red-pen); letter-spacing: 0.05em; margin-top: 0.25rem;">Hard</div>
+      </div>
+    </div>
+
+    <h4 style="margin-bottom: 1rem; color: var(--ink);">Practice Multiple Choice Questions</h4>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 3fr 1fr 1fr 1fr 1fr;">
+        <span>Question Text</span>
+        <span>Difficulty</span>
+        <span>Marks</span>
+        <span>Created At</span>
+        <span>Actions</span>
+      </div>
+      {% for q in practice_mcqs %}
+        <div class="ledger-row" style="grid-template-columns: 3fr 1fr 1fr 1fr 1fr; align-items: center;">
+          <div>
+            <strong>{{ q.question_text|truncatechars:100 }}</strong>
+            <div style="font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.2rem;">
+              Options: {{ q.options|length }} | Correct: Option {{ q.correct_option_index|add:1 }}
+            </div>
+          </div>
+          <span class="mode-tag {% if q.difficulty == 'easy' %}practice-tag{% elif q.difficulty == 'hard' %}exam-tag{% elif q.difficulty == 'medium' %}medium-tag{% else %}mode-tag{% endif %}" style="font-size: 0.7rem; justify-self: start;">{{ q.get_difficulty_display }}</span>
+          <span class="mono-text">{{ q.marks }}</span>
+          <span class="mono-text" style="font-size: 0.8rem;">{{ q.created_at|date:"M d, Y" }}</span>
+          <div style="display: flex; gap: 0.5rem; justify-self: start;">
+            <a href="{% url 'teacher_edit_mcq' q.id %}?type=practice" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; text-decoration: none;">Edit</a>
+            <form action="{% url 'teacher_delete_mcq' q.id %}?type=practice" method="POST" onsubmit="return confirm('Are you sure you want to delete this question?');" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; color: var(--red-pen);">Delete</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No practice MCQ for this topic.</div>
+      {% endfor %}
+    </div>
+
+    <div class="perf" aria-hidden="true" style="margin: 2.5rem 0;"></div>
+
+    <h4 style="margin-bottom: 1rem; color: var(--ink);">Exam Multiple Choice Questions</h4>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 3fr 1fr 1fr 1fr 1fr;">
+        <span>Question Text</span>
+        <span>Difficulty</span>
+        <span>Marks</span>
+        <span>Created At</span>
+        <span>Actions</span>
+      </div>
+      {% for q in exam_mcqs %}
+        <div class="ledger-row" style="grid-template-columns: 3fr 1fr 1fr 1fr 1fr; align-items: center;">
+          <div>
+            <strong>{{ q.question_text|truncatechars:100 }}</strong>
+            <div style="font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.2rem;">
+              Options: {{ q.options|length }} | Correct: Option {{ q.correct_option_index|add:1 }}
+            </div>
+          </div>
+          <span class="mode-tag {% if q.difficulty == 'easy' %}practice-tag{% elif q.difficulty == 'hard' %}exam-tag{% elif q.difficulty == 'medium' %}medium-tag{% else %}mode-tag{% endif %}" style="font-size: 0.7rem; justify-self: start;">{{ q.get_difficulty_display }}</span>
+          <span class="mono-text">{{ q.marks }}</span>
+          <span class="mono-text" style="font-size: 0.8rem;">{{ q.created_at|date:"M d, Y" }}</span>
+          <div style="display: flex; gap: 0.5rem; justify-self: start;">
+            <a href="{% url 'teacher_edit_mcq' q.id %}?type=exam" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; text-decoration: none;">Edit</a>
+            <form action="{% url 'teacher_delete_mcq' q.id %}?type=exam" method="POST" onsubmit="return confirm('Are you sure you want to delete this question?');" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; color: var(--red-pen);">Delete</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No exam MCQ for this topic.</div>
+      {% endfor %}
+    </div>
+
+    <div class="perf" aria-hidden="true" style="margin: 2.5rem 0;"></div>
+
+    <h4 style="margin-bottom: 1rem; color: var(--ink);">Practice Coding Questions</h4>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
+        <span>Title</span>
+        <span>Difficulty</span>
+        <span>Marks</span>
+        <span>Created At</span>
+        <span>Actions</span>
+      </div>
+      {% for q in practice_coding_qs %}
+        <div class="ledger-row" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr; align-items: center;">
+          <div>
+            <strong>{{ q.title }}</strong>
+            <div style="font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.2rem;">
+              {{ q.description|truncatechars:80 }}
+            </div>
+          </div>
+          <span class="mode-tag {% if q.difficulty == 'easy' %}practice-tag{% elif q.difficulty == 'hard' %}exam-tag{% elif q.difficulty == 'medium' %}medium-tag{% else %}mode-tag{% endif %}" style="font-size: 0.7rem; justify-self: start;">{{ q.get_difficulty_display }}</span>
+          <span class="mono-text">{{ q.marks }}</span>
+          <span class="mono-text" style="font-size: 0.8rem;">{{ q.created_at|date:"M d, Y" }}</span>
+          <div style="display: flex; gap: 0.5rem; justify-self: start;">
+            <a href="{% url 'teacher_edit_coding' q.id %}?type=practice" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; text-decoration: none;">Edit</a>
+            <form action="{% url 'teacher_delete_coding' q.id %}?type=practice" method="POST" onsubmit="return confirm('Are you sure you want to delete this coding question?');" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; color: var(--red-pen);">Delete</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No practice coding questions for this topic.</div>
+      {% endfor %}
+    </div>
+
+    <div class="perf" aria-hidden="true" style="margin: 2.5rem 0;"></div>
+
+    <h4 style="margin-bottom: 1rem; color: var(--ink);">Exam Coding Questions</h4>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr;">
+        <span>Title</span>
+        <span>Difficulty</span>
+        <span>Marks</span>
+        <span>Created At</span>
+        <span>Actions</span>
+      </div>
+      {% for q in exam_coding_qs %}
+        <div class="ledger-row" style="grid-template-columns: 2fr 1fr 1fr 1fr 1fr; align-items: center;">
+          <div>
+            <strong>{{ q.title }}</strong>
+            <div style="font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.2rem;">
+              {{ q.description|truncatechars:80 }}
+            </div>
+          </div>
+          <span class="mode-tag {% if q.difficulty == 'easy' %}practice-tag{% elif q.difficulty == 'hard' %}exam-tag{% elif q.difficulty == 'medium' %}medium-tag{% else %}mode-tag{% endif %}" style="font-size: 0.7rem; justify-self: start;">{{ q.get_difficulty_display }}</span>
+          <span class="mono-text">{{ q.marks }}</span>
+          <span class="mono-text" style="font-size: 0.8rem;">{{ q.created_at|date:"M d, Y" }}</span>
+          <div style="display: flex; gap: 0.5rem; justify-self: start;">
+            <a href="{% url 'teacher_edit_coding' q.id %}?type=exam" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; text-decoration: none;">Edit</a>
+            <form action="{% url 'teacher_delete_coding' q.id %}?type=exam" method="POST" onsubmit="return confirm('Are you sure you want to delete this coding question?');" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; color: var(--red-pen);">Delete</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No exam coding questions for this topic.</div>
+      {% endfor %}
+    </div>
+
+  </div>
+{% endblock %}

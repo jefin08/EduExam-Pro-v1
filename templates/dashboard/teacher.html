@@ -68,9 +68,10 @@
           </div>
 
           <!-- Manage button only — panel lives outside the ledger below -->
-          <div>
+          <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end;">
+            <a href="{% url 'teacher_topic_questions' topic.id %}" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.3rem 0.75rem; text-decoration: none;">Questions</a>
             <button type="button" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.3rem 0.75rem;"
-              onclick="openVisPanel(event, 'vis-panel-{{ topic.id }}')">Manage ▾</button>
+              onclick="openVisPanel(event, 'vis-panel-{{ topic.id }}')">Visibility ▾</button>
           </div>
         </div>
       {% empty %}
@@ -132,6 +133,13 @@
             </select>
           </div>
           <div class="form-group">
+            <label for="mcq_type">Question Type</label>
+            <select id="mcq_type" name="type" required>
+              <option value="practice" selected>Practice Question</option>
+              <option value="exam">Exam Question</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label for="mcq_difficulty">Difficulty</label>
             <select id="mcq_difficulty" name="difficulty" required>
               <option value="easy">Easy</option>
@@ -172,6 +180,10 @@
             <label for="mcq_marks">Marks</label>
             <input type="number" id="mcq_marks" name="marks" value="1" min="1" required>
           </div>
+          <div class="form-group full-width">
+            <label for="mcq_explanation">Explanation (Optional)</label>
+            <textarea id="mcq_explanation" name="explanation" rows="2" placeholder="Provide solution explanation..."></textarea>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Add MCQ</button>
       </form>
@@ -190,6 +202,13 @@
               {% for topic in topics %}
                 <option value="{{ topic.id }}">{{ topic.name }} ({{ topic.subject }})</option>
               {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="code_type">Question Type</label>
+            <select id="code_type" name="type" required>
+              <option value="practice" selected>Practice Question</option>
+              <option value="exam">Exam Question</option>
             </select>
           </div>
           <div class="form-group">
@@ -236,6 +255,10 @@
             <label for="hidden_out">Hidden Test Output</label>
             <textarea id="hidden_out" name="hidden_output" rows="2" placeholder="Hidden testing outputs for validation" required></textarea>
           </div>
+          <div class="form-group full-width">
+            <label for="code_explanation">Explanation (Optional)</label>
+            <textarea id="code_explanation" name="explanation" rows="2" placeholder="Provide correct solution and explanation..."></textarea>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Add Coding Question</button>
       </form>
@@ -262,7 +285,6 @@
             <label for="reveal_rule">Solution Reveal Rule</label>
             <select id="reveal_rule" name="reveal_rule" required>
               <option value="immediate" selected>After First Attempt</option>
-              <option value="delayed">After 3 Attempts</option>
               <option value="never">Never</option>
             </select>
           </div>

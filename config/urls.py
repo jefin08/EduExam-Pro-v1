@@ -19,7 +19,7 @@ from django.urls import path, include
 from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
-from practice.views import attempt_practice_set_view
+from practice.views import attempt_practice_set_view, publish_comment_view
 from exams.views import take_exam_view, teacher_monitor_view, log_monitoring_event
 
 urlpatterns = [
@@ -27,6 +27,7 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name='landing.html'), name='landing'),
     path('', include('accounts.urls')),
     path('practice/<int:set_id>/', attempt_practice_set_view, name='attempt_practice'),
+    path('practice/comment/publish/', publish_comment_view, name='publish_comment'),
     path('exam/<int:exam_id>/', take_exam_view, name='take_exam'),
     path('exam/<int:exam_id>/monitor/', teacher_monitor_view, name='teacher_monitor'),
     path('exam/<int:exam_id>/event/', log_monitoring_event, name='log_monitoring_event'),

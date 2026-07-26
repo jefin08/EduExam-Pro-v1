@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import Exam, OfficialGrade, MonitoringEvent
-from content.models import MCQQuestion, CodingQuestion
+from content.models import ExamMCQQuestion, ExamCodingQuestion
 from judge.models import Submission, TestCaseResult
 import json
 
@@ -36,8 +36,8 @@ def take_exam_view(request, exam_id):
         
     # Get questions from linked topics
     topics = exam.topics.all()
-    mcq_questions = MCQQuestion.objects.filter(topic__in=topics)
-    coding_questions = CodingQuestion.objects.filter(topic__in=topics)
+    mcq_questions = ExamMCQQuestion.objects.filter(topic__in=topics)
+    coding_questions = ExamCodingQuestion.objects.filter(topic__in=topics)
     
     if request.method == 'POST':
         data = json.loads(request.body.decode('utf-8'))
@@ -47,14 +47,14 @@ def take_exam_view(request, exam_id):
         # 1. Grade MCQs
         mcq_score = 0.0
         for q_id, chosen_idx in mcq_answers.items():
-            question = MCQQuestion.objects.filter(id=q_id).first()
+            question = ExamMCQQuestion.objects.filter(id=q_id).first()
             if question and question.correct_option_index == int(chosen_idx):
                 mcq_score += question.marks
                 
         # 2. Grade Coding
         coding_score = 0.0
         for q_id, code_info in coding_submissions.items():
-            question = CodingQuestion.objects.filter(id=q_id).first()
+            question = ExamCodingQuestion.objects.filter(id=q_id).first()
             if question:
                 code_text = code_info.get('code', '')
                 lang = code_info.get('language', 'python')
@@ -62,7 +62,7 @@ def take_exam_view(request, exam_id):
                 # Register code submission under exam context
                 sub = Submission.objects.create(
                     student=request.user,
-                    coding_question=question,
+                    exam_coding_question=question,
                     code=code_text,
                     language=lang,
                     status='graded',

@@ -1,8 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from .models import PracticeSet, PracticeAttempt
-from content.models import Topic, MCQQuestion, CodingQuestion
+from .models import PracticeSet, PracticeAttempt, PracticeComment
+from content.models import Topic, PracticeMCQQuestion, PracticeCodingQuestion
 from judge.models import Submission, TestCaseResult
 import json
 
@@ -19,8 +19,8 @@ def attempt_practice_set_view(request, set_id):
         
     # Fetch questions from all linked topics
     topics = practice_set.topics.all()
-    mcq_questions = MCQQuestion.objects.filter(topic__in=topics)
-    coding_questions = CodingQuestion.objects.filter(topic__in=topics)
+    mcq_questions = PracticeMCQQuestion.objects.filter(topic__in=topics).prefetch_related('comments__student')
+    coding_questions = PracticeCodingQuestion.objects.filter(topic__in=topics).prefetch_related('comments__student')
     
     if request.method == 'POST':
         # Handle submission scoring
@@ -31,14 +31,14 @@ def attempt_practice_set_view(request, set_id):
         # 1. Score MCQs
         total_mcq_score = 0.0
         for q_id, chosen_idx in mcq_answers.items():
-            question = MCQQuestion.objects.filter(id=q_id).first()
+            question = PracticeMCQQuestion.objects.filter(id=q_id).first()
             if question and question.correct_option_index == int(chosen_idx):
                 total_mcq_score += question.marks
                 
         # 2. Score Coding Questions (Synchronous mock execution for immediate study feedback)
         total_coding_score = 0.0
         for q_id, code_info in coding_submissions.items():
-            question = CodingQuestion.objects.filter(id=q_id).first()
+            question = PracticeCodingQuestion.objects.filter(id=q_id).first()
             if question:
                 code_text = code_info.get('code', '')
                 lang = code_info.get('language', 'python')
@@ -46,7 +46,7 @@ def attempt_practice_set_view(request, set_id):
                 # Create a database Submission record
                 sub = Submission.objects.create(
                     student=request.user,
-                    coding_question=question,
+                    practice_coding_question=question,
                     code=code_text,
                     language=lang,
                     status='graded',
@@ -99,3 +99,40 @@ def attempt_practice_set_view(request, set_id):
         'coding_qs': coding_questions,
     }
     return render(request, 'practice/attempt.html', context)
+
+@login_required
+def publish_comment_view(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON data'}, status=400)
+            
+        q_type = data.get('question_type')
+        q_id = data.get('question_id')
+        comment_text = data.get('comment_text', '').strip()
+        
+        if not comment_text:
+            return JsonResponse({'success': False, 'error': 'Comment content cannot be empty'}, status=400)
+            
+        comment = PracticeComment(
+            student=request.user,
+            question_type=q_type,
+            comment_text=comment_text
+        )
+        if q_type == 'mcq':
+            comment.mcq_question = get_object_or_404(PracticeMCQQuestion, id=q_id)
+        else:
+            comment.coding_question = get_object_or_404(PracticeCodingQuestion, id=q_id)
+            
+        comment.save()
+        return JsonResponse({
+            'success': True,
+            'comment': {
+                'id': comment.id,
+                'student_username': comment.student.username,
+                'comment_text': comment.comment_text,
+                'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M')
+            }
+        })
+    return JsonResponse({'success': False, 'error': 'POST request required'}, status=400)

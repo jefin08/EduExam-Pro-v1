@@ -6,14 +6,12 @@ from accounts.models import Class
 class PracticeSet(models.Model):
     REVEAL_RULES = (
         ('immediate', 'After First Attempt'),
-        ('delayed', 'After N Attempts'),
         ('never', 'Never'),
     )
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='practice_sets')
     topics = models.ManyToManyField(Topic, related_name='practice_sets', help_text="Topics this practice set is built from")
     name = models.CharField(max_length=200)
     solution_reveal_rule = models.CharField(max_length=20, choices=REVEAL_RULES, default='immediate')
-    reveal_after_n = models.IntegerField(default=1, help_text="Number of attempts before revealing solution (if delayed)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -41,3 +39,14 @@ class PracticeAttempt(models.Model):
 
     def __str__(self):
         return f"{self.student.username} - {self.practice_set.name}: {self.score} at {self.attempted_at}"
+
+class PracticeComment(models.Model):
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='practice_comments')
+    question_type = models.CharField(max_length=10, choices=(('mcq', 'MCQ'), ('coding', 'Coding')))
+    mcq_question = models.ForeignKey('content.PracticeMCQQuestion', on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    coding_question = models.ForeignKey('content.PracticeCodingQuestion', on_delete=models.CASCADE, null=True, blank=True, related_name='comments')
+    comment_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Comment by {self.student.username} on {self.question_type} {self.id}"
