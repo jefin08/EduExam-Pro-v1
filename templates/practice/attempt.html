@@ -255,18 +255,37 @@
             <div class="editor-wrapper">
               <div class="editor-header">
                 <span>online_editor.py</span>
-                <select id="lang-select-{{ code_q.id }}" style="background-color: var(--ink); color: var(--bg); border: 1px solid var(--rule); font-family: var(--font-mono); font-size: 0.75rem; padding: 0.15rem 0.5rem; cursor: pointer;">
+                <select id="lang-select-{{ code_q.id }}" onchange="updateEditorHeader(this, '{{ code_q.id }}')" style="background-color: var(--ink); color: var(--bg); border: 1px solid var(--rule); font-family: var(--font-mono); font-size: 0.75rem; padding: 0.15rem 0.5rem; cursor: pointer;">
                   <option value="python">Python 3</option>
-                  <option value="cpp">C++ 17</option>
+                  <option value="c">C (GCC)</option>
+                  <option value="cpp">C++ (G++)</option>
                   <option value="java">Java 17</option>
                 </select>
               </div>
               <textarea class="code-textarea" id="editor-{{ code_q.id }}" placeholder="# Write your code solution here..."></textarea>
             </div>
-            
+
+            <!-- Custom Input Panel -->
+            <div style="margin-top: 1rem;">
+              <label for="custom-input-{{ code_q.id }}" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); display: block; margin-bottom: 0.4rem;">Custom Input (stdin)</label>
+              <textarea id="custom-input-{{ code_q.id }}" placeholder="Provide input parameters here..." style="width: 100%; height: 60px; padding: 0.5rem; border: 1px solid var(--rule-strong); border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; background-color: var(--paper); color: var(--ink); resize: vertical;"></textarea>
+            </div>
+
             <!-- Editor Actions -->
-            <div class="run-btn-row">
-              <button class="btn btn-ghost" style="font-size: 0.85rem;" onclick="mockRunCode('{{ code_q.id }}')">Run Sample Tests</button>
+            <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+              <button class="btn btn-ghost" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;" onclick="runCustomCode('{{ code_q.id }}')">▶ Run Code</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;" onclick="runSampleTests('{{ code_q.id }}', 'practice')">🧪 Run Sample Tests</button>
+            </div>
+
+            <!-- Virtual Terminal -->
+            <div style="margin-top: 1rem;">
+              <div style="background-color: #121820; color: #a1b0c4; border: 1px solid #1a2330; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; overflow: hidden;">
+                <div style="background-color: #1a2330; padding: 0.4rem 0.75rem; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #243245; color: #7f92b0;">
+                  <span>VIRTUAL TERMINAL</span>
+                  <span id="term-status-{{ code_q.id }}">IDLE</span>
+                </div>
+                <pre id="terminal-{{ code_q.id }}" style="margin: 0; padding: 0.75rem; height: 140px; overflow-y: auto; white-space: pre-wrap; font-family: var(--font-mono); color: #39ff14; background-color: #0b0f19; line-height: 1.4;">Console initialized. Ready to execute code.</pre>
+              </div>
             </div>
 
             <!-- Workspace and comments -->
@@ -418,18 +437,187 @@
       state.mcqAnswers[qId] = idx;
     }
 
-    function mockRunCode(qId) {
+    function updateEditorHeader(selectEl, qId) {
+      const headerSpan = selectEl.parentNode.querySelector('span');
+      if (!headerSpan) return;
+      const lang = selectEl.value;
+      let filename = "online_editor.py";
+      if (lang === "c") filename = "online_editor.c";
+      else if (lang === "cpp") filename = "online_editor.cpp";
+      else if (lang === "java") filename = "Main.java";
+      headerSpan.textContent = filename;
+    }
+
+    function runCustomCode(qId) {
       const editor = document.getElementById(`editor-${qId}`);
-      if (editor) {
-        alert("Running sample test cases on local backend...\nResult: PASS (Sample cases match expected output values).");
-        
-        // Record state
-        const langSelect = document.getElementById(`lang-select-${qId}`);
-        state.codingSubmissions[qId] = {
-          code: editor.value,
-          language: langSelect ? langSelect.value : 'python'
-        };
-      }
+      const langSelect = document.getElementById(`lang-select-${qId}`);
+      const inputArea = document.getElementById(`custom-input-${qId}`);
+      const terminal = document.getElementById(`terminal-${qId}`);
+      const statusLbl = document.getElementById(`term-status-${qId}`);
+
+      if (!editor) return;
+
+      const code = editor.value;
+      const language = langSelect ? langSelect.value : 'python';
+      const customInput = inputArea ? inputArea.value : '';
+
+      terminal.textContent = "Compiling & executing solution on server...";
+      terminal.style.color = "#a1b0c4";
+      statusLbl.textContent = "RUNNING...";
+      statusLbl.style.color = "#a1b0c4";
+
+      // Sync state for finish
+      state.codingSubmissions[qId] = {
+        code: code,
+        language: language
+      };
+
+      fetch('/judge/run-custom/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+          code: code,
+          language: language,
+          input: customInput
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'compile_error') {
+          statusLbl.textContent = "COMPILE ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[Compiler Error]\n${data.stderr}`;
+        } else if (data.status === 'runtime_error') {
+          statusLbl.textContent = "RUNTIME ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[Runtime Error]\nExit status code: 1\n\n[stdout]\n${data.stdout}\n\n[stderr]\n${data.stderr}`;
+        } else if (data.status === 'time_limit_exceeded') {
+          statusLbl.textContent = "TIMEOUT (TLE)";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[Time Limit Exceeded]\nExecution timed out after ${data.runtime} seconds.`;
+        } else if (data.status === 'success') {
+          statusLbl.textContent = "SUCCESS (EXIT 0)";
+          statusLbl.style.color = "#39ff14";
+          
+          let termText = `[Success]\nRuntime: ${data.runtime}s\n\n[stdout]\n${data.stdout}`;
+          if (data.stderr) {
+            termText += `\n\n[stderr (warning)]\n${data.stderr}`;
+          }
+          terminal.style.color = "#39ff14";
+          terminal.textContent = termText;
+        } else {
+          statusLbl.textContent = "ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[System Error]\n${data.stderr || 'Unknown error occurred.'}`;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        statusLbl.textContent = "NETWORK ERROR";
+        statusLbl.style.color = "#ff4d4d";
+        terminal.style.color = "#ff4d4d";
+        terminal.textContent = "[Error]\nFailed to connect to the compilation server.";
+      });
+    }
+
+    function runSampleTests(qId, qType = 'practice') {
+      const editor = document.getElementById(`editor-${qId}`);
+      const langSelect = document.getElementById(`lang-select-${qId}`);
+      const terminal = document.getElementById(`terminal-${qId}`);
+      const statusLbl = document.getElementById(`term-status-${qId}`);
+
+      if (!editor) return;
+
+      const code = editor.value;
+      const language = langSelect ? langSelect.value : 'python';
+
+      terminal.textContent = "Compiling and executing sample test cases...";
+      terminal.style.color = "#a1b0c4";
+      statusLbl.textContent = "TESTING...";
+      statusLbl.style.color = "#a1b0c4";
+
+      // Sync state for finish
+      state.codingSubmissions[qId] = {
+        code: code,
+        language: language
+      };
+
+      fetch('/judge/run-samples/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+          question_id: qId,
+          question_type: qType,
+          code: code,
+          language: language
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'compile_error') {
+          statusLbl.textContent = "COMPILE ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[Compiler Error]\n${data.compile_output}`;
+        } else if (data.status === 'success') {
+          let termText = "[Sample Cases Execution Results]\n\n";
+          let allPassed = true;
+          let passedCount = 0;
+
+          data.results.forEach((tc, idx) => {
+            const num = idx + 1;
+            if (tc.status === 'pass') {
+              passedCount++;
+              termText += `➔ Test Case ${num}: PASS (${tc.runtime_seconds}s)\n`;
+            } else {
+              allPassed = false;
+              termText += `➔ Test Case ${num}: FAIL (${tc.status})\n`;
+              termText += `   Input:    "${tc.input}"\n`;
+              termText += `   Expected: "${tc.expected}"\n`;
+              if (tc.error_message) {
+                termText += `   Error:    ${tc.error_message}\n`;
+              }
+              termText += `\n`;
+            }
+          });
+
+          const total = data.results.length;
+          termText += `\nSummary: Passed ${passedCount}/${total} sample cases.`;
+
+          if (allPassed) {
+            statusLbl.textContent = "ALL PASSED";
+            statusLbl.style.color = "#39ff14";
+            terminal.style.color = "#39ff14";
+          } else {
+            statusLbl.textContent = "SOME FAILED";
+            statusLbl.style.color = "#ffcc00";
+            terminal.style.color = "#ffcc00";
+          }
+          terminal.textContent = termText;
+        } else {
+          statusLbl.textContent = "ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[System Error]\n${data.error || 'Unknown error occurred.'}`;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        statusLbl.textContent = "NETWORK ERROR";
+        statusLbl.style.color = "#ff4d4d";
+        terminal.style.color = "#ff4d4d";
+        terminal.textContent = "[Error]\nFailed to connect to the compilation server.";
+      });
     }
 
     // Navigation and Action helpers

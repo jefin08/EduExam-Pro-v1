@@ -35,6 +35,9 @@
               {% if grade.is_submitted %}
                 <span class="mode-tag practice-tag" style="font-size: 0.75rem;">Submitted</span>
                 <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">At: {{ grade.submitted_at|date:"H:i:s" }}</span>
+              {% elif exam.start_time > now %}
+                <span class="mode-tag waiting-tag" style="font-size: 0.75rem; background-color: rgba(0, 150, 255, 0.08); color: #007bff; border-color: #007bff;">Waiting</span>
+                <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">Joined: {{ grade.started_at|date:"H:i:s" }}</span>
               {% else %}
                 <span class="mode-tag exam-tag" style="font-size: 0.75rem; background-color: rgba(180, 132, 42, 0.08); color: var(--gold); border-color: var(--gold);">In Progress</span>
                 <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">Started: {{ grade.started_at|date:"H:i:s" }}</span>

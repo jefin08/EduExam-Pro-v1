@@ -127,6 +127,19 @@
 </head>
 <body>
 
+  <!-- Fullscreen Proctored Exam Overlay -->
+  <div id="fullscreen-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="card modal-card" style="max-width: 550px; text-align: center; padding: 3rem 2.5rem; border: 2px solid var(--red-pen); border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: auto;">
+      <h2 class="serif-text" style="color: var(--red-pen); margin-bottom: 1rem; font-size: 1.8rem; font-weight: 600;">Secured Fullscreen Mode Required</h2>
+      <p style="color: var(--ink-soft); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem;">
+        To begin taking this exam, you must enter fullscreen mode. Exiting fullscreen mode, opening other windows, or switching tabs during the exam will be automatically logged as a violation.
+      </p>
+      <button id="enter-fullscreen-btn" class="btn btn-primary" style="background-color: var(--red-pen); border-color: var(--red-pen); padding: 0.75rem 2rem; font-size: 1.05rem; font-weight: 600; cursor: pointer; border-radius: 4px;">
+        Start Exam & Enter Fullscreen
+      </button>
+    </div>
+  </div>
+
   <!-- Top Exam Header -->
   <div class="exam-header">
     <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
@@ -136,9 +149,41 @@
       </span>
       <span class="serif-text" style="font-size: 1.25rem; font-weight: 600;">{{ exam.name }}</span>
       <div style="display: flex; align-items: center; gap: 1.5rem;">
+        <!-- Network Status Indicator -->
+        <span id="network-status-indicator" style="font-family: var(--font-mono); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; color: var(--ink-soft);">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--pass-teal); display: inline-block;" id="network-dot"></span>
+          <span id="network-text">Online</span>
+        </span>
+        <!-- Battery Status Indicator -->
+        <span id="battery-status-indicator" style="font-family: var(--font-mono); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; color: var(--ink-soft); display: none;">
+          <span id="battery-icon">🔋</span>
+          <span id="battery-text">--%</span>
+        </span>
         <span class="mono-text" style="color: var(--red-pen); font-weight: 600; font-size: 1.1rem;" id="countdown-timer">00:00:00</span>
         <button class="btn btn-primary" id="finish-exam-btn" style="background-color: var(--red-pen); border-color: var(--red-pen);">Finish Examination</button>
       </div>
+
+  <!-- Network Lost Paused Modal Overlay -->
+  <div class="modal-overlay" id="network-pause-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(30, 39, 51, 0.95); z-index: 10003; justify-content: center; align-items: center; backdrop-filter: blur(6px);">
+    <div class="card modal-card" style="max-width: 550px; width: 90%; padding: 3rem 2.5rem; text-align: center; background-color: var(--paper); border: 3px solid var(--red-pen); border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: auto;">
+      <div class="logo-stamp" style="width: 70px; height: 70px; border-color: var(--red-pen); color: var(--red-pen); font-size: 2.2rem; margin-bottom: 1.5rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; background: rgba(178,58,46,0.1); border-radius: 50%;">📶</div>
+      <h2 class="serif-text" style="color: var(--red-pen); margin-bottom: 1rem; font-size: 2rem; font-weight: 600;">Exam Paused: Connection Lost</h2>
+      <p style="color: var(--ink-main); font-size: 1.05rem; line-height: 1.6; margin-bottom: 2rem;">
+        Your internet connection has been lost. The exam session is currently paused. 
+        Please restore your network connection to resume. Your timer has been paused.
+      </p>
+      <div style="font-size: 0.85rem; color: var(--ink-soft); font-family: var(--font-mono); display: flex; align-items: center; gap: 0.5rem; justify-content: center; width: 100%;">
+        <span class="loading-spinner" style="width: 14px; height: 14px; border: 2px solid var(--red-pen); border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite;"></span>
+        <span>Reconnecting to the server...</span>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
     </div>
   </div>
 
@@ -147,8 +192,25 @@
       
       <!-- Left sidebar question browser -->
       <div class="question-nav-card">
-        <h4 class="mono-text" style="font-size: 0.8rem; text-transform: uppercase; color: var(--ink-soft);">Exam Sheets</h4>
-        <ul class="nav-list">
+        <h4 class="mono-text" style="font-size: 0.8rem; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.5rem;">Exam Sheets</h4>
+        
+        <!-- Filter & Sort controls -->
+        <div style="margin-bottom: 1rem; border-bottom: 1px solid var(--rule-strong); padding-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <div style="display: flex; gap: 0.25rem;">
+            <button class="btn btn-ghost" id="filter-all-btn" style="font-size: 0.65rem; padding: 0.15rem 0.4rem; background: var(--rule-strong); border: 1px solid var(--rule-strong);" onclick="filterQuestions('all')">All</button>
+            <button class="btn btn-ghost" id="filter-done-btn" style="font-size: 0.65rem; padding: 0.15rem 0.4rem; border: 1px solid transparent;" onclick="filterQuestions('done')">Answered</button>
+            <button class="btn btn-ghost" id="filter-todo-btn" style="font-size: 0.65rem; padding: 0.15rem 0.4rem; border: 1px solid transparent;" onclick="filterQuestions('todo')">Unanswered</button>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.7rem; color: var(--ink-soft);">
+            <span>Sort:</span>
+            <select id="sort-questions" onchange="sortQuestionsList()" style="font-size: 0.7rem; padding: 0.1rem 0.3rem; border: 1px solid var(--rule-strong); background: var(--bg); color: var(--ink); border-radius: 2px; cursor: pointer;">
+              <option value="number">Q-Number</option>
+              <option value="status">Unanswered first</option>
+            </select>
+          </div>
+        </div>
+
+        <ul class="nav-list" id="sidebar-nav-list">
           {% for mcq in mcqs %}
             <li class="nav-item {% if forloop.first %}active{% endif %}" data-qtype="mcq" data-qid="{{ mcq.id }}" onclick="switchQuestion('mcq', '{{ mcq.id }}', this)">
               <span>Q{{ forloop.counter }}. MCQ</span>
@@ -184,6 +246,16 @@
                 </div>
               {% endfor %}
             </div>
+            <!-- Scratchpad / Workspace (Practice workout area for MCQ) -->
+            <div style="margin-top: 1.25rem; border-top: 1px dashed var(--rule); padding-top: 1rem;">
+              <label for="scratchpad-mcq-{{ mcq.id }}" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-soft); display: block; margin-bottom: 0.4rem; font-weight: 600; text-align: left;">Scratchpad / Workspace</label>
+              <textarea id="scratchpad-mcq-{{ mcq.id }}" placeholder="Draft your notes, scratchpad calculations, or work here. (This is for practice workout and won't be submitted as part of your answer)" style="width: 100%; height: 80px; padding: 0.5rem; border: 1px solid var(--rule-strong); border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; background-color: var(--paper); color: var(--ink); resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; border-top: 1px dashed var(--rule); padding-top: 1rem;">
+              <button class="btn btn-ghost" style="font-size: 0.85rem; padding: 0.4rem 1.2rem; border-color: var(--rule-strong);" onclick="skipAndContinue('mcq', '{{ mcq.id }}')">Skip & Continue ➔</button>
+              <button class="btn btn-primary" style="font-size: 0.85rem; padding: 0.4rem 1.2rem; background-color: var(--pass-teal); border-color: var(--pass-teal);" onclick="saveAndNext('mcq', '{{ mcq.id }}')">Save & Next ➔</button>
+            </div>
           </div>
         {% endfor %}
 
@@ -213,13 +285,48 @@
             <div class="editor-wrapper">
               <div class="editor-header">
                 <span>online_editor.py</span>
-                <select id="lang-select-{{ code_q.id }}" style="background-color: var(--ink); color: var(--bg); border: 1px solid var(--rule); font-family: var(--font-mono); font-size: 0.75rem; padding: 0.15rem 0.5rem; cursor: pointer;">
+                <select id="lang-select-{{ code_q.id }}" onchange="updateEditorHeader(this, '{{ code_q.id }}')" style="background-color: var(--ink); color: var(--bg); border: 1px solid var(--rule); font-family: var(--font-mono); font-size: 0.75rem; padding: 0.15rem 0.5rem; cursor: pointer;">
                   <option value="python">Python 3</option>
-                  <option value="cpp">C++ 17</option>
+                  <option value="c">C (GCC)</option>
+                  <option value="cpp">C++ (G++)</option>
                   <option value="java">Java 17</option>
                 </select>
               </div>
               <textarea class="code-textarea" id="editor-{{ code_q.id }}" placeholder="# Write your code solution here..."></textarea>
+            </div>
+
+            <!-- Custom Input Panel -->
+            <div style="margin-top: 1rem;">
+              <label for="custom-input-{{ code_q.id }}" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); display: block; margin-bottom: 0.4rem;">Custom Input (stdin)</label>
+              <textarea id="custom-input-{{ code_q.id }}" placeholder="Provide input parameters here..." style="width: 100%; height: 60px; padding: 0.5rem; border: 1px solid var(--rule-strong); border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; background-color: var(--paper); color: var(--ink); resize: vertical;"></textarea>
+            </div>
+
+            <!-- Editor Actions -->
+            <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+              <button class="btn btn-ghost" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;" onclick="runCustomCode('{{ code_q.id }}')">▶ Run Code</button>
+              <button class="btn btn-ghost" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;" onclick="runSampleTests('{{ code_q.id }}', 'exam')">🧪 Run Sample Tests</button>
+            </div>
+
+            <!-- Virtual Terminal -->
+            <div style="margin-top: 1rem;">
+              <div style="background-color: #121820; color: #a1b0c4; border: 1px solid #1a2330; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; overflow: hidden;">
+                <div style="background-color: #1a2330; padding: 0.4rem 0.75rem; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #243245; color: #7f92b0;">
+                  <span>VIRTUAL TERMINAL</span>
+                  <span id="term-status-{{ code_q.id }}">IDLE</span>
+                </div>
+                <pre id="terminal-{{ code_q.id }}" style="margin: 0; padding: 0.75rem; height: 140px; overflow-y: auto; white-space: pre-wrap; font-family: var(--font-mono); color: #39ff14; background-color: #0b0f19; line-height: 1.4;">Console initialized. Ready to execute code.</pre>
+              </div>
+            </div>
+
+            <!-- Scratchpad / Workspace (Practice workout area) -->
+            <div style="margin-top: 1.25rem; border-top: 1px dashed var(--rule); padding-top: 1rem;">
+              <label for="scratchpad-{{ code_q.id }}" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-soft); display: block; margin-bottom: 0.4rem; font-weight: 600;">Scratchpad / Workspace</label>
+              <textarea id="scratchpad-{{ code_q.id }}" placeholder="Draft your notes, ideas, or work here. (This is for practice workout/scratchpad and won't be submitted as your official solution)" style="width: 100%; height: 100px; padding: 0.5rem; border: 1px solid var(--rule-strong); border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; background-color: var(--paper); color: var(--ink); resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; border-top: 1px dashed var(--rule); padding-top: 1rem;">
+              <button class="btn btn-ghost" style="font-size: 0.85rem; padding: 0.4rem 1.2rem; border-color: var(--rule-strong);" onclick="skipAndContinue('coding', '{{ code_q.id }}')">Skip & Continue ➔</button>
+              <button class="btn btn-primary" style="font-size: 0.85rem; padding: 0.4rem 1.2rem; background-color: var(--pass-teal); border-color: var(--pass-teal);" onclick="saveAndNext('coding', '{{ code_q.id }}')">Save & Next ➔</button>
             </div>
           </div>
         {% endfor %}
@@ -247,7 +354,38 @@
     </div>
   </div>
 
+  <!-- Confirm Finish Modal Overlay -->
+  <div class="modal-overlay" id="confirm-finish-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(30, 39, 51, 0.6); z-index: 10001; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+    <div class="card modal-card" style="max-width: 500px; width: 90%; padding: 3rem 2.5rem; text-align: center; background-color: var(--paper); border: 2px solid var(--red-pen); border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: auto;">
+      <h2 class="serif-text" style="color: var(--red-pen); margin-bottom: 1rem; font-size: 1.8rem; font-weight: 600;">Finish Examination?</h2>
+      <p style="color: var(--ink-soft); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem;">
+        Are you sure you want to submit your answers? You will not be able to modify your solutions after this action.
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button onclick="closeConfirmFinishModal()" class="btn btn-ghost" style="padding: 0.5rem 1.5rem; font-size: 0.95rem; cursor: pointer;">Cancel</button>
+        <button onclick="confirmSubmitExam()" class="btn btn-primary" style="background-color: var(--red-pen); border-color: var(--red-pen); padding: 0.5rem 1.5rem; font-size: 0.95rem; font-weight: 600; cursor: pointer;">Yes, Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Proctor Warning Modal Overlay -->
+  <div class="modal-overlay" id="proctor-warning-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(178, 58, 46, 0.85); z-index: 10002; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+    <div class="card modal-card" style="max-width: 500px; width: 90%; padding: 3rem 2.5rem; text-align: center; background-color: var(--paper); border: 3px solid var(--red-pen); border-radius: 6px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: auto;">
+      <div class="logo-stamp" style="width: 60px; height: 60px; border-color: var(--red-pen); color: var(--red-pen); font-size: 1.8rem; margin-bottom: 1.5rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; background: rgba(178,58,46,0.1); border-radius: 50%;">⚠</div>
+      <h2 class="serif-text" style="color: var(--red-pen); margin-bottom: 1rem; font-size: 1.8rem; font-weight: 600;" id="warning-modal-title">Security Violation Warning</h2>
+      <p style="color: var(--ink-main); font-size: 1rem; line-height: 1.6; margin-bottom: 2.5rem;" id="warning-modal-desc">
+        You have attempted to perform a restricted action (switching window/tabs, copying, pasting, right-click, or dev-tools shortcuts). This is warning <strong>1 of 3</strong>. 
+        On the 4th violation, your exam will be terminated immediately.
+      </p>
+      <button onclick="acknowledgeWarning()" class="btn btn-primary" style="background-color: var(--red-pen); border-color: var(--red-pen); padding: 0.6rem 2rem; font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 4px;">
+        Acknowledge & Return
+      </button>
+    </div>
+  </div>
+
   <script>
+    let isExamSubmitted = false;
+
     // State storage
     const state = {
       mcqAnswers: {},
@@ -262,6 +400,135 @@
       const card = document.getElementById(`${type}-card-${id}`);
       if (card) card.classList.add('active');
     }
+
+    function saveAndNext(type, id) {
+      if (type === 'coding') {
+        const editor = document.getElementById(`editor-${id}`);
+        const langSelect = document.getElementById(`lang-select-${id}`);
+        if (editor) {
+          state.codingSubmissions[id] = {
+            code: editor.value,
+            language: langSelect ? langSelect.value : 'python'
+          };
+          const navItem = document.querySelector(`.nav-item[data-qtype="coding"][data-qid="${id}"]`);
+          if (editor.value.trim().length > 0) {
+            if (navItem) navItem.classList.add('completed');
+          } else {
+            if (navItem) navItem.classList.remove('completed');
+          }
+        }
+      }
+      
+      const navItems = Array.from(document.querySelectorAll('#sidebar-nav-list .nav-item'));
+      const currentIndex = navItems.findIndex(el => el.getAttribute('data-qtype') === type && el.getAttribute('data-qid') === id);
+      
+      if (currentIndex !== -1 && currentIndex < navItems.length - 1) {
+        const nextItem = navItems[currentIndex + 1];
+        let targetItem = nextItem;
+        let index = currentIndex + 1;
+        while (targetItem && targetItem.style.display === 'none' && index < navItems.length) {
+          index++;
+          targetItem = navItems[index];
+        }
+        if (targetItem && targetItem.style.display !== 'none') {
+          targetItem.click();
+        }
+      }
+    }
+
+    let currentFilter = 'all';
+    function filterQuestions(filterMode) {
+      currentFilter = filterMode;
+      
+      document.getElementById('filter-all-btn').style.background = 'transparent';
+      document.getElementById('filter-all-btn').style.borderColor = 'transparent';
+      document.getElementById('filter-done-btn').style.background = 'transparent';
+      document.getElementById('filter-done-btn').style.borderColor = 'transparent';
+      document.getElementById('filter-todo-btn').style.background = 'transparent';
+      document.getElementById('filter-todo-btn').style.borderColor = 'transparent';
+      
+      const activeBtn = document.getElementById(`filter-${filterMode}-btn`);
+      if (activeBtn) {
+        activeBtn.style.background = 'var(--rule-strong)';
+        activeBtn.style.borderColor = 'var(--rule-strong)';
+      }
+      
+      const navItems = document.querySelectorAll('#sidebar-nav-list .nav-item');
+      navItems.forEach(el => {
+        const isCompleted = el.classList.contains('completed');
+        if (filterMode === 'all') {
+          el.style.display = 'flex';
+        } else if (filterMode === 'done') {
+          el.style.display = isCompleted ? 'flex' : 'none';
+        } else if (filterMode === 'todo') {
+          el.style.display = !isCompleted ? 'flex' : 'none';
+        }
+      });
+    }
+
+    function sortQuestionsList() {
+      const select = document.getElementById('sort-questions');
+      const sortVal = select.value;
+      const list = document.getElementById('sidebar-nav-list');
+      const items = Array.from(list.children);
+      
+      items.forEach((el, index) => {
+        if (!el.hasAttribute('data-original-index')) {
+          el.setAttribute('data-original-index', index);
+        }
+      });
+      
+      items.sort((a, b) => {
+        if (sortVal === 'number') {
+          return parseInt(a.getAttribute('data-original-index')) - parseInt(b.getAttribute('data-original-index'));
+        } else if (sortVal === 'status') {
+          const aDone = a.classList.contains('completed');
+          const bDone = b.classList.contains('completed');
+          if (aDone && !bDone) return 1;
+          if (!aDone && bDone) return -1;
+          return parseInt(a.getAttribute('data-original-index')) - parseInt(b.getAttribute('data-original-index'));
+        }
+        return 0;
+      });
+      
+      items.forEach(el => list.appendChild(el));
+    }
+
+    function skipAndContinue(type, id) {
+      const navItems = Array.from(document.querySelectorAll('#sidebar-nav-list .nav-item'));
+      const currentIndex = navItems.findIndex(el => el.getAttribute('data-qtype') === type && el.getAttribute('data-qid') === id);
+      
+      if (currentIndex !== -1 && currentIndex < navItems.length - 1) {
+        const nextItem = navItems[currentIndex + 1];
+        let targetItem = nextItem;
+        let index = currentIndex + 1;
+        while (targetItem && targetItem.style.display === 'none' && index < navItems.length) {
+          index++;
+          targetItem = navItems[index];
+        }
+        if (targetItem && targetItem.style.display !== 'none') {
+          targetItem.click();
+        }
+      }
+    }
+
+    function initCodingAttendedListeners() {
+      document.querySelectorAll('.code-textarea').forEach(tx => {
+        tx.addEventListener('input', () => {
+          const qId = tx.id.replace('editor-', '');
+          const navItem = document.querySelector(`.nav-item[data-qtype="coding"][data-qid="${qId}"]`);
+          if (tx.value.trim().length > 0) {
+            if (navItem) navItem.classList.add('completed');
+          } else {
+            if (navItem) navItem.classList.remove('completed');
+          }
+          // Live status updates
+          filterQuestions(currentFilter);
+          sortQuestionsList();
+        });
+      });
+    }
+    initCodingAttendedListeners();
 
     function selectMCQOption(qId, idx, optionEl) {
       const parent = optionEl.parentNode;
@@ -278,13 +545,206 @@
 
       const navItem = document.querySelector(`.nav-item[data-qtype="mcq"][data-qid="${qId}"]`);
       if (navItem) navItem.classList.add('completed');
+      
+      // Live status updates
+      filterQuestions(currentFilter);
+      sortQuestionsList();
+    }
+
+    function updateEditorHeader(selectEl, qId) {
+      const headerSpan = selectEl.parentNode.querySelector('span');
+      if (!headerSpan) return;
+      const lang = selectEl.value;
+      let filename = "online_editor.py";
+      if (lang === "c") filename = "online_editor.c";
+      else if (lang === "cpp") filename = "online_editor.cpp";
+      else if (lang === "java") filename = "Main.java";
+      headerSpan.textContent = filename;
+    }
+
+    function runCustomCode(qId) {
+      const editor = document.getElementById(`editor-${qId}`);
+      const langSelect = document.getElementById(`lang-select-${qId}`);
+      const inputArea = document.getElementById(`custom-input-${qId}`);
+      const terminal = document.getElementById(`terminal-${qId}`);
+      const statusLbl = document.getElementById(`term-status-${qId}`);
+
+      if (!editor) return;
+
+      const code = editor.value;
+      const language = langSelect ? langSelect.value : 'python';
+      const customInput = inputArea ? inputArea.value : '';
+
+      terminal.textContent = "Compiling & executing solution on server...";
+      terminal.style.color = "#a1b0c4";
+      statusLbl.textContent = "RUNNING...";
+      statusLbl.style.color = "#a1b0c4";
+
+      // Sync state for finish
+      state.codingSubmissions[qId] = {
+        code: code,
+        language: language
+      };
+
+      fetch('/judge/run-custom/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+          code: code,
+          language: language,
+          input: customInput
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'compile_error') {
+          statusLbl.textContent = "COMPILE ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[Compiler Error]\n${data.stderr}`;
+        } else if (data.status === 'runtime_error') {
+          statusLbl.textContent = "RUNTIME ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[Runtime Error]\nExit status code: 1\n\n[stdout]\n${data.stdout}\n\n[stderr]\n${data.stderr}`;
+        } else if (data.status === 'time_limit_exceeded') {
+          statusLbl.textContent = "TIMEOUT (TLE)";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[Time Limit Exceeded]\nExecution timed out after ${data.runtime} seconds.`;
+        } else if (data.status === 'success') {
+          statusLbl.textContent = "SUCCESS (EXIT 0)";
+          statusLbl.style.color = "#39ff14";
+          
+          let termText = `[Success]\nRuntime: ${data.runtime}s\n\n[stdout]\n${data.stdout}`;
+          if (data.stderr) {
+            termText += `\n\n[stderr (warning)]\n${data.stderr}`;
+          }
+          terminal.style.color = "#39ff14";
+          terminal.textContent = termText;
+        } else {
+          statusLbl.textContent = "ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[System Error]\n${data.stderr || 'Unknown error occurred.'}`;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        statusLbl.textContent = "NETWORK ERROR";
+        statusLbl.style.color = "#ff4d4d";
+        terminal.style.color = "#ff4d4d";
+        terminal.textContent = "[Error]\nFailed to connect to the compilation server.";
+      });
+    }
+
+    function runSampleTests(qId, qType = 'exam') {
+      const editor = document.getElementById(`editor-${qId}`);
+      const langSelect = document.getElementById(`lang-select-${qId}`);
+      const terminal = document.getElementById(`terminal-${qId}`);
+      const statusLbl = document.getElementById(`term-status-${qId}`);
+
+      if (!editor) return;
+
+      const code = editor.value;
+      const language = langSelect ? langSelect.value : 'python';
+
+      terminal.textContent = "Compiling and executing sample test cases...";
+      terminal.style.color = "#a1b0c4";
+      statusLbl.textContent = "TESTING...";
+      statusLbl.style.color = "#a1b0c4";
+
+      // Sync state for finish
+      state.codingSubmissions[qId] = {
+        code: code,
+        language: language
+      };
+
+      fetch('/judge/run-samples/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+          question_id: qId,
+          question_type: qType,
+          code: code,
+          language: language
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'compile_error') {
+          statusLbl.textContent = "COMPILE ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[Compiler Error]\n${data.compile_output}`;
+        } else if (data.status === 'success') {
+          let termText = "[Sample Cases Execution Results]\n\n";
+          let allPassed = true;
+          let passedCount = 0;
+
+          data.results.forEach((tc, idx) => {
+            const num = idx + 1;
+            if (tc.status === 'pass') {
+              passedCount++;
+              termText += `➔ Test Case ${num}: PASS (${tc.runtime_seconds}s)\n`;
+            } else {
+              allPassed = false;
+              termText += `➔ Test Case ${num}: FAIL (${tc.status})\n`;
+              termText += `   Input:    "${tc.input}"\n`;
+              termText += `   Expected: "${tc.expected}"\n`;
+              if (tc.error_message) {
+                termText += `   Error:    ${tc.error_message}\n`;
+              }
+              termText += `\n`;
+            }
+          });
+
+          const total = data.results.length;
+          termText += `\nSummary: Passed ${passedCount}/${total} sample cases.`;
+
+          if (allPassed) {
+            statusLbl.textContent = "ALL PASSED";
+            statusLbl.style.color = "#39ff14";
+            terminal.style.color = "#39ff14";
+          } else {
+            statusLbl.textContent = "SOME FAILED";
+            statusLbl.style.color = "#ffcc00";
+            terminal.style.color = "#ffcc00";
+          }
+          terminal.textContent = termText;
+        } else {
+          statusLbl.textContent = "ERROR";
+          statusLbl.style.color = "#ff4d4d";
+          terminal.style.color = "#ff4d4d";
+          terminal.textContent = `[System Error]\n${data.error || 'Unknown error occurred.'}`;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        statusLbl.textContent = "NETWORK ERROR";
+        statusLbl.style.color = "#ff4d4d";
+        terminal.style.color = "#ff4d4d";
+        terminal.textContent = "[Error]\nFailed to connect to the compilation server.";
+      });
     }
 
     // Timer countdown logic
     let remainingSecs = parseInt('{{ remaining_seconds }}');
     const timerDisplay = document.getElementById('countdown-timer');
 
+    let isOffline = false;
+
     function tickTimer() {
+      if (isOffline) {
+        setTimeout(tickTimer, 1000);
+        return;
+      }
       if (remainingSecs <= 0) {
         submitExam(true); // Force submit on timeout
         return;
@@ -305,6 +765,73 @@
     }
     tickTimer();
 
+    // Network Status monitoring (pause exam if offline)
+    function updateNetworkStatus() {
+      const isOnline = navigator.onLine;
+      const dot = document.getElementById('network-dot');
+      const text = document.getElementById('network-text');
+      const pauseModal = document.getElementById('network-pause-modal');
+      
+      if (isOnline) {
+        isOffline = false;
+        if (dot) dot.style.backgroundColor = 'var(--pass-teal)';
+        if (text) text.textContent = 'Online';
+        if (pauseModal) pauseModal.style.display = 'none';
+      } else {
+        isOffline = true;
+        if (dot) dot.style.backgroundColor = 'var(--red-pen)';
+        if (text) text.textContent = 'Offline';
+        if (pauseModal) pauseModal.style.display = 'flex';
+        logEvent('blur', 'Connection lost: Student device disconnected from network.');
+      }
+    }
+    
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    updateNetworkStatus(); // Initial call
+
+    // Battery monitoring (remind/warn on low charge)
+    function initBatteryMonitoring() {
+      if ('getBattery' in navigator) {
+        navigator.getBattery().then(battery => {
+          const indicator = document.getElementById('battery-status-indicator');
+          const text = document.getElementById('battery-text');
+          const icon = document.getElementById('battery-icon');
+          
+          if (indicator) indicator.style.display = 'inline-flex';
+          
+          function updateBattery() {
+            const pct = Math.round(battery.level * 100);
+            if (text) text.textContent = `${pct}%`;
+            
+            if (battery.charging) {
+              if (icon) icon.textContent = '⚡';
+            } else {
+              if (pct > 50) {
+                if (icon) icon.textContent = '🔋';
+              } else if (pct > 20) {
+                if (icon) icon.textContent = '🪫';
+              } else {
+                if (icon) icon.textContent = '⚠️';
+              }
+            }
+            
+            if (pct <= 20 && !battery.charging) {
+              if (indicator) indicator.style.color = 'var(--red-pen)';
+              logEvent('blur', `Device battery is running low: ${pct}% (not charging)`);
+            } else {
+              if (indicator) indicator.style.color = 'var(--ink-soft)';
+            }
+          }
+          
+          battery.addEventListener('levelchange', updateBattery);
+          battery.addEventListener('chargingchange', updateBattery);
+          updateBattery();
+        });
+      }
+    }
+    initBatteryMonitoring();
+
     // Anti-Cheating Event Logging
     function logEvent(type, details) {
       fetch('{% url "log_monitoring_event" exam.id %}', {
@@ -317,28 +844,91 @@
       });
     }
 
+    // Proctor Warning Violation Counter
+    let violationCount = 0;
+    
+    function triggerViolation(details) {
+      if (isExamSubmitted) return;
+      
+      violationCount++;
+      logEvent('blur', `Violation #${violationCount}: ${details}`);
+      
+      const warningModal = document.getElementById('proctor-warning-modal');
+      
+      if (violationCount >= 4) {
+        // Exceeded 3 warnings. Terminate exam!
+        isExamSubmitted = true;
+        
+        warningModal.style.display = 'flex';
+        document.getElementById('warning-modal-title').textContent = "Exam Terminated";
+        document.getElementById('warning-modal-desc').innerHTML = "You have exceeded the limit of 3 security warnings. Your exam session has been terminated and your answers have been auto-submitted.";
+        
+        const btn = warningModal.querySelector('button');
+        btn.textContent = "Show Output & Finish";
+        btn.onclick = () => {
+          warningModal.style.display = 'none';
+          // After submit, the submit success modal will show
+        };
+        
+        submitExam(true); // submit with auto-submit timeout flag
+      } else {
+        warningModal.style.display = 'flex';
+        document.getElementById('warning-modal-desc').innerHTML = `You have performed a restricted action (<strong>${details}</strong>). This is warning <strong>${violationCount} of 3</strong>.<br><br><span style="color: var(--red-pen); font-weight: bold;">On the 4th attempt, your exam will be automatically submitted and terminated.</span>`;
+      }
+    }
+    
+    function acknowledgeWarning() {
+      document.getElementById('proctor-warning-modal').style.display = 'none';
+      requestFullscreen();
+    }
+
     // 1. Tab Switch / Blur Focus Monitoring
     window.addEventListener('blur', () => {
-      logEvent('blur', 'Student lost focus of exam window.');
+      triggerViolation('Lost focus of exam window');
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        logEvent('tab_switch', 'Student switched browser tab or minimized window.');
+        triggerViolation('Switched browser tab or minimized window');
       }
     });
 
     // 2. Lock Copy-Paste & Log attempts
     document.addEventListener('copy', e => {
       e.preventDefault();
-      logEvent('copy_paste', 'Attempted to COPY exam contents.');
+      triggerViolation('Attempted to COPY contents');
     });
     document.addEventListener('paste', e => {
       e.preventDefault();
-      logEvent('copy_paste', 'Attempted to PASTE into exam textareas.');
+      triggerViolation('Attempted to PASTE contents');
     });
     document.addEventListener('cut', e => {
       e.preventDefault();
-      logEvent('copy_paste', 'Attempted to CUT from exam window.');
+      triggerViolation('Attempted to CUT contents');
+    });
+
+    // 3. Block Right-Click Context Menu
+    document.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      triggerViolation('Blocked right-click context menu');
+    });
+
+    // 4. Block Developer Tools & Source Code View Shortcuts
+    document.addEventListener('keydown', e => {
+      // F12
+      if (e.key === 'F12') {
+        e.preventDefault();
+        triggerViolation('Attempted to open Developer Tools (F12)');
+      }
+      // Ctrl+Shift+I or Ctrl+Shift+J
+      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'i' || e.key === 'j')) {
+        e.preventDefault();
+        triggerViolation('Attempted to inspect element using Ctrl+Shift+I/J');
+      }
+      // Ctrl+U
+      if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) {
+        e.preventDefault();
+        triggerViolation('Attempted to view page source code using Ctrl+U');
+      }
     });
 
     // Submit Exam Handler
@@ -371,6 +961,7 @@
       .then(res => res.json())
       .then(data => {
         if (data.success) {
+          isExamSubmitted = true;
           document.getElementById('modal-score-lbl').textContent = `${data.score} pt`;
           document.getElementById('finish-modal').style.display = 'flex';
         }
@@ -380,9 +971,72 @@
       });
     }
 
+    function closeConfirmFinishModal() {
+      document.getElementById('confirm-finish-modal').style.display = 'none';
+    }
+
+    function confirmSubmitExam() {
+      closeConfirmFinishModal();
+      submitExam();
+    }
+
     document.getElementById('finish-exam-btn').addEventListener('click', () => {
-      if (confirm("Are you sure you want to finish the exam? You cannot modify answers after submission.")) {
-        submitExam();
+      document.getElementById('confirm-finish-modal').style.display = 'flex';
+    });
+
+    // 5. Fullscreen Management & Violation Logging
+    const enterFullscreenBtn = document.getElementById('enter-fullscreen-btn');
+    enterFullscreenBtn.addEventListener('click', () => {
+      requestFullscreen();
+      document.getElementById('fullscreen-overlay').style.display = 'none';
+    });
+
+    function requestFullscreen() {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen();
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      } else if (el.mozRequestFullScreen) {
+        el.mozRequestFullScreen();
+      } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
+      }
+    }
+
+    function handleFullscreenChange() {
+      if (isExamSubmitted) return;
+
+      const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      if (!isFullscreen) {
+        triggerViolation('Exited fullscreen mode');
+        const overlay = document.getElementById('fullscreen-overlay');
+        overlay.style.display = 'flex';
+        overlay.querySelector('h2').textContent = "Security Violation: Fullscreen Exited";
+        overlay.querySelector('p').textContent = "You have exited fullscreen mode. You must return to fullscreen to continue the examination. This incident has been logged.";
+        document.getElementById('enter-fullscreen-btn').textContent = "Return to Fullscreen";
+      } else {
+        const overlay = document.getElementById('fullscreen-overlay');
+        if (overlay) overlay.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    // Initial check: if student is already in fullscreen mode (transitioning from waiting room), bypass overlay
+    const isInitiallyFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullscreenElement || document.msFullscreenElement;
+    if (isInitiallyFullscreen) {
+      document.getElementById('fullscreen-overlay').style.display = 'none';
+    }
+
+    // 6. Block student from leaving the exam page
+    window.addEventListener('beforeunload', (e) => {
+      if (!isExamSubmitted) {
+        e.preventDefault();
+        e.returnValue = 'You cannot leave the exam while it is in progress!';
       }
     });
   </script>

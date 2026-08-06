@@ -7,6 +7,7 @@
 <li><a href="{% url 'teacher_practice' %}">Practice Sets</a></li>
 <li><a href="{% url 'teacher_create_practice_page' %}">Create Practice Set</a></li>
 <li class="active"><a href="{% url 'teacher_practice_questions' %}">Add Practice Questions</a></li>
+<li><a href="{% url 'teacher_practice_questions_list' %}">View All Questions</a></li>
 <li><a href="{% url 'teacher_bulk_upload' %}">Bulk Upload Questions</a></li>
 {% endblock %}
 
@@ -14,7 +15,13 @@
 
   <!-- ================= PRACTICE QUESTIONS SECTION ================= -->
   <div id="questions-sec" class="main-panel-section">
-    <h3 class="section-title">Add Practice Questions</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 class="section-title" style="margin: 0;">Add Practice Questions</h3>
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'teacher_practice' %}" class="btn btn-primary" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">Practice Sets</a>
+        <a href="{% url 'teacher_bulk_upload' %}" class="btn btn-ghost" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Bulk Upload</a>
+      </div>
+    </div>
 
     <!-- Create MCQ Form -->
     <div class="dash-form">

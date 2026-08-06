@@ -101,6 +101,14 @@
 
 
         <div class="form-group">
+          <label for="{{ form.full_name.id_for_label }}">Full Name</label>
+          {{ form.full_name }}
+          {% if form.full_name.errors %}
+            <ul class="error-list">{% for err in form.full_name.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
           <label for="{{ form.department.id_for_label }}">Department</label>
           {{ form.department }}
           {% if form.department.errors %}

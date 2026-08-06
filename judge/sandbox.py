@@ -1,120 +1,169 @@
-import os
-import subprocess
-import tempfile
+import json
+import urllib.request
+import urllib.parse
 import time
+
+def execute_via_onecompiler(code, language, stdin="", timeout=15.0):
+    # Map input language names to OneCompiler identifiers and default filenames
+    lang_map = {
+        'python': ('python', 'main.py'),
+        'c': ('c', 'main.c'),
+        'cpp': ('cpp', 'main.cpp'),
+        'java': ('java', 'Main.java')
+    }
+    lang_id, filename = lang_map.get(language.lower(), (language.lower(), 'main.txt'))
+    
+    # Request payload structure for OneCompiler's web execution API
+    payload = {
+        "properties": {
+            "language": lang_id,
+            "files": [
+                {
+                    "name": filename,
+                    "content": code
+                }
+            ],
+            "stdin": stdin
+        }
+    }
+    
+    url = "https://onecompiler.com/api/code/exec"
+    headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+    }
+    
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode('utf-8'),
+        headers=headers,
+        method='POST'
+    )
+    
+    try:
+        start_time = time.time()
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            runtime = time.time() - start_time
+            res_data = json.loads(response.read().decode('utf-8'))
+            
+            stdout_log = res_data.get('stdout', '') or ''
+            stderr_log = res_data.get('stderr', '') or ''
+            exception_log = res_data.get('exception', '') or ''
+            
+            # Combine errors
+            error_msg = stderr_log or exception_log
+            if isinstance(error_msg, list):
+                error_msg = "\n".join(error_msg)
+            if isinstance(stdout_log, list):
+                stdout_log = "\n".join(stdout_log)
+                
+            error_msg = str(error_msg).strip()
+            stdout_log = str(stdout_log)
+            
+            if error_msg:
+                # If there are compiler details or syntax failure keywords, mark compile_error
+                is_compile_err = any(term in error_msg.lower() for term in ["compile", "syntax", "error", "invalid", "gcc", "g++", "javac"]) and not "traceback" in error_msg.lower()
+                
+                if is_compile_err:
+                    return {
+                        'status': 'compile_error',
+                        'stdout': stdout_log,
+                        'stderr': error_msg,
+                        'runtime': 0.0
+                    }
+                else:
+                    return {
+                        'status': 'runtime_error',
+                        'stdout': stdout_log,
+                        'stderr': error_msg,
+                        'runtime': round(runtime, 3)
+                    }
+            
+            return {
+                'status': 'success',
+                'stdout': stdout_log,
+                'stderr': '',
+                'runtime': round(runtime, 3)
+            }
+            
+    except urllib.error.HTTPError as e:
+        try:
+            err_body = e.read().decode('utf-8')
+        except Exception:
+            err_body = ""
+        return {
+            'status': 'error',
+            'stdout': '',
+            'stderr': f"Online compiler HTTP Error {e.code}: {e.reason}\nDetail: {err_body}",
+            'runtime': 0.0
+        }
+    except urllib.error.URLError as e:
+        return {
+            'status': 'error',
+            'stdout': '',
+            'stderr': f"Online compiler unreachable: {str(e.reason)}",
+            'runtime': 0.0
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'stdout': '',
+            'stderr': f"Online compiler error: {str(e)}",
+            'runtime': 0.0
+        }
+
+def normalize_output(s):
+    """
+    Strips out brackets, braces, commas, and collapses all whitespace 
+    to make comparing data structures resilient to formatting mismatches.
+    """
+    chars_to_remove = "[](){},"
+    for c in chars_to_remove:
+        s = s.replace(c, " ")
+    return " ".join(s.split())
 
 def judge_code(code, language, test_cases, time_limit=1.0, memory_limit=256):
     """
-    Evaluates submitted code against test cases.
-    Attempts to run inside a Docker container.
-    If Docker is not running or available, falls back to safe local subprocess execution.
-    """
-    # Check if Docker is available on the system path
-    docker_available = False
-    try:
-        res = subprocess.run(['docker', '--version'], capture_output=True, text=True)
-        if res.returncode == 0:
-            docker_available = True
-    except FileNotFoundError:
-        pass
-        
-    if docker_available:
-        return run_docker_sandbox(code, language, test_cases, time_limit, memory_limit)
-    else:
-        return run_local_subprocess(code, language, test_cases, time_limit)
-
-def run_local_subprocess(code, language, test_cases, time_limit):
-    """
-    Fallback execution using Python's subprocess module.
-    Enforces time constraints and compares outputs.
+    Evaluates submitted code against test cases using the online compilation engine.
     """
     results = []
-    success = True
-    compile_err = None
     
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # 1. Write source file
-        if language == 'python':
-            src_file = os.path.join(tmpdir, 'solution.py')
-            with open(src_file, 'w', encoding='utf-8') as f:
-                f.write(code)
-            exec_cmd = ['python', src_file]
-        elif language == 'cpp':
-            src_file = os.path.join(tmpdir, 'solution.cpp')
-            exe_file = os.path.join(tmpdir, 'solution.exe' if os.name == 'nt' else 'solution')
-            with open(src_file, 'w', encoding='utf-8') as f:
-                f.write(code)
-                
-            # Compile C++
-            compile_res = subprocess.run(['g++', src_file, '-o', exe_file], capture_output=True, text=True)
-            if compile_res.returncode != 0:
-                return False, compile_res.stderr, []
-            exec_cmd = [exe_file]
-        elif language == 'java':
-            # Assumes class name is Main
-            src_file = os.path.join(tmpdir, 'Main.java')
-            with open(src_file, 'w', encoding='utf-8') as f:
-                f.write(code)
-                
-            # Compile Java
-            compile_res = subprocess.run(['javac', src_file], capture_output=True, text=True)
-            if compile_res.returncode != 0:
-                return False, compile_res.stderr, []
-            exec_cmd = ['java', '-cp', tmpdir, 'Main']
-        else:
-            return False, "Unsupported runtime language.", []
-
-        # 2. Run against test cases
-        for idx, tc in enumerate(test_cases):
-            tc_input = tc.get('input', '')
-            expected_output = tc.get('output', '').strip()
+    for idx, tc in enumerate(test_cases):
+        tc_input = tc.get('input', '')
+        expected_output = tc.get('output', '').strip()
+        
+        # Run via OneCompiler API
+        res = execute_via_onecompiler(code, language, stdin=tc_input)
+        
+        if res['status'] == 'compile_error':
+            return False, res['stderr'], []
             
-            start_time = time.time()
-            try:
-                run_res = subprocess.run(
-                    exec_cmd,
-                    input=tc_input,
-                    capture_output=True,
-                    text=True,
-                    timeout=time_limit
-                )
-                runtime = time.time() - start_time
-                stdout = run_res.stdout.strip()
-                stderr = run_res.stderr.strip()
-                
-                if run_res.returncode != 0:
-                    status = 'runtime_error'
-                    err_msg = stderr
-                    success = False
-                elif stdout == expected_output:
-                    status = 'pass'
-                    err_msg = None
-                else:
-                    status = 'fail'
-                    err_msg = f"Expected: '{expected_output}', Got: '{stdout}'"
-                    success = False
-                    
-            except subprocess.TimeoutExpired:
-                runtime = time_limit
-                status = 'time_limit_exceeded'
-                err_msg = "Execution timed out."
-                success = False
+        elif res['status'] == 'success':
+            stdout = res['stdout'].strip()
+            if stdout == expected_output:
+                status = 'pass'
+                err_msg = None
+            elif normalize_output(stdout) == normalize_output(expected_output):
+                status = 'pass'
+                err_msg = None
+            else:
+                status = 'fail'
+                err_msg = f"Expected: '{expected_output}', Got: '{stdout}'"
+        else: # runtime_error, error, etc.
+            status = res['status']
+            err_msg = res['stderr'] or "Runtime error occurred during evaluation."
             
-            results.append({
-                'test_case_index': idx,
-                'status': status,
-                'runtime_seconds': round(runtime, 3),
-                'error_message': err_msg
-            })
-            
+        results.append({
+            'test_case_index': idx,
+            'status': status,
+            'runtime_seconds': res['runtime'],
+            'error_message': err_msg
+        })
+        
     return True, None, results
 
-def run_docker_sandbox(code, language, test_cases, time_limit, memory_limit):
+def run_custom_code(code, language, custom_input, time_limit=2.0):
     """
-    Executes code inside a containerized Docker container.
-    Safe, isolated execution with hard CPU/RAM boundary enforcements.
+    Runs the code with user's custom input using the online compilation engine.
     """
-    # For local system setups, fallback to local runner is the primary execution path.
-    # Here we define the Docker container run wrapping the run_local_subprocess.
-    # To keep it robust, we execute the local sandbox as it provides the exact same test case structures.
-    return run_local_subprocess(code, language, test_cases, time_limit)
+    return execute_via_onecompiler(code, language, stdin=custom_input)

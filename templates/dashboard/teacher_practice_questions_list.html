@@ -1,0 +1,280 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}All Practice Questions — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}">← Back to Dashboard</a></li>
+<li><a href="{% url 'teacher_practice' %}">Practice Sets</a></li>
+<li><a href="{% url 'teacher_create_practice_page' %}">Create Practice Set</a></li>
+<li><a href="{% url 'teacher_practice_questions' %}">Add Practice Questions</a></li>
+<li class="active"><a href="{% url 'teacher_practice_questions_list' %}">View All Questions</a></li>
+<li><a href="{% url 'teacher_bulk_upload' %}">Bulk Upload Questions</a></li>
+{% endblock %}
+
+{% block main_content %}
+
+  <div class="main-panel-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <h3 class="section-title" style="margin: 0;">All Practice Questions</h3>
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'teacher_practice_questions' %}" class="btn btn-primary" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Add Practice Questions</a>
+        <a href="{% url 'teacher_bulk_upload' %}" class="btn btn-ghost" style="text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Bulk Upload</a>
+      </div>
+    </div>
+
+    <!-- Filter Form System -->
+    <div class="dash-form" style="margin-bottom: 2rem; padding: 1.5rem;">
+      <h4 style="margin: 0 0 1rem 0; font-family: var(--font-serif); font-size: 1.1rem; color: var(--ink);">Filter Questions By</h4>
+      <form method="GET" action="{% url 'teacher_practice_questions_list' %}" id="filter-form">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap: 1rem; align-items: end;">
+          
+          <!-- Class Filter -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="filter_class" style="font-size: 0.75rem;">Class Group</label>
+            <select id="filter_class" name="class_id" style="padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+              <option value="">All Class Groups</option>
+              {% for class in classes %}
+                <option value="{{ class.id }}" {% if selected_class_id == class.id|stringformat:"i" %}selected{% endif %}>{{ class.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Subject Filter -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="filter_subject" style="font-size: 0.75rem;">Subject</label>
+            <select id="filter_subject" name="subject" style="padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+              <option value="">All Subjects</option>
+              {% for subject in subjects %}
+                <option value="{{ subject }}" {% if selected_subject == subject %}selected{% endif %}>{{ subject }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Topic Filter -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="filter_topic" style="font-size: 0.75rem;">Topic</label>
+            <select id="filter_topic" name="topic_id" style="padding: 0.5rem 0.75rem; font-size: 0.9rem;">
+              <option value="">All Topics</option>
+              {% for topic in topics %}
+                <option value="{{ topic.id }}" data-subject="{{ topic.subject }}" data-classes="{% for visibility in topic.visibilities.all %}{{ visibility.class_group.id }}{% if not forloop.last %},{% endif %}{% endfor %}" {% if selected_topic_id == topic.id|stringformat:"i" %}selected{% endif %}>{{ topic.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn btn-primary" style="height: 38px; padding: 0 1rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center;">Apply Filter</button>
+            {% if is_filtered %}
+              <a href="{% url 'teacher_practice_questions_list' %}" class="btn" style="height: 38px; padding: 0 1rem; font-size: 0.85rem; text-decoration: none; border-color: var(--rule-strong); display: inline-flex; align-items: center; justify-content: center; background-color: var(--paper);">Clear</a>
+            {% endif %}
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    {% if is_filtered %}
+      
+      <!-- MCQ Questions Section -->
+      <div style="margin-bottom: 3rem;">
+        <h4 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 1rem; border-left: 4px solid var(--pass-teal); padding-left: 0.5rem;">Multiple Choice Questions (MCQs) ({{ mcqs|length }})</h4>
+        <div class="ledger">
+          <div class="ledger-header" style="grid-template-columns: 2.5fr 1fr 1fr 1.2fr 100px 100px;">
+            <span>Question Text</span>
+            <span>Subject</span>
+            <span>Topic</span>
+            <span>Visible to Classes</span>
+            <span>Marks / Diff</span>
+            <span>Actions</span>
+          </div>
+          {% for mcq in mcqs %}
+            <div class="ledger-row" style="grid-template-columns: 2.5fr 1fr 1fr 1.2fr 100px 100px; align-items: start; font-size: 0.9rem; padding: 1.25rem 1.5rem;">
+              <div>
+                <span style="font-weight: 500; color: var(--ink);">{{ forloop.counter }}. {{ mcq.question_text }}</span>
+                <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0; font-size: 0.85rem; color: var(--ink-soft); list-style-type: circle;">
+                  {% for option in mcq.options %}
+                    <li style="margin-bottom: 0.25rem; {% if forloop.counter0 == mcq.correct_option_index %}color: var(--pass-teal); font-weight: bold;{% endif %}">
+                      {{ option }} {% if forloop.counter0 == mcq.correct_option_index %}(Correct){% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              <span class="mono-text" style="font-size: 0.85rem;">{{ mcq.topic.subject }}</span>
+              <strong>{{ mcq.topic.name }}</strong>
+              <div>
+                {% for visibility in mcq.topic.visibilities.all %}
+                  <span class="mode-tag practice-tag" style="font-size: 0.7rem; display: inline-block; margin-bottom: 0.25rem; margin-right: 0.25rem;">{{ visibility.class_group.name }}</span>
+                {% empty %}
+                  <span class="mode-tag exam-tag" style="font-size: 0.7rem; display: inline-block;">No class assigned</span>
+                {% endfor %}
+              </div>
+              <div>
+                <span class="mono-text" style="font-size: 0.85rem;">{{ mcq.marks }} pts</span><br>
+                <span class="mode-tag {% if mcq.difficulty == 'easy' %}practice-tag{% elif mcq.difficulty == 'medium' %}both-tag{% else %}exam-tag{% endif %}" style="font-size: 0.65rem; padding: 0.1rem 0.3rem; display: inline-block; margin-top: 0.25rem;">{{ mcq.get_difficulty_display }}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <a href="{% url 'teacher_edit_mcq' mcq.id %}" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.5rem; text-align: center; text-decoration: none; border-color: var(--rule-strong);">Edit</a>
+                <form action="{% url 'teacher_delete_mcq' mcq.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete this question?');" style="margin: 0;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.5rem; width: 100%; border-color: var(--red-pen); color: var(--red-pen); background: transparent; cursor: pointer;">Delete</button>
+                </form>
+              </div>
+            </div>
+          {% empty %}
+            <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No MCQs match your filter criteria.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Coding Questions Section -->
+      <div>
+        <h4 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 1rem; border-left: 4px solid var(--pass-teal); padding-left: 0.5rem;">Programming / Coding Questions ({{ codings|length }})</h4>
+        <div class="ledger">
+          <div class="ledger-header" style="grid-template-columns: 2.5fr 1fr 1fr 1.2fr 100px 100px;">
+            <span>Problem Title & Description</span>
+            <span>Subject</span>
+            <span>Topic</span>
+            <span>Visible to Classes</span>
+            <span>Marks / Diff</span>
+            <span>Actions</span>
+          </div>
+          {% for code in codings %}
+            <div class="ledger-row" style="grid-template-columns: 2.5fr 1fr 1fr 1.2fr 100px 100px; align-items: start; font-size: 0.9rem; padding: 1.25rem 1.5rem;">
+              <div>
+                <strong style="font-size: 0.95rem; color: var(--ink);">{{ forloop.counter }}. {{ code.title }}</strong>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                  {{ code.description }}
+                </p>
+              </div>
+              <span class="mono-text" style="font-size: 0.85rem;">{{ code.topic.subject }}</span>
+              <strong>{{ code.topic.name }}</strong>
+              <div>
+                {% for visibility in code.topic.visibilities.all %}
+                  <span class="mode-tag practice-tag" style="font-size: 0.7rem; display: inline-block; margin-bottom: 0.25rem; margin-right: 0.25rem;">{{ visibility.class_group.name }}</span>
+                {% empty %}
+                  <span class="mode-tag exam-tag" style="font-size: 0.7rem; display: inline-block;">No class assigned</span>
+                {% endfor %}
+              </div>
+              <div>
+                <span class="mono-text" style="font-size: 0.85rem;">{{ code.marks }} pts</span><br>
+                <span class="mode-tag {% if code.difficulty == 'easy' %}practice-tag{% elif code.difficulty == 'medium' %}both-tag{% else %}exam-tag{% endif %}" style="font-size: 0.65rem; padding: 0.1rem 0.3rem; display: inline-block; margin-top: 0.25rem;">{{ code.get_difficulty_display }}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <a href="{% url 'teacher_edit_coding' code.id %}" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.5rem; text-align: center; text-decoration: none; border-color: var(--rule-strong);">Edit</a>
+                <form action="{% url 'teacher_delete_coding' code.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete this coding problem?');" style="margin: 0;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.5rem; width: 100%; border-color: var(--red-pen); color: var(--red-pen); background: transparent; cursor: pointer;">Delete</button>
+                </form>
+              </div>
+            </div>
+          {% empty %}
+            <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No coding questions match your filter criteria.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+    {% else %}
+      <!-- Selection Screen Prompt -->
+      <div class="dash-form" style="padding: 4rem 2rem; text-align: center; background-color: var(--bg); border-style: dashed;">
+        <span style="font-size: 3rem;">🔍</span>
+        <h4 style="margin: 1rem 0 0.5rem 0; font-family: var(--font-serif); font-size: 1.4rem; color: var(--ink);">Please select filter criteria to view questions</h4>
+        <p style="color: var(--ink-soft); font-size: 0.95rem; max-width: 500px; margin: 0 auto; line-height: 1.5;">
+          Select a Subject, Topic, or Class Group using the filters above to display your practice questions.
+        </p>
+      </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Dynamic Dropdown Filter Logic -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const classSelect = document.getElementById("filter_class");
+      const subjectSelect = document.getElementById("filter_subject");
+      const topicSelect = document.getElementById("filter_topic");
+
+      const originalSubjectOptions = Array.from(subjectSelect.options);
+      const originalTopicOptions = Array.from(topicSelect.options);
+
+      function filterDropdowns() {
+        const selectedClassId = classSelect.value;
+        const selectedSubject = subjectSelect.value;
+
+        // 1. Filter Subject options based on selected Class
+        subjectSelect.innerHTML = "";
+        subjectSelect.appendChild(originalSubjectOptions[0]); // "All Subjects" option
+
+        originalSubjectOptions.slice(1).forEach(subjectOpt => {
+          const subjectName = subjectOpt.value;
+          let isSubjectVisible = !selectedClassId; // If no class selected, all subjects are visible
+
+          if (selectedClassId) {
+            // Find if there is at least one topic in this subject visible to the selected class
+            isSubjectVisible = originalTopicOptions.slice(1).some(topicOpt => {
+              const topicSubject = topicOpt.getAttribute("data-subject");
+              const rawClasses = topicOpt.getAttribute("data-classes");
+              const topicClasses = rawClasses ? rawClasses.split(",") : [];
+              return topicSubject === subjectName && topicClasses.includes(selectedClassId);
+            });
+          }
+
+          if (isSubjectVisible) {
+            subjectSelect.appendChild(subjectOpt);
+          }
+        });
+
+        // Restore selected subject if it's still available in the filtered list, otherwise reset
+        const currentSelectedSubjectOpt = subjectSelect.querySelector(`option[value="${selectedSubject}"]`);
+        if (currentSelectedSubjectOpt) {
+          subjectSelect.value = selectedSubject;
+        } else {
+          subjectSelect.value = "";
+        }
+
+        const activeSubject = subjectSelect.value;
+
+        // 2. Filter Topic options based on selected Class and active Subject
+        topicSelect.innerHTML = "";
+        topicSelect.appendChild(originalTopicOptions[0]); // "All Topics" option
+
+        originalTopicOptions.slice(1).forEach(topicOpt => {
+          const topicSubject = topicOpt.getAttribute("data-subject");
+          const rawClasses = topicOpt.getAttribute("data-classes");
+          const topicClasses = rawClasses ? rawClasses.split(",") : [];
+          
+          const matchesClass = !selectedClassId || topicClasses.includes(selectedClassId);
+          const matchesSubject = !activeSubject || topicSubject === activeSubject;
+
+          if (matchesClass && matchesSubject) {
+            topicSelect.appendChild(topicOpt);
+          }
+        });
+
+        // Restore selected topic if it's still available, otherwise reset
+        const currentSelectedTopic = topicSelect.value;
+        const currentSelectedTopicOpt = topicSelect.querySelector(`option[value="${currentSelectedTopic}"]`);
+        if (!currentSelectedTopicOpt) {
+          topicSelect.value = "";
+        }
+      }
+
+      // Initial filter on load
+      filterDropdowns();
+
+      // Trigger filtering on changes
+      classSelect.addEventListener("change", function() {
+        // Reset subject and topic to All when class changes, then filter
+        subjectSelect.value = "";
+        topicSelect.value = "";
+        filterDropdowns();
+      });
+
+      subjectSelect.addEventListener("change", function() {
+        // Reset topic when subject changes, then filter
+        topicSelect.value = "";
+        filterDropdowns();
+      });
+    });
+  </script>
+
+{% endblock %}

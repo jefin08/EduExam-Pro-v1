@@ -1,14 +1,19 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Class
+from .models import Class, Department
 
 User = get_user_model()
 
 class TeacherSignUpForm(forms.Form):
-    department = forms.CharField(
-        max_length=100,
+    full_name = forms.CharField(
+        max_length=150,
+        label="Full Name",
+        widget=forms.TextInput(attrs={'placeholder': 'Full Name'})
+    )
+    department = forms.ChoiceField(
         label="Department / Classification",
-        widget=forms.TextInput(attrs={'placeholder': 'e.g. Computer Science'})
+        required=True,
+        widget=forms.Select()
     )
     username = forms.CharField(
         max_length=150,
@@ -23,6 +28,11 @@ class TeacherSignUpForm(forms.Form):
     confirm_password = forms.CharField(
         widget=forms.PasswordInput(attrs={'placeholder': 'Confirm Password'})
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        departments = Department.objects.all().order_by('name')
+        self.fields['department'].choices = [('', 'Select your department...')] + [(dept.name, dept.name) for dept in departments]
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
@@ -40,11 +50,21 @@ class TeacherSignUpForm(forms.Form):
         return cleaned_data
 
 class StudentSignUpForm(forms.Form):
+    full_name = forms.CharField(
+        max_length=150,
+        label="Full Name",
+        widget=forms.TextInput(attrs={'placeholder': 'Full Name'})
+    )
     class_group = forms.ModelChoiceField(
         queryset=Class.objects.all(),
         empty_label="Select your class...",
         required=True,
         label="Class Group"
+    )
+    department = forms.ChoiceField(
+        label="Department",
+        required=True,
+        widget=forms.Select()
     )
     username = forms.CharField(
         max_length=150,
@@ -59,6 +79,11 @@ class StudentSignUpForm(forms.Form):
     confirm_password = forms.CharField(
         widget=forms.PasswordInput(attrs={'placeholder': 'Confirm Password'})
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        departments = Department.objects.all().order_by('name')
+        self.fields['department'].choices = [('', 'Select your department...')] + [(dept.name, dept.name) for dept in departments]
 
     def clean_username(self):
         username = self.cleaned_data.get('username')

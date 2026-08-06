@@ -101,10 +101,26 @@
 
 
         <div class="form-group">
+          <label for="{{ form.full_name.id_for_label }}">Full Name</label>
+          {{ form.full_name }}
+          {% if form.full_name.errors %}
+            <ul class="error-list">{% for err in form.full_name.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
           <label for="{{ form.class_group.id_for_label }}">Assign Class Group</label>
           {{ form.class_group }}
           {% if form.class_group.errors %}
             <ul class="error-list">{% for err in form.class_group.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.department.id_for_label }}">Department</label>
+          {{ form.department }}
+          {% if form.department.errors %}
+            <ul class="error-list">{% for err in form.department.errors %}<li>{{ err }}</li>{% endfor %}</ul>
           {% endif %}
         </div>
 

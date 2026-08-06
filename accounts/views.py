@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from .forms import TeacherSignUpForm, StudentSignUpForm, UserSignInForm
-from .models import User, Class
+from .models import User, Class, Department
 from content.models import Topic, TopicClassVisibility, PracticeMCQQuestion, PracticeCodingQuestion, ExamMCQQuestion, ExamCodingQuestion
 from exams.models import Exam, ExamCode, OfficialGrade
 from practice.models import PracticeSet, PracticeSetClassAssignment, PracticeAttempt
@@ -24,6 +24,11 @@ def teacher_signup_view(request):
     if request.method == 'POST':
         form = TeacherSignUpForm(request.POST)
         if form.is_valid():
+            full_name = form.cleaned_data['full_name'].strip()
+            name_parts = full_name.split(None, 1)
+            first_name = name_parts[0] if len(name_parts) > 0 else ""
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
+            
             department = form.cleaned_data['department']
             username = form.cleaned_data['username']
             email = form.cleaned_data['email']
@@ -34,6 +39,8 @@ def teacher_signup_view(request):
                 username=username,
                 email=email,
                 password=password,
+                first_name=first_name,
+                last_name=last_name,
                 role='teacher',
                 department=department,
                 is_approved=False
@@ -53,7 +60,13 @@ def student_signup_view(request):
     if request.method == 'POST':
         form = StudentSignUpForm(request.POST)
         if form.is_valid():
+            full_name = form.cleaned_data['full_name'].strip()
+            name_parts = full_name.split(None, 1)
+            first_name = name_parts[0] if len(name_parts) > 0 else ""
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
+            
             class_group = form.cleaned_data['class_group']
+            department = form.cleaned_data['department']
             username = form.cleaned_data['username']
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
@@ -63,8 +76,11 @@ def student_signup_view(request):
                 username=username,
                 email=email,
                 password=password,
+                first_name=first_name,
+                last_name=last_name,
                 role='student',
                 class_group=class_group,
+                department=department,
                 is_approved=False
             )
             
@@ -123,6 +139,7 @@ def admin_dashboard_view(request):
         return redirect_to_dashboard(request.user)
     
     classes = Class.objects.all()
+    departments = Department.objects.all().order_by('name')
     teachers = User.objects.filter(role='teacher', is_approved=True)
     pending_teachers = User.objects.filter(role='teacher', is_approved=False)
     students = User.objects.filter(role='student', is_approved=True)
@@ -130,6 +147,7 @@ def admin_dashboard_view(request):
     
     context = {
         'classes': classes,
+        'departments': departments,
         'teachers': teachers,
         'pending_teachers': pending_teachers,
         'students': students,
@@ -139,6 +157,23 @@ def admin_dashboard_view(request):
         'total_students': students.count(),
     }
     return render(request, 'dashboard/admin.html', context)
+
+from django.http import JsonResponse
+
+@login_required
+def admin_pending_count_api(request):
+    if request.user.role != 'admin':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    pending_teachers_count = User.objects.filter(role='teacher', is_approved=False).count()
+    pending_students_count = User.objects.filter(role='student', is_approved=False).count()
+    total_pending_count = pending_teachers_count + pending_students_count
+    
+    return JsonResponse({
+        'pending_teachers_count': pending_teachers_count,
+        'pending_students_count': pending_students_count,
+        'total_pending_count': total_pending_count
+    })
 
 @login_required
 def admin_approve_teacher(request, teacher_id):
@@ -183,6 +218,7 @@ def admin_create_teacher(request):
     username = request.POST.get('username')
     email = request.POST.get('email')
     password = request.POST.get('password')
+    department = request.POST.get('department')
     
     if username and password:
         if User.objects.filter(username=username).exists():
@@ -192,7 +228,9 @@ def admin_create_teacher(request):
                 username=username,
                 email=email,
                 password=password,
-                role='teacher'
+                role='teacher',
+                department=department,
+                is_approved=True
             )
             messages.success(request, f"Teacher account '{username}' created successfully.")
     return redirect('/dashboard/admin/')
@@ -206,6 +244,7 @@ def admin_create_student(request):
     email = request.POST.get('email')
     password = request.POST.get('password')
     class_id = request.POST.get('class_id')
+    department = request.POST.get('department')
     
     if username and password and class_id:
         if User.objects.filter(username=username).exists():
@@ -217,9 +256,26 @@ def admin_create_student(request):
                 email=email,
                 password=password,
                 role='student',
-                class_group=class_group
+                class_group=class_group,
+                department=department,
+                is_approved=True
             )
             messages.success(request, f"Student '{username}' enrolled in {class_group.name} successfully.")
+    return redirect('/dashboard/admin/')
+
+@login_required
+def admin_create_department(request):
+    if request.user.role != 'admin' or request.method != 'POST':
+        return redirect('/dashboard/admin/')
+    
+    dept_name = request.POST.get('department_name')
+    if dept_name:
+        dept_name = dept_name.strip()
+        dept, created = Department.objects.get_or_create(name=dept_name)
+        if created:
+            messages.success(request, f"Department '{dept_name}' created successfully.")
+        else:
+            messages.warning(request, f"Department '{dept_name}' already exists.")
     return redirect('/dashboard/admin/')
 
 # ----------------- TEACHER DASHBOARD & ACTIONS -----------------
@@ -293,6 +349,56 @@ def teacher_practice_questions_view(request):
         'preselected_topic_id': preselected_topic_id,
     }
     return render(request, 'dashboard/teacher_practice_questions.html', context)
+
+@login_required
+def teacher_practice_questions_list_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+    
+    classes = Class.objects.all().order_by('name')
+    topics = Topic.objects.filter(teacher=request.user).order_by('name')
+    subjects = Topic.objects.filter(teacher=request.user).values_list('subject', flat=True).distinct().order_by('subject')
+    
+    selected_class_id = request.GET.get('class_id', '')
+    selected_subject = request.GET.get('subject', '')
+    selected_topic_id = request.GET.get('topic_id', '')
+    
+    is_filtered = bool(selected_class_id or selected_subject or selected_topic_id)
+    
+    mcqs = []
+    codings = []
+    
+    if is_filtered:
+        mcq_qs = PracticeMCQQuestion.objects.filter(topic__teacher=request.user).select_related('topic').prefetch_related('topic__visibilities__class_group')
+        coding_qs = PracticeCodingQuestion.objects.filter(topic__teacher=request.user).select_related('topic').prefetch_related('topic__visibilities__class_group')
+        
+        if selected_class_id:
+            mcq_qs = mcq_qs.filter(topic__visibilities__class_group_id=selected_class_id)
+            coding_qs = coding_qs.filter(topic__visibilities__class_group_id=selected_class_id)
+            
+        if selected_subject:
+            mcq_qs = mcq_qs.filter(topic__subject=selected_subject)
+            coding_qs = coding_qs.filter(topic__subject=selected_subject)
+            
+        if selected_topic_id:
+            mcq_qs = mcq_qs.filter(topic_id=selected_topic_id)
+            coding_qs = coding_qs.filter(topic_id=selected_topic_id)
+            
+        mcqs = mcq_qs.distinct()
+        codings = coding_qs.distinct()
+        
+    context = {
+        'classes': classes,
+        'topics': topics,
+        'subjects': subjects,
+        'selected_class_id': selected_class_id,
+        'selected_subject': selected_subject,
+        'selected_topic_id': selected_topic_id,
+        'is_filtered': is_filtered,
+        'mcqs': mcqs,
+        'codings': codings,
+    }
+    return render(request, 'dashboard/teacher_practice_questions_list.html', context)
 
 @login_required
 def teacher_create_practice_page_view(request):
@@ -577,7 +683,8 @@ def student_dashboard_view(request):
     class_group = request.user.class_group
     
     # Gating visibility check - strictly inherited from active Topic visibility mappings
-    visible_topics = Topic.objects.filter(is_active=True, visibilities__class_group=class_group).distinct()
+    # Exclude topics designed purely for exams from the practice view
+    visible_topics = Topic.objects.filter(is_active=True, visibilities__class_group=class_group).exclude(purpose='exam').distinct()
     visible_topic_ids = visible_topics.values_list('id', flat=True)
     
     # Show practice sets only if ALL their topics are visible to the student's class group
@@ -625,11 +732,11 @@ def student_join_exam(request):
             return redirect('/dashboard/student/')
             
         exam = exam_code_obj.exam
-        # Block entry before the exam window opens (allows joining 5 minutes early)
+        # Block entry before the exam window opens (allows joining 15 minutes early)
         from datetime import timedelta
-        if now < (exam.start_time - timedelta(minutes=5)):
+        if now < (exam.start_time - timedelta(minutes=15)):
             local_start = timezone.localtime(exam.start_time)
-            entry_time = timezone.localtime(exam.start_time - timedelta(minutes=5))
+            entry_time = timezone.localtime(exam.start_time - timedelta(minutes=15))
             messages.error(request, f"This exam hasn't started yet. Early entry opens at {entry_time.strftime('%I:%M %p')}.")
             return redirect('/dashboard/student/')
 
@@ -672,6 +779,24 @@ def teacher_toggle_visibility(request, topic_id, class_id):
         messages.success(request, f"Topic '{topic.name}' is now visible to class '{class_group.name}'.")
         
     return redirect('/dashboard/teacher/')
+
+@login_required
+def teacher_practice_toggle_visibility(request, practice_set_id, class_id):
+    if request.user.role != 'teacher' or request.method != 'POST':
+        return redirect('/dashboard/teacher/practice/')
+        
+    practice_set = get_object_or_404(PracticeSet, id=practice_set_id, teacher=request.user)
+    class_group = get_object_or_404(Class, id=class_id)
+    
+    assignment = PracticeSetClassAssignment.objects.filter(practice_set=practice_set, class_group=class_group).first()
+    if assignment:
+        assignment.delete()
+        messages.success(request, f"Practice Set '{practice_set.name}' unassigned from class '{class_group.name}'.")
+    else:
+        PracticeSetClassAssignment.objects.create(practice_set=practice_set, class_group=class_group)
+        messages.success(request, f"Practice Set '{practice_set.name}' assigned to class '{class_group.name}'.")
+        
+    return redirect('/dashboard/teacher/practice/')
 
 
 @login_required
@@ -778,6 +903,67 @@ def teacher_delete_coding(request, question_id):
     title = question.title
     question.delete()
     messages.success(request, f"{q_type.title()} coding question '{title}' deleted successfully.")
+    return redirect(f'/dashboard/teacher/topic/{topic_id}/questions/')
+
+@login_required
+def teacher_import_practice_to_exam(request, topic_id):
+    if request.user.role != 'teacher' or request.method != 'POST':
+        return redirect('/dashboard/teacher/')
+        
+    topic = get_object_or_404(Topic, id=topic_id, teacher=request.user)
+    
+    # 1. Parse MCQs to import
+    mcq_ids = request.POST.getlist('import_mcq_ids')
+    for q_id in mcq_ids:
+        practice_q = PracticeMCQQuestion.objects.filter(id=q_id, topic=topic).first()
+        if practice_q:
+            # Retrieve edited values from POST data
+            q_text = request.POST.get(f'mcq_text_{q_id}', practice_q.question_text)
+            q_marks = request.POST.get(f'mcq_marks_{q_id}', practice_q.marks)
+            q_diff = request.POST.get(f'mcq_difficulty_{q_id}', practice_q.difficulty)
+            
+            # Duplicate as Exam question
+            ExamMCQQuestion.objects.create(
+                topic=topic,
+                question_text=q_text,
+                options=practice_q.options,
+                correct_option_index=practice_q.correct_option_index,
+                explanation=practice_q.explanation,
+                marks=int(q_marks) if q_marks.isdigit() else practice_q.marks,
+                difficulty=q_diff,
+                tags=practice_q.tags
+            )
+            
+    # 2. Parse Coding Questions to import
+    coding_ids = request.POST.getlist('import_coding_ids')
+    for q_id in coding_ids:
+        practice_q = PracticeCodingQuestion.objects.filter(id=q_id, topic=topic).first()
+        if practice_q:
+            # Retrieve edited values from POST data
+            q_title = request.POST.get(f'coding_title_{q_id}', practice_q.title)
+            q_desc = request.POST.get(f'coding_desc_{q_id}', practice_q.description)
+            q_marks = request.POST.get(f'coding_marks_{q_id}', practice_q.marks)
+            q_diff = request.POST.get(f'coding_difficulty_{q_id}', practice_q.difficulty)
+            
+            # Duplicate as Exam question
+            ExamCodingQuestion.objects.create(
+                topic=topic,
+                title=q_title,
+                description=q_desc,
+                input_format=practice_q.input_format,
+                output_format=practice_q.output_format,
+                sample_test_cases=practice_q.sample_test_cases,
+                hidden_test_cases=practice_q.hidden_test_cases,
+                starter_code=practice_q.starter_code,
+                explanation=practice_q.explanation,
+                time_limit=practice_q.time_limit,
+                memory_limit=practice_q.memory_limit,
+                marks=int(q_marks) if q_marks.isdigit() else practice_q.marks,
+                difficulty=q_diff,
+                tags=practice_q.tags
+            )
+            
+    messages.success(request, "Selected practice questions imported to exam questions successfully.")
     return redirect(f'/dashboard/teacher/topic/{topic_id}/questions/')
 
 @login_required

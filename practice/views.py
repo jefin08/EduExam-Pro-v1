@@ -17,8 +17,8 @@ def attempt_practice_set_view(request, set_id):
     if not practice_set.assignments.filter(class_group=request.user.class_group).exists():
         return redirect('/dashboard/student/')
         
-    # Strictly gate visibility based on topic visibility to the student's class group
-    visible_topic_ids = Topic.objects.filter(is_active=True, visibilities__class_group=request.user.class_group).values_list('id', flat=True)
+    # Strictly gate visibility based on topic visibility to the student's class group (exclude exam topics)
+    visible_topic_ids = Topic.objects.filter(is_active=True, visibilities__class_group=request.user.class_group).exclude(purpose='exam').values_list('id', flat=True)
     if practice_set.topics.exclude(id__in=visible_topic_ids).exists():
         return redirect('/dashboard/student/')
         

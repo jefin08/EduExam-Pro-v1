@@ -17,6 +17,10 @@ class PracticeSet(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def assigned_class_ids(self):
+        return list(self.assignments.values_list('class_group_id', flat=True))
+
 class PracticeSetClassAssignment(models.Model):
     practice_set = models.ForeignKey(PracticeSet, on_delete=models.CASCADE, related_name='assignments')
     class_group = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='practice_assignments')

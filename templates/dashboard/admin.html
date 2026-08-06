@@ -5,6 +5,7 @@
 {% block sidebar_menu %}
 <li class="active"><a href="#">Admin Overview</a></li>
 <li><a href="#classes-sec">Class Groups</a></li>
+<li><a href="#departments-sec">Departments</a></li>
 <li><a href="#pending-teachers-sec">Pending Teachers</a></li>
 <li><a href="#pending-students-sec">Pending Students</a></li>
 <li><a href="#teachers-sec">Teachers Directory</a></li>
@@ -28,6 +29,14 @@
       <span class="stat-val">{{ total_students }}</span>
       <span class="stat-lbl">Enrolled Students</span>
     </div>
+    <div class="stat-card" id="pending-teachers-card" style="border-color: var(--red-pen); cursor: pointer;" onclick="location.href='#pending-teachers-sec'">
+      <span class="stat-val" id="pending-teachers-val" style="color: var(--red-pen);">{{ pending_teachers.count }}</span>
+      <span class="stat-lbl" style="color: var(--red-pen);">Pending Teachers</span>
+    </div>
+    <div class="stat-card" id="pending-students-card" style="border-color: var(--pass-teal); cursor: pointer;" onclick="location.href='#pending-students-sec'">
+      <span class="stat-val" id="pending-students-val" style="color: var(--pass-teal);">{{ pending_students.count }}</span>
+      <span class="stat-lbl" style="color: var(--pass-teal);">Pending Students</span>
+    </div>
   </div>
 
   <!-- Class Group Creation Form -->
@@ -41,6 +50,21 @@
           <input type="text" id="class_name" name="class_name" placeholder="e.g. Grade 10 - Section A" required>
         </div>
         <button type="submit" class="btn btn-primary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center;">Create Class</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Department Creation Form -->
+  <div class="dash-form">
+    <h3>Create Department</h3>
+    <form action="{% url 'admin_create_department' %}" method="POST">
+      {% csrf_token %}
+      <div class="form-grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="department_name">Department Name / Title</label>
+          <input type="text" id="department_name" name="department_name" placeholder="e.g. Computer Science" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center;">Create Department</button>
       </div>
     </form>
   </div>
@@ -59,9 +83,18 @@
           <label for="teacher_email">Email Address</label>
           <input type="email" id="teacher_email" name="email" placeholder="e.g. john@university.edu" required>
         </div>
-        <div class="form-group full-width">
+        <div class="form-group">
+          <label for="teacher_department">Department</label>
+          <select id="teacher_department" name="department" required>
+            <option value="" disabled selected>Select department...</option>
+            {% for dept in departments %}
+              <option value="{{ dept.name }}">{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
           <label for="teacher_password">Account Password</label>
-          <input type="password" id="teacher_password" name="password" placeholder="System-generated password placeholder" required>
+          <input type="password" id="teacher_password" name="password" placeholder="Define password" required>
         </div>
       </div>
       <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Register Teacher</button>
@@ -92,6 +125,15 @@
           </select>
         </div>
         <div class="form-group">
+          <label for="student_department">Department</label>
+          <select id="student_department" name="department" required>
+            <option value="" disabled selected>Select department...</option>
+            {% for dept in departments %}
+              <option value="{{ dept.name }}">{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group full-width">
           <label for="student_password">Account Password</label>
           <input type="password" id="student_password" name="password" placeholder="Define student login password" required>
         </div>
@@ -117,6 +159,25 @@
         </div>
       {% empty %}
         <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No classes registered yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Existing Departments Ledger -->
+  <div id="departments-sec" style="margin-top: 2rem;">
+    <h3 class="section-title">Current Departments Register</h3>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 80px 1fr;">
+        <span>ID</span>
+        <span>Department Name</span>
+      </div>
+      {% for dept in departments %}
+        <div class="ledger-row" style="grid-template-columns: 80px 1fr;">
+          <span class="mono-text" style="color: var(--ink-soft);">#{{ dept.id }}</span>
+          <strong>{{ dept.name }}</strong>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No departments created yet.</div>
       {% endfor %}
     </div>
   </div>
@@ -216,5 +277,37 @@
       {% endfor %}
     </div>
   </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const pendingTeachersVal = document.getElementById("pending-teachers-val");
+      const pendingStudentsVal = document.getElementById("pending-students-val");
+
+      function updatePendingCount() {
+        fetch("{% url 'admin_pending_count' %}")
+          .then(response => {
+            if (!response.ok) {
+              throw new Error("HTTP error " + response.status);
+            }
+            return response.json();
+          })
+          .then(data => {
+            const teachersCount = data.pending_teachers_count || 0;
+            const studentsCount = data.pending_students_count || 0;
+
+            // Update individual count boxes
+            if (pendingTeachersVal) pendingTeachersVal.textContent = teachersCount;
+            if (pendingStudentsVal) pendingStudentsVal.textContent = studentsCount;
+          })
+          .catch(error => console.error("Error fetching pending requests count:", error));
+      }
+
+      // Check count initially on load
+      updatePendingCount();
+
+      // Poll every 3 seconds for live updates
+      setInterval(updatePendingCount, 3000);
+    });
+  </script>
 
 {% endblock %}

@@ -19,12 +19,8 @@ def take_exam_view(request, exam_id):
         messages.error(request, "Access denied. Your class group is not assigned to this exam.")
         return redirect('/dashboard/student/')
         
-    now = timezone.now()
-    if now < exam.start_time:
-        # User entered early (in the 5 min window). Show waiting room.
-        return render(request, 'exam/waiting.html', {'exam': exam})
-        
     # Get or create OfficialGrade entry (enforcing one attempt only at the DB layer via unique_together)
+    # This ensures early joining students show up in the teacher's live monitor status lists
     grade, created = OfficialGrade.objects.get_or_create(
         student=request.user,
         exam=exam
@@ -33,6 +29,11 @@ def take_exam_view(request, exam_id):
     # If already submitted, lock them out
     if grade.is_submitted:
         return render(request, 'exam/submitted.html', {'exam': exam, 'grade': grade})
+
+    now = timezone.now()
+    if now < exam.start_time:
+        # User entered early. Show waiting room.
+        return render(request, 'exam/waiting.html', {'exam': exam})
         
     # Get questions from linked topics
     topics = exam.topics.all()
@@ -53,6 +54,8 @@ def take_exam_view(request, exam_id):
                 
         # 2. Grade Coding
         coding_score = 0.0
+        from judge.sandbox import judge_code
+        
         for q_id, code_info in coding_submissions.items():
             question = ExamCodingQuestion.objects.filter(id=q_id).first()
             if question:
@@ -65,29 +68,52 @@ def take_exam_view(request, exam_id):
                     exam_coding_question=question,
                     code=code_text,
                     language=lang,
-                    status='graded',
+                    status='judging',
                     context_type='exam',
                     exam=exam
                 )
                 
-                # Standard Python function check syntax validation
-                success = True
-                if "def" not in code_text and lang == 'python':
-                    success = False
-                    
-                tc_status = 'pass' if success else 'fail'
-                tc_score = question.marks if success else 0.0
+                # Retrieve combined sample and hidden test cases
+                test_cases = question.sample_test_cases + question.hidden_test_cases
                 
-                TestCaseResult.objects.create(
-                    submission=sub,
-                    test_case_index=0,
-                    is_hidden=False,
-                    status=tc_status,
-                    runtime_seconds=0.05
+                # Evaluate code via the sandbox
+                success, compile_error, results = judge_code(
+                    code=code_text,
+                    language=lang,
+                    test_cases=test_cases,
+                    time_limit=getattr(question, 'time_limit', 1.0),
+                    memory_limit=getattr(question, 'memory_limit', 256)
                 )
-                sub.score = tc_score
-                sub.save()
-                coding_score += tc_score
+                
+                if not success:
+                    sub.status = 'compile_error'
+                    sub.compile_output = compile_error or "Compilation failed."
+                    sub.score = 0.0
+                    sub.save()
+                else:
+                    total_passed = 0
+                    total_tests = len(results)
+                    
+                    for res in results:
+                        idx = res['test_case_index']
+                        is_hidden = idx >= len(question.sample_test_cases)
+                        
+                        TestCaseResult.objects.create(
+                            submission=sub,
+                            test_case_index=idx,
+                            is_hidden=is_hidden,
+                            status=res['status'],
+                            runtime_seconds=res['runtime_seconds'],
+                            error_message=res['error_message']
+                        )
+                        if res['status'] == 'pass':
+                            total_passed += 1
+                            
+                    passed_ratio = total_passed / total_tests if total_tests > 0 else 0
+                    sub.score = round(question.marks * passed_ratio, 2)
+                    sub.status = 'graded'
+                    sub.save()
+                    coding_score += sub.score
                 
         # Update OfficialGrade
         grade.mcq_score = mcq_score
@@ -126,6 +152,7 @@ def teacher_monitor_view(request, exam_id):
         'exam': exam,
         'grades': grades,
         'events': events,
+        'now': timezone.now(),
     }
     return render(request, 'exam/monitor.html', context)
 

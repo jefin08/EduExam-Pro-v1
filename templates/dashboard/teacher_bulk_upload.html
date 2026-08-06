@@ -7,7 +7,8 @@
 <li><a href="{% url 'teacher_practice' %}">Practice Sets</a></li>
 <li><a href="{% url 'teacher_create_practice_page' %}">Create Practice Set</a></li>
 <li><a href="{% url 'teacher_practice_questions' %}">Add Practice Questions</a></li>
-<li class="active"><a href="#bulk-sec">Bulk Upload Questions</a></li>
+<li><a href="{% url 'teacher_practice_questions_list' %}">View All Questions</a></li>
+<li class="active"><a href="{% url 'teacher_bulk_upload' %}">Bulk Upload Questions</a></li>
 {% endblock %}
 
 {% block main_content %}
