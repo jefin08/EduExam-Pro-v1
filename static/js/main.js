@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 2. Interactive MCQ Circle Select
+  // 2. Interactive MCQ Circle Select with Framer Motion spring physics
   const mcqOptions = document.querySelectorAll('.mcq-option');
   mcqOptions.forEach(option => {
     option.addEventListener('click', () => {
@@ -45,10 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
       // Force repaint before adding circle animation class
       void option.offsetWidth;
       option.classList.add('circled');
+
+      // Framer Motion spring feedback punch on selection
+      if (typeof Motion !== 'undefined' && !prefersReducedMotion) {
+        Motion.animate(option, { scale: [0.95, 1.03, 1] }, { duration: 0.35, easing: [0.34, 1.56, 0.64, 1] });
+      }
     });
   });
 
-  // 3. Staggered Console Log Reveal & Grade Seal
+  // 3. Staggered Console Log Reveal & Grade Seal with Framer Motion
   const consoleBody = document.getElementById('judge-console');
   if (consoleBody) {
     const lines = consoleBody.querySelectorAll('.console-line');
@@ -65,13 +70,19 @@ document.addEventListener('DOMContentLoaded', () => {
       function showNextLine() {
         if (lineIndex < lines.length) {
           lines[lineIndex].classList.add('visible');
+          if (typeof Motion !== 'undefined' && !prefersReducedMotion) {
+            Motion.animate(lines[lineIndex], { opacity: [0, 1], x: [-10, 0] }, { duration: 0.3 });
+          }
           lineIndex++;
           setTimeout(showNextLine, prefersReducedMotion ? 50 : 800);
         } else {
-          // Reveal the A+ grade stamp at the end
+          // Reveal the A+ grade stamp at the end with Framer Motion spring bounce
           if (stamp) {
             setTimeout(() => {
               stamp.classList.add('revealed');
+              if (typeof Motion !== 'undefined' && !prefersReducedMotion) {
+                Motion.animate(stamp, { scale: [0.3, 1.25, 1], rotate: [-15, -5] }, { duration: 0.5, easing: [0.34, 1.56, 0.64, 1] });
+              }
             }, 500);
           }
           // Loop console again after some idle time
@@ -87,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     revealConsole();
   }
 
-  // 4. Scroll Reveal via Intersection Observer
+  // 4. Scroll Reveal via Intersection Observer & Framer Motion
   const sections = document.querySelectorAll('section');
   if (sections.length > 0) {
     if (prefersReducedMotion) {
@@ -97,6 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             entry.target.classList.add('revealed');
+            if (typeof Motion !== 'undefined') {
+              Motion.animate(entry.target, { opacity: [0, 1], y: [30, 0] }, { duration: 0.6, easing: [0.22, 1, 0.36, 1] });
+            }
             observer.unobserve(entry.target);
           }
         });

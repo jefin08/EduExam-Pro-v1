@@ -74,11 +74,12 @@ code, pre, .mono-text {
 header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   background-color: rgba(250, 249, 245, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--rule);
+  pointer-events: auto;
 }
 
 .nav-wrapper {
@@ -126,11 +127,36 @@ nav ul a {
   color: var(--ink-soft);
   font-size: 0.95rem;
   font-weight: 500;
+  padding: 0.4rem 0.2rem;
+  position: relative;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 1001;
   transition: color var(--transition-fast);
 }
 
-nav ul a:hover {
+nav ul a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  width: 0;
+  height: 2.5px;
+  background-color: var(--ink);
+  transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1), left 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 2px;
+}
+
+nav ul a:hover,
+nav ul a.active {
   color: var(--ink);
+  font-weight: 600;
+}
+
+nav ul a:hover::after,
+nav ul a.active::after {
+  width: 100%;
+  left: 0;
 }
 
 /* Buttons */
@@ -210,7 +236,14 @@ nav ul a:hover {
   width: 100%;
   height: 3px;
   background-color: var(--red-pen);
-  opacity: 0.8;
+  opacity: 0.85;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.underline-highlight.drawn::after {
+  transform: scaleX(1);
 }
 
 .hero p.lead {
@@ -758,3 +791,86 @@ footer p {
     transform: none !important;
   }
 }
+
+/* ==========================================================================
+   Preloader & Framer Motion Initializer Overlay
+   ========================================================================== */
+#app-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.preloader-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.preloader-stamp {
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--red-pen);
+  color: var(--red-pen);
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  box-shadow: 3px 3px 0px rgba(178, 58, 46, 0.15);
+  transform: rotate(-6deg);
+}
+
+.preloader-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.preloader-track {
+  width: 260px;
+  height: 4px;
+  background-color: var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.preloader-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  background-color: var(--ink);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.preloader-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Base initial hidden states for Framer Motion stagger elements */
+[data-framer-hero],
+[data-framer-card],
+[data-framer-section] {
+  will-change: transform, opacity;
+}
+

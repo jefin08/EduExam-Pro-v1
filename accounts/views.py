@@ -46,8 +46,8 @@ def teacher_signup_view(request):
                 is_approved=False
             )
             
-            messages.success(request, "Sign up request submitted successfully! Your account is pending admin approval.")
-            return redirect('signin')
+            messages.success(request, "Sign up request submitted successfully! Your account is pending admin approval. You will be able to sign in once an administrator approves your account.")
+            return redirect('/signin/?pending=true')
     else:
         form = TeacherSignUpForm()
         
@@ -288,162 +288,35 @@ def teacher_dashboard_view(request):
     classes = Class.objects.all()
     topics = Topic.objects.filter(teacher=request.user)
     
+    practice_mcqs = PracticeMCQQuestion.objects.filter(topic__teacher=request.user).select_related('topic').order_by('-created_at')
+    exam_mcqs = ExamMCQQuestion.objects.filter(topic__teacher=request.user).select_related('topic').order_by('-created_at')
+    practice_coding_qs = PracticeCodingQuestion.objects.filter(topic__teacher=request.user).select_related('topic').order_by('-created_at')
+    exam_coding_qs = ExamCodingQuestion.objects.filter(topic__teacher=request.user).select_related('topic').order_by('-created_at')
+    practice_sets = PracticeSet.objects.filter(teacher=request.user).prefetch_related('assignments__class_group', 'topics')
+    exams = Exam.objects.filter(teacher=request.user).prefetch_related('codes__class_group', 'topics')
+    all_official_grades = OfficialGrade.objects.filter(exam__teacher=request.user).select_related('student', 'student__class_group', 'exam').order_by('-submitted_at')
+    
     context = {
         'classes': classes,
         'topics': topics,
+        'practice_mcqs': practice_mcqs,
+        'exam_mcqs': exam_mcqs,
+        'practice_coding_qs': practice_coding_qs,
+        'exam_coding_qs': exam_coding_qs,
+        'practice_sets': practice_sets,
+        'exams': exams,
+        'all_official_grades': all_official_grades,
+        'now': timezone.now(),
     }
     return render(request, 'dashboard/teacher.html', context)
 
 @login_required
 def teacher_exams_view(request):
-    if request.user.role != 'teacher':
-        return redirect_to_dashboard(request.user)
-    
-    classes = Class.objects.all()
-    topics = Topic.objects.filter(teacher=request.user, purpose__in=['exam', 'both'])
-    exams = Exam.objects.filter(teacher=request.user)
-    
-    preselected_topic_id = request.GET.get('topic_id', '')
-    
-    context = {
-        'classes': classes,
-        'topics': topics,
-        'exams': exams,
-        'preselected_topic_id': preselected_topic_id,
-        'now': timezone.now(),
-    }
-    return render(request, 'dashboard/teacher_exams.html', context)
+    return redirect('/dashboard/teacher/#exams')
 
 @login_required
 def teacher_practice_view(request):
-    if request.user.role != 'teacher':
-        return redirect_to_dashboard(request.user)
-    
-    classes = Class.objects.all()
-    topics = Topic.objects.filter(teacher=request.user, purpose__in=['practice', 'both'])
-    practice_sets = PracticeSet.objects.filter(teacher=request.user)
-    
-    preselected_topic_id = request.GET.get('topic_id', '')
-    
-    context = {
-        'classes': classes,
-        'topics': topics,
-        'practice_sets': practice_sets,
-        'preselected_topic_id': preselected_topic_id,
-    }
-    return render(request, 'dashboard/teacher_practice.html', context)
-
-@login_required
-def teacher_practice_questions_view(request):
-    if request.user.role != 'teacher':
-        return redirect_to_dashboard(request.user)
-    
-    classes = Class.objects.all()
-    topics = Topic.objects.filter(teacher=request.user, purpose__in=['practice', 'both'])
-    
-    preselected_topic_id = request.GET.get('topic_id', '')
-    
-    context = {
-        'classes': classes,
-        'topics': topics,
-        'preselected_topic_id': preselected_topic_id,
-    }
-    return render(request, 'dashboard/teacher_practice_questions.html', context)
-
-@login_required
-def teacher_practice_questions_list_view(request):
-    if request.user.role != 'teacher':
-        return redirect_to_dashboard(request.user)
-    
-    classes = Class.objects.all().order_by('name')
-    topics = Topic.objects.filter(teacher=request.user).order_by('name')
-    subjects = Topic.objects.filter(teacher=request.user).values_list('subject', flat=True).distinct().order_by('subject')
-    
-    selected_class_id = request.GET.get('class_id', '')
-    selected_subject = request.GET.get('subject', '')
-    selected_topic_id = request.GET.get('topic_id', '')
-    
-    is_filtered = bool(selected_class_id or selected_subject or selected_topic_id)
-    
-    mcqs = []
-    codings = []
-    
-    if is_filtered:
-        mcq_qs = PracticeMCQQuestion.objects.filter(topic__teacher=request.user).select_related('topic').prefetch_related('topic__visibilities__class_group')
-        coding_qs = PracticeCodingQuestion.objects.filter(topic__teacher=request.user).select_related('topic').prefetch_related('topic__visibilities__class_group')
-        
-        if selected_class_id:
-            mcq_qs = mcq_qs.filter(topic__visibilities__class_group_id=selected_class_id)
-            coding_qs = coding_qs.filter(topic__visibilities__class_group_id=selected_class_id)
-            
-        if selected_subject:
-            mcq_qs = mcq_qs.filter(topic__subject=selected_subject)
-            coding_qs = coding_qs.filter(topic__subject=selected_subject)
-            
-        if selected_topic_id:
-            mcq_qs = mcq_qs.filter(topic_id=selected_topic_id)
-            coding_qs = coding_qs.filter(topic_id=selected_topic_id)
-            
-        mcqs = mcq_qs.distinct()
-        codings = coding_qs.distinct()
-        
-    context = {
-        'classes': classes,
-        'topics': topics,
-        'subjects': subjects,
-        'selected_class_id': selected_class_id,
-        'selected_subject': selected_subject,
-        'selected_topic_id': selected_topic_id,
-        'is_filtered': is_filtered,
-        'mcqs': mcqs,
-        'codings': codings,
-    }
-    return render(request, 'dashboard/teacher_practice_questions_list.html', context)
-
-@login_required
-def teacher_create_practice_page_view(request):
-    if request.user.role != 'teacher':
-        return redirect_to_dashboard(request.user)
-    
-    classes = Class.objects.all()
-    topics = Topic.objects.filter(teacher=request.user, purpose__in=['practice', 'both'])
-    
-    context = {
-        'classes': classes,
-        'topics': topics,
-    }
-    return render(request, 'dashboard/teacher_create_practice.html', context)
-
-@login_required
-def teacher_schedule_exam_view(request):
-    if request.user.role != 'teacher':
-        return redirect_to_dashboard(request.user)
-    
-    classes = Class.objects.all()
-    topics = Topic.objects.filter(teacher=request.user, purpose__in=['exam', 'both'])
-    
-    context = {
-        'classes': classes,
-        'topics': topics,
-    }
-    return render(request, 'dashboard/teacher_schedule_exam.html', context)
-
-@login_required
-def teacher_exams_questions_view(request):
-    if request.user.role != 'teacher':
-        return redirect_to_dashboard(request.user)
-    
-    classes = Class.objects.all()
-    topics = Topic.objects.filter(teacher=request.user, purpose__in=['exam', 'both'])
-    
-    preselected_topic_id = request.GET.get('topic_id', '')
-    
-    context = {
-        'classes': classes,
-        'topics': topics,
-        'preselected_topic_id': preselected_topic_id,
-    }
-    return render(request, 'dashboard/teacher_exams_questions.html', context)
+    return redirect('/dashboard/teacher/#practice')
 
 @login_required
 def teacher_create_topic(request):
@@ -505,7 +378,7 @@ def teacher_create_mcq(request):
     difficulty = request.POST.get('difficulty', 'medium')
     explanation = request.POST.get('explanation', '')
     
-    q_type = request.GET.get('type', 'practice')
+    q_type = request.GET.get('type') or request.POST.get('question_type') or 'practice'
     
     if topic_id and question_text and opt1 and opt2 and correct_idx is not None:
         topic = Topic.objects.get(id=topic_id)
@@ -524,10 +397,7 @@ def teacher_create_mcq(request):
             explanation=explanation
         )
         messages.success(request, f"{q_type.title()} multiple-choice question added successfully.")
-    referer = request.META.get('HTTP_REFERER')
-    if referer:
-        return redirect(referer)
-    return redirect('/dashboard/teacher/')
+    return redirect('/dashboard/teacher/#questions')
 
 @login_required
 def teacher_create_coding(request):
@@ -541,13 +411,14 @@ def teacher_create_coding(request):
     output_format = request.POST.get('output_format')
     sample_input = request.POST.get('sample_input')
     sample_output = request.POST.get('sample_output')
-    hidden_input = request.POST.get('hidden_input')
-    hidden_output = request.POST.get('hidden_output')
+    starter_code = request.POST.get('starter_code', '')
+    time_limit = request.POST.get('time_limit', 2)
+    memory_limit = request.POST.get('memory_limit', 256)
     marks = request.POST.get('marks', 5)
     difficulty = request.POST.get('difficulty', 'medium')
     explanation = request.POST.get('explanation', '')
     
-    q_type = request.GET.get('type', 'practice')
+    q_type = request.GET.get('type') or request.POST.get('question_type') or 'practice'
 
     if topic_id and title and description and sample_input and sample_output:
         topic = Topic.objects.get(id=topic_id)
@@ -564,6 +435,9 @@ def teacher_create_coding(request):
             'output_format': output_format,
             'sample_test_cases': sample_cases,
             'hidden_test_cases': hidden_cases,
+            'starter_code': starter_code,
+            'time_limit': int(time_limit) if str(time_limit).isdigit() else 2,
+            'memory_limit': int(memory_limit) if str(memory_limit).isdigit() else 256,
             'marks': int(marks),
             'difficulty': difficulty,
         }
@@ -571,10 +445,7 @@ def teacher_create_coding(request):
             kwargs['explanation'] = explanation
         ModelClass.objects.create(**kwargs)
         messages.success(request, f"{q_type.title()} coding question '{title}' added successfully.")
-    referer = request.META.get('HTTP_REFERER')
-    if referer:
-        return redirect(referer)
-    return redirect('/dashboard/teacher/')
+    return redirect('/dashboard/teacher/#questions')
 
 @login_required
 def teacher_create_practice(request):
@@ -595,7 +466,7 @@ def teacher_create_practice(request):
         
         if total_questions == 0:
             messages.error(request, "Cannot create practice set: The selected topics do not contain any practice questions.")
-            return redirect('/dashboard/teacher/practice/')
+            return redirect('/dashboard/teacher/#practice')
 
         practice_set = PracticeSet.objects.create(
             teacher=request.user,
@@ -612,7 +483,7 @@ def teacher_create_practice(request):
             class_group = Class.objects.get(id=c_id)
             PracticeSetClassAssignment.objects.create(practice_set=practice_set, class_group=class_group)
         messages.success(request, f"Practice Set '{name}' published successfully.")
-    return redirect('/dashboard/teacher/practice/')
+    return redirect('/dashboard/teacher/#practice')
 
 @login_required
 def teacher_create_exam(request):
@@ -650,7 +521,7 @@ def teacher_create_exam(request):
                 
         except ValueError:
             messages.error(request, "Invalid date/time format.")
-            return redirect('/dashboard/teacher/exams/')
+            return redirect('/dashboard/teacher/#exams')
 
         exam = Exam.objects.create(
             teacher=request.user,
@@ -671,7 +542,7 @@ def teacher_create_exam(request):
             ExamCode.objects.create(exam=exam, code=code, class_group=class_group)
             
         messages.success(request, f"Exam '{name}' scheduled successfully.")
-    return redirect('/dashboard/teacher/exams/')
+    return redirect('/dashboard/teacher/#exams')
 
 # ----------------- STUDENT DASHBOARD & ACTIONS -----------------
 
@@ -783,7 +654,7 @@ def teacher_toggle_visibility(request, topic_id, class_id):
 @login_required
 def teacher_practice_toggle_visibility(request, practice_set_id, class_id):
     if request.user.role != 'teacher' or request.method != 'POST':
-        return redirect('/dashboard/teacher/practice/')
+        return redirect('/dashboard/teacher/#practice')
         
     practice_set = get_object_or_404(PracticeSet, id=practice_set_id, teacher=request.user)
     class_group = get_object_or_404(Class, id=class_id)
@@ -796,13 +667,24 @@ def teacher_practice_toggle_visibility(request, practice_set_id, class_id):
         PracticeSetClassAssignment.objects.create(practice_set=practice_set, class_group=class_group)
         messages.success(request, f"Practice Set '{practice_set.name}' assigned to class '{class_group.name}'.")
         
-    return redirect('/dashboard/teacher/practice/')
+    return redirect('/dashboard/teacher/#practice')
 
+@login_required
+def teacher_toggle_exam_code_visibility(request, exam_code_id):
+    if request.user.role != 'teacher' or request.method != 'POST':
+        return redirect('/dashboard/teacher/#results')
+        
+    exam_code = get_object_or_404(ExamCode, id=exam_code_id, exam__teacher=request.user)
+    exam_code.is_active = not exam_code.is_active
+    exam_code.save()
+    status_str = "unlocked/active" if exam_code.is_active else "locked/hidden"
+    messages.success(request, f"Exam results & access for class '{exam_code.class_group.name}' updated to {status_str}.")
+    return redirect('/dashboard/teacher/#results')
 
 @login_required
 def teacher_edit_exam_schedule(request, exam_id):
     if request.user.role != 'teacher' or request.method != 'POST':
-        return redirect('/dashboard/teacher/')
+        return redirect('/dashboard/teacher/#exams')
 
     exam = get_object_or_404(Exam, id=exam_id, teacher=request.user)
 
@@ -811,7 +693,7 @@ def teacher_edit_exam_schedule(request, exam_id):
 
     if not start_raw or not end_raw:
         messages.error(request, "Both start and end date/time are required.")
-        return redirect('/dashboard/teacher/exams/')
+        return redirect('/dashboard/teacher/#exams')
 
     from datetime import datetime
     try:
@@ -820,7 +702,7 @@ def teacher_edit_exam_schedule(request, exam_id):
         naive_end   = datetime.strptime(end_raw,   '%Y-%m-%dT%H:%M')
     except ValueError:
         messages.error(request, "Invalid date/time format.")
-        return redirect('/dashboard/teacher/exams/')
+        return redirect('/dashboard/teacher/#exams')
 
     # Make timezone-aware
     aware_start = timezone.make_aware(naive_start)
@@ -828,7 +710,7 @@ def teacher_edit_exam_schedule(request, exam_id):
 
     if aware_end <= aware_start:
         messages.error(request, "End time must be after start time.")
-        return redirect('/dashboard/teacher/exams/')
+        return redirect('/dashboard/teacher/#exams')
 
     # Auto-calculate duration from time difference
     duration_minutes = int((aware_end - aware_start).total_seconds() // 60)
@@ -839,44 +721,7 @@ def teacher_edit_exam_schedule(request, exam_id):
     exam.save()
 
     messages.success(request, f"Schedule updated for '{exam.name}' — duration set to {duration_minutes} mins.")
-    return redirect('/dashboard/teacher/exams/')
-
-@login_required
-def teacher_topic_questions(request, topic_id):
-    if request.user.role != 'teacher':
-        return redirect_to_dashboard(request.user)
-    
-    topic = get_object_or_404(Topic, id=topic_id, teacher=request.user)
-    practice_mcqs = PracticeMCQQuestion.objects.filter(topic=topic).order_by('-created_at')
-    exam_mcqs = ExamMCQQuestion.objects.filter(topic=topic).order_by('-created_at')
-    practice_coding_qs = PracticeCodingQuestion.objects.filter(topic=topic).order_by('-created_at')
-    exam_coding_qs = ExamCodingQuestion.objects.filter(topic=topic).order_by('-created_at')
-    
-    total_mcqs = practice_mcqs.count() + exam_mcqs.count()
-    total_coding = practice_coding_qs.count() + exam_coding_qs.count()
-    total_questions = total_mcqs + total_coding
-    
-    # Calculate difficulties across all 4 sets
-    easy_count = practice_mcqs.filter(difficulty='easy').count() + exam_mcqs.filter(difficulty='easy').count() + practice_coding_qs.filter(difficulty='easy').count() + exam_coding_qs.filter(difficulty='easy').count()
-    medium_count = practice_mcqs.filter(difficulty='medium').count() + exam_mcqs.filter(difficulty='medium').count() + practice_coding_qs.filter(difficulty='medium').count() + exam_coding_qs.filter(difficulty='medium').count()
-    hard_count = practice_mcqs.filter(difficulty='hard').count() + exam_mcqs.filter(difficulty='hard').count() + practice_coding_qs.filter(difficulty='hard').count() + exam_coding_qs.filter(difficulty='hard').count()
-    
-    context = {
-        'topic': topic,
-        'practice_mcqs': practice_mcqs,
-        'exam_mcqs': exam_mcqs,
-        'practice_coding_qs': practice_coding_qs,
-        'exam_coding_qs': exam_coding_qs,
-        'stats': {
-            'total': total_questions,
-            'mcq': total_mcqs,
-            'coding': total_coding,
-            'easy': easy_count,
-            'medium': medium_count,
-            'hard': hard_count,
-        }
-    }
-    return render(request, 'dashboard/teacher_topic_questions.html', context)
+    return redirect('/dashboard/teacher/#exams')
 
 @login_required
 def teacher_delete_mcq(request, question_id):
@@ -889,6 +734,9 @@ def teacher_delete_mcq(request, question_id):
     topic_id = question.topic.id
     question.delete()
     messages.success(request, f"{q_type.title()} multiple-choice question deleted successfully.")
+    referer = request.META.get('HTTP_REFERER', '')
+    if 'topic' not in referer:
+        return redirect('/dashboard/teacher/#questions')
     return redirect(f'/dashboard/teacher/topic/{topic_id}/questions/')
 
 @login_required
@@ -903,6 +751,9 @@ def teacher_delete_coding(request, question_id):
     title = question.title
     question.delete()
     messages.success(request, f"{q_type.title()} coding question '{title}' deleted successfully.")
+    referer = request.META.get('HTTP_REFERER', '')
+    if 'topic' not in referer:
+        return redirect('/dashboard/teacher/#questions')
     return redirect(f'/dashboard/teacher/topic/{topic_id}/questions/')
 
 @login_required
@@ -955,7 +806,6 @@ def teacher_import_practice_to_exam(request, topic_id):
                 sample_test_cases=practice_q.sample_test_cases,
                 hidden_test_cases=practice_q.hidden_test_cases,
                 starter_code=practice_q.starter_code,
-                explanation=practice_q.explanation,
                 time_limit=practice_q.time_limit,
                 memory_limit=practice_q.memory_limit,
                 marks=int(q_marks) if q_marks.isdigit() else practice_q.marks,
@@ -964,6 +814,9 @@ def teacher_import_practice_to_exam(request, topic_id):
             )
             
     messages.success(request, "Selected practice questions imported to exam questions successfully.")
+    referer = request.META.get('HTTP_REFERER', '')
+    if 'topic' not in referer:
+        return redirect('/dashboard/teacher/#questions')
     return redirect(f'/dashboard/teacher/topic/{topic_id}/questions/')
 
 @login_required
@@ -995,7 +848,7 @@ def teacher_edit_mcq(request, question_id):
         
         question.save()
         messages.success(request, f"{q_type.title()} multiple-choice question updated successfully.")
-        return redirect(f'/dashboard/teacher/topic/{question.topic.id}/questions/')
+        return redirect('/dashboard/teacher/#questions')
         
     return render(request, 'dashboard/teacher_edit_mcq.html', {'question': question, 'q_type': q_type})
 
@@ -1022,6 +875,12 @@ def teacher_edit_coding(request, question_id):
         question.sample_test_cases = [{'input': sample_input, 'output': sample_output}]
         question.hidden_test_cases = [{'input': hidden_input or sample_input, 'output': hidden_output or sample_output}]
         
+        question.starter_code = request.POST.get('starter_code', '')
+        time_lim = request.POST.get('time_limit', 2)
+        mem_lim = request.POST.get('memory_limit', 256)
+        question.time_limit = int(time_lim) if str(time_lim).isdigit() else 2
+        question.memory_limit = int(mem_lim) if str(mem_lim).isdigit() else 256
+        
         question.marks = int(request.POST.get('marks', 5))
         question.difficulty = request.POST.get('difficulty', 'medium')
         
@@ -1030,7 +889,7 @@ def teacher_edit_coding(request, question_id):
         
         question.save()
         messages.success(request, f"{q_type.title()} coding question '{question.title}' updated successfully.")
-        return redirect(f'/dashboard/teacher/topic/{question.topic.id}/questions/')
+        return redirect('/dashboard/teacher/#questions')
         
     return render(request, 'dashboard/teacher_edit_coding.html', {'question': question, 'q_type': q_type})
 
@@ -1273,7 +1132,8 @@ def teacher_bulk_upload_view(request):
     if request.user.role != 'teacher':
         return redirect_to_dashboard(request.user)
         
-    topics = Topic.objects.filter(teacher=request.user, purpose__in=['practice', 'both'])
+    topics = Topic.objects.filter(teacher=request.user)
+    classes = Class.objects.all()
     
     if request.method == 'POST':
         topic_id = request.POST.get('topic_id')
@@ -1288,22 +1148,31 @@ def teacher_bulk_upload_view(request):
                 
         if not topic_id:
             messages.error(request, "Please select a topic.")
-            return redirect('teacher_bulk_upload')
+            return redirect('/dashboard/teacher/#questions')
             
         topic = get_object_or_404(Topic, id=topic_id, teacher=request.user)
         parsed_questions = parse_bulk_text(bulk_text)
         
+        practice_mcqs = PracticeMCQQuestion.objects.filter(topic__teacher=request.user).select_related('topic').order_by('-created_at')
+        exam_mcqs = ExamMCQQuestion.objects.filter(topic__teacher=request.user).select_related('topic').order_by('-created_at')
+        practice_coding_qs = PracticeCodingQuestion.objects.filter(topic__teacher=request.user).select_related('topic').order_by('-created_at')
+        exam_coding_qs = ExamCodingQuestion.objects.filter(topic__teacher=request.user).select_related('topic').order_by('-created_at')
+        
         context = {
-            'topic': topic,
-            'questions': parsed_questions,
+            'classes': classes,
+            'topics': topics,
+            'practice_mcqs': practice_mcqs,
+            'exam_mcqs': exam_mcqs,
+            'practice_coding_qs': practice_coding_qs,
+            'exam_coding_qs': exam_coding_qs,
+            'open_bulk_verify': True,
+            'bulk_topic': topic,
+            'parsed_questions': parsed_questions,
             'bulk_text': bulk_text,
         }
-        return render(request, 'dashboard/teacher_bulk_upload_verify.html', context)
+        return render(request, 'dashboard/teacher.html', context)
         
-    context = {
-        'topics': topics,
-    }
-    return render(request, 'dashboard/teacher_bulk_upload.html', context)
+    return redirect('/dashboard/teacher/#questions')
 
 
 @login_required
@@ -1315,8 +1184,8 @@ def teacher_bulk_save_view(request):
     topic = get_object_or_404(Topic, id=topic_id, teacher=request.user)
     
     index = 0
-    created_mcq_count = 0
-    created_coding_count = 0
+    created_mcq_ids = []
+    created_coding_ids = []
     
     while True:
         q_type = request.POST.get(f'type_{index}')
@@ -1355,7 +1224,7 @@ def teacher_bulk_save_view(request):
                 if correct_idx < 0 or correct_idx >= len(options):
                     correct_idx = 0
                     
-                PracticeMCQQuestion.objects.create(
+                mcq_obj = PracticeMCQQuestion.objects.create(
                     topic=topic,
                     question_text=q_text,
                     options=options,
@@ -1364,7 +1233,7 @@ def teacher_bulk_save_view(request):
                     marks=marks,
                     difficulty=difficulty
                 )
-                created_mcq_count += 1
+                created_mcq_ids.append(str(mcq_obj.id))
                 
         elif q_type == 'CODING':
             title = request.POST.get(f'title_{index}', '').strip()
@@ -1381,7 +1250,7 @@ def teacher_bulk_save_view(request):
                 sample_test_cases = [{"input": s_in, "output": s_out}]
                 hidden_test_cases = [{"input": h_in, "output": h_out}]
                 
-                PracticeCodingQuestion.objects.create(
+                coding_obj = PracticeCodingQuestion.objects.create(
                     topic=topic,
                     title=title,
                     description=desc,
@@ -1394,12 +1263,15 @@ def teacher_bulk_save_view(request):
                     marks=marks,
                     difficulty=difficulty
                 )
-                created_coding_count += 1
+                created_coding_ids.append(str(coding_obj.id))
                 
         index += 1
         
     messages.success(
         request, 
-        f"Bulk import completed: Created {created_mcq_count} MCQ and {created_coding_count} Coding practice questions."
+        f"Bulk import completed: Created {len(created_mcq_ids)} MCQ and {len(created_coding_ids)} Coding practice questions."
     )
-    return redirect('/dashboard/teacher/practice/questions/')
+    
+    mcq_param = ",".join(created_mcq_ids)
+    coding_param = ",".join(created_coding_ids)
+    return redirect(f'/dashboard/teacher/?imported_mcqs={mcq_param}&imported_codings={coding_param}#questions')

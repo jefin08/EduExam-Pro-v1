@@ -1,0 +1,406 @@
+================================================================================
+          COMPLETE MASTER INVENTORY OF TEACHER PAGES & FEATURES
+================================================================================
+
+--------------------------------------------------------------------------------
+PAGE 1: Teacher Registration / Signup Page
+--------------------------------------------------------------------------------
+• URL: /signup/teacher/
+• Template: accounts/signup.html
+• What This Page Does: Allows new teachers to self-register an account. Created 
+  accounts are placed in an unapproved state (is_approved = False) until 
+  approved by an Admin.
+
+LINKS & BUTTONS:
+1. "Sign Up as Teacher" [Button - <button type="submit">]
+   - Action: Submits form (POST) to teacher_signup_view.
+   - Behind The Scenes: Creates a new User record with role='teacher', sets 
+     password hash, sets is_approved=False. Redirects to Login with pending 
+     approval alert message.
+2. "Already have an account? Sign In" [Link - <a>]
+   - Action: Navigates to /signin/
+   - Behind The Scenes: Redirects user to the login screen.
+3. "Sign Up as Student instead" [Link - <a>]
+   - Action: Navigates to /signup/student/
+   - Behind The Scenes: Redirects user to the Student registration page.
+
+INPUT FIELDS & OPTIONS:
+- Username Field: <input type="text" name="username"> (Required text input).
+- Email Field: <input type="email" name="email"> (Required email string).
+- Department Dropdown: <select name="department">
+  * Options: Dynamically rendered from Department model (e.g., Computer Science, 
+    Mathematics, Physics, Electrical Engineering).
+- Password Field: <input type="password" name="password"> (Required password).
+- Confirm Password Field: <input type="password" name="password_confirm"> (Validation check).
+
+
+--------------------------------------------------------------------------------
+PAGE 2: Teacher Main Dashboard & Topics Builder
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/
+• View: teacher_dashboard_view
+• Template: templates/dashboard/teacher.html
+• What This Page Does: The central landing page for teachers. Used to create 
+  curriculum topics, set topic class visibility, edit existing topics, and jump 
+  to the Exam or Practice portals.
+
+LINKS & BUTTONS:
+1. "Go to Exam Portal →" [Link Button - <a>]
+   - Action: Navigates to /dashboard/teacher/exams/
+   - Behind The Scenes: Opens the Exam Portal page.
+2. "Go to Practice Portal →" [Link Button - <a>]
+   - Action: Navigates to /dashboard/teacher/practice/
+   - Behind The Scenes: Opens the Practice Portal page.
+3. "Publish Topic" [Button - <button type="submit">]
+   - Action: Submits form (POST) to teacher_create_topic.
+   - Behind The Scenes: Inserts a new Topic record in DB and creates initial 
+     TopicClassVisibility rows for all checked classes.
+4. "Questions" [Button - <a>]
+   - Action: Navigates to /dashboard/teacher/topic/<topic_id>/questions/
+   - Behind The Scenes: Opens the Question Management Workspace for that topic.
+5. "Visibility ▾" [Button - <button type="button">]
+   - Action: Triggers JS openVisPanel(event, 'vis-panel-<id>')
+   - Behind The Scenes: Opens a fixed floating popup showing class visibility 
+     toggle buttons for that topic.
+6. "Edit ✎" [Button - <button type="button">]
+   - Action: Triggers JS openVisPanel(event, 'vis-panel-edit-<id>')
+   - Behind The Scenes: Opens a fixed floating popup form to edit Topic Name, 
+     Subject, and Purpose.
+7. "✓ visible — hide" [Button inside Popup - <button type="submit">]
+   - Action: Submits POST form to teacher_toggle_visibility.
+   - Behind The Scenes: Removes the TopicClassVisibility entry for that class. 
+     Instantly hides topic from students in that class.
+8. "+ show" [Button inside Popup - <button type="submit">]
+   - Action: Submits POST form to teacher_toggle_visibility.
+   - Behind The Scenes: Inserts a TopicClassVisibility entry. Instantly displays 
+     topic to students in that class.
+9. "Save Changes" [Button inside Edit Popup - <button type="submit">]
+   - Action: Submits POST form to teacher_edit_topic.
+   - Behind The Scenes: Updates name, subject, and purpose on Topic model.
+10. "✕" Close Button [Button inside Popups - <button type="button">]
+    - Action: Triggers JS closeAllVisPanels()
+    - Behind The Scenes: Hides the floating modal overlay.
+
+INPUT FIELDS & OPTIONS:
+- Topic Name Field: <input type="text" name="name"> (Required string).
+- Subject Area Field: <input type="text" name="subject"> (Required string).
+- Topic Purpose Select Dropdown: <select name="purpose">
+  * Option 1: 'both' — Both (Exam & Practice) (Default)
+  * Option 2: 'exam' — For Exam Only
+  * Option 3: 'practice' — For Practice Only
+- Select Classes Checkboxes: <input type="checkbox" name="class_ids" value="<id>"> 
+  dynamically listing system classes (e.g. Grade 10-A, Grade 10-B).
+
+
+--------------------------------------------------------------------------------
+PAGE 3: Topic Questions Workspace Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/topic/<topic_id>/questions/
+• View: teacher_topic_questions
+• Template: templates/dashboard/teacher_topic_questions.html
+• What This Page Does: Dedicated question workspace for a single topic. Displays 
+  question statistics and lists all practice/exam MCQ and Coding questions in 
+  4 separate ledgers. Features a clone import tool.
+
+LINKS & BUTTONS:
+1. "← Back to Topics" [Sidebar Link - <a>]
+   - Action: Navigates to /dashboard/teacher/#topics-sec
+   - Behind The Scenes: Returns teacher to main dashboard topics list.
+2. "Import Practice to Exam" [Button - <button type="button">]
+   - Action: Triggers JS openImportModal()
+   - Behind The Scenes: Opens #import-modal dialog overlay allowing cloning of 
+     practice questions to exam questions.
+3. "+ Add Exam Question" [Button - <a>]
+   - Action: Navigates to /dashboard/teacher/exams/questions/?topic_id=<id>
+   - Behind The Scenes: Opens form to create an Exam MCQ or Coding question.
+4. "+ Add Practice Question" [Button - <a>]
+   - Action: Navigates to /dashboard/teacher/practice/questions/?topic_id=<id>
+   - Behind The Scenes: Opens form to create a Practice MCQ or Coding question.
+5. "Edit" [Row Action - <a>]
+   - Action: Navigates to edit question view pre-filled with data.
+   - Behind The Scenes: Loads teacher_edit_mcq or teacher_edit_coding view.
+6. "Delete" [Row Action - <button type="submit">]
+   - Action: Submits POST form to teacher_delete_mcq or teacher_delete_coding.
+   - Behind The Scenes: Deletes question record after user accepts browser confirm.
+7. "Delete" (Inside Import Modal) [Button - <button type="button">]
+   - Action: Triggers JS excludeItem(type, id)
+   - Behind The Scenes: Unchecks item, dims card, and marks it to be excluded 
+     from clone batch.
+8. "Add Selected to Exam Questions" (Inside Import Modal) [Button - <button type="submit">]
+   - Action: Submits POST form to teacher_import_practice_to_exam.
+   - Behind The Scenes: Clones selected practice questions into new ExamMCQQuestion 
+     or ExamCodingQuestion rows.
+9. "Cancel" / "&times;" (Inside Import Modal) [Button - <button type="button">]
+   - Action: Triggers JS closeImportModal()
+   - Behind The Scenes: Closes modal overlay.
+
+INPUT FIELDS & OPTIONS:
+- Import Modal MCQ Checkboxes: <input type="checkbox" name="import_mcq_ids"> (Pre-checked).
+- Import Modal MCQ Text Area: <textarea name="mcq_text_<id>">.
+- Import Modal MCQ Difficulty Select: <select name="mcq_difficulty_<id>"> ('easy', 'medium', 'hard').
+- Import Modal MCQ Marks Field: <input type="number" name="mcq_marks_<id>">.
+- Import Modal Coding Checkboxes: <input type="checkbox" name="import_coding_ids"> (Pre-checked).
+- Import Modal Coding Title Field: <input type="text" name="coding_title_<id>">.
+- Import Modal Coding Description Area: <textarea name="coding_desc_<id>">.
+- Import Modal Coding Difficulty Select: <select name="coding_difficulty_<id>"> ('easy', 'medium', 'hard').
+- Import Modal Coding Marks Field: <input type="number" name="coding_marks_<id>">.
+
+
+--------------------------------------------------------------------------------
+PAGE 4: Create / Edit Multiple Choice Question (MCQ) Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/question/mcq/create/ & .../mcq/<id>/edit/
+• Template: templates/dashboard/teacher_questions.html
+• What This Page Does: Form interface to author or update single/multiple choice 
+  questions for practice or exams.
+
+LINKS & BUTTONS:
+1. "Save Question" [Button - <button type="submit">]
+   - Action: Submits form (POST) to teacher_create_mcq or teacher_edit_mcq.
+   - Behind The Scenes: Creates or updates PracticeMCQQuestion or ExamMCQQuestion 
+     model in database.
+2. "Cancel" [Button - <a>]
+   - Action: Navigates to /dashboard/teacher/topic/<topic_id>/questions/
+   - Behind The Scenes: Returns to topic workspace without saving.
+
+INPUT FIELDS & OPTIONS:
+- Target Topic Select Dropdown: <select name="topic_id"> listing teacher's topics.
+- Category / Mode Select Dropdown: <select name="question_type">
+  * Option 1: 'practice' — Practice Question
+  * Option 2: 'exam' — Exam Question
+- Question Statement Textarea: <textarea name="question_text"> (Required).
+- Explanation / Solution Textarea: <textarea name="explanation"> (Optional).
+- Option A Text Input: <input type="text" name="option_0"> (Required).
+- Option B Text Input: <input type="text" name="option_1"> (Required).
+- Option C Text Input: <input type="text" name="option_2"> (Optional).
+- Option D Text Input: <input type="text" name="option_3"> (Optional).
+- Correct Answer Option Radio Buttons: <input type="radio" name="correct_option_index">
+  * Value '0' — Option A is Correct
+  * Value '1' — Option B is Correct
+  * Value '2' — Option C is Correct
+  * Value '3' — Option D is Correct
+- Difficulty Select Dropdown: <select name="difficulty"> ('easy', 'medium', 'hard').
+- Marks Weightage Field: <input type="number" name="marks" value="1">.
+
+
+--------------------------------------------------------------------------------
+PAGE 5: Create / Edit Coding Question Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/question/coding/create/ & .../coding/<id>/edit/
+• Template: templates/dashboard/teacher_coding_form.html
+• What This Page Does: Full problem specification editor for sandbox coding 
+  problems, including starter templates, time/memory limits, sample cases, and 
+  hidden test cases.
+
+LINKS & BUTTONS:
+1. "Save Coding Question" [Button - <button type="submit">]
+   - Action: Submits form (POST) to teacher_create_coding or teacher_edit_coding.
+   - Behind The Scenes: Creates or updates PracticeCodingQuestion or ExamCodingQuestion 
+     model in database.
+2. "Cancel" [Button - <a>]
+   - Action: Navigates to /dashboard/teacher/topic/<topic_id>/questions/
+   - Behind The Scenes: Returns to topic workspace.
+
+INPUT FIELDS & OPTIONS:
+- Topic Select Dropdown: <select name="topic_id">.
+- Category Mode Selection: 'practice' vs 'exam'.
+- Problem Title Input: <input type="text" name="title">.
+- Problem Description Textarea: Full problem statement text.
+- Input Format Textarea: Expected stdin format explanation.
+- Output Format Textarea: Expected stdout format explanation.
+- Starter Code Textarea: Pre-filled code template for students.
+- Sample Test Cases Inputs: Input stdin & expected output stdout pairs (visible to student).
+- Hidden Test Cases Inputs: Secret stdin & stdout pairs (used for secret grading).
+- Time Limit Field: <input type="number" step="0.1" name="time_limit" value="1.0"> (seconds).
+- Memory Limit Field: <input type="number" name="memory_limit" value="256"> (MB).
+- Difficulty Select Dropdown: <select name="difficulty"> ('easy', 'medium', 'hard').
+- Marks Weightage Field: <input type="number" name="marks" value="5">.
+
+
+--------------------------------------------------------------------------------
+PAGE 6: All Practice Questions Repository Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/practice/questions/all/
+• Template: templates/dashboard/teacher_practice_questions_list.html
+• What This Page Does: Centralized question bank ledger displaying all practice 
+  MCQs and coding questions created across all topics.
+
+LINKS & BUTTONS:
+1. "Edit" [Row Action - <a>]
+   - Action: Navigates to question edit page.
+2. "Delete" [Row Action - <button type="submit">]
+   - Action: Submits POST form to delete question from database.
+
+INPUT FIELDS & OPTIONS:
+- Filter by Topic Select Dropdown: Filter question list by selected topic.
+- Search Keyword Input: Filter ledger by text search.
+
+
+--------------------------------------------------------------------------------
+PAGE 7: Bulk Question Import Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/practice/questions/bulk/
+• Template: templates/dashboard/teacher_bulk_upload.html
+• What This Page Does: Allows teachers to upload a TXT file or paste raw text 
+  formatted in standardized question schemas to import multiple questions at once.
+
+LINKS & BUTTONS:
+1. "Parse & Verify Questions" [Button - <button type="submit">]
+   - Action: Submits form (POST) to teacher_bulk_upload / teacher_bulk_save.
+   - Behind The Scenes: Parses text schema, validates fields, and executes batch 
+     insert into database.
+
+INPUT FIELDS & OPTIONS:
+- Step 1: Select Topic Dropdown: <select id="topic_select_bulk" onchange="handleTopicSelection(this.value)">
+  * Options: '-- Choose a Topic --' (Disabled), followed by teacher's topics.
+- Step 2: Upload TXT File Input: <input type="file" id="bulk_file" name="bulk_file" accept=".txt">.
+  * JS Trigger: Reads file text via FileReader and auto-populates text editor.
+- Step 2: TXT Question Content Textarea: <textarea id="bulk_text" name="bulk_text">.
+
+
+--------------------------------------------------------------------------------
+PAGE 8: Practice Portal Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/practice/
+• Template: templates/dashboard/teacher_practice.html
+• What This Page Does: Displays all published practice sets, reveal rules, 
+  assigned classes, and toggle visibility popups.
+
+LINKS & BUTTONS:
+1. "+ Create Practice Set" [Link Button - <a>]
+   - Action: Navigates to /dashboard/teacher/practice/new/
+2. "+ Add Practice Questions" [Link Button - <a>]
+   - Action: Navigates to /dashboard/teacher/practice/questions/
+3. "+ Bulk Upload" [Link Button - <a>]
+   - Action: Navigates to /dashboard/teacher/practice/questions/bulk/
+4. "Visibility ▾" [Button - <button type="button">]
+   - Action: Triggers JS openVisPanel(event, 'vis-panel-<id>')
+   - Behind The Scenes: Opens fixed floating class assignment popup for practice set.
+5. "✓ assigned — remove" (In Popup) [Button - <button type="submit">]
+   - Action: Submits POST form to teacher_practice_toggle_visibility.
+   - Behind The Scenes: Removes PracticeSetClassAssignment record. Hides practice 
+     set from student dashboard.
+6. "+ assign" (In Popup) [Button - <button type="submit">]
+   - Action: Submits POST form to teacher_practice_toggle_visibility.
+   - Behind The Scenes: Inserts PracticeSetClassAssignment record. Displays practice 
+     set on student dashboard.
+
+
+--------------------------------------------------------------------------------
+PAGE 9: Create Practice Set Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/practice/new/
+• Template: templates/dashboard/teacher_create_practice.html
+• What This Page Does: Assembles a practice set by picking topics, setting 
+  solution reveal rules, and assigning target classes.
+
+LINKS & BUTTONS:
+1. "Publish Practice Set" [Button - <button type="submit">]
+   - Action: Submits form (POST) to teacher_create_practice.
+   - Behind The Scenes: Creates PracticeSet record, links topics, and creates 
+     PracticeSetClassAssignment entries.
+
+INPUT FIELDS & OPTIONS:
+- Practice Set Title Field: <input type="text" name="name"> (Required).
+- Solution Reveal Rule Select Dropdown: <select name="reveal_rule">
+  * Option 1: 'immediate' — After First Attempt (Explanation shown after 1st try)
+  * Option 2: 'never' — Never (Explanation remains hidden)
+- Select Topics Checkboxes: <input type="checkbox" name="topic_ids" value="<id>"> 
+  showing question counts (e.g. Binary Search (Practice Qs: 12)).
+- Assign to Classes Checkboxes: <input type="checkbox" name="class_ids" value="<id>">.
+
+
+--------------------------------------------------------------------------------
+PAGE 10: Exam Portal / Exam Management Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/exams/
+• Template: templates/dashboard/teacher_exams.html
+• What This Page Does: Main hub for scheduled exams. Displays live status 
+  indicators (LIVE, UPCOMING, ENDED), generated access codes, and links to 
+  live proctoring.
+
+LINKS & BUTTONS:
+1. "+ Schedule New Exam" [Link Button - <a>]
+   - Action: Navigates to /dashboard/teacher/exams/schedule/
+2. "+ Add Exam Questions" [Link Button - <a>]
+   - Action: Navigates to /dashboard/teacher/exams/questions/
+3. "Live Monitor" [Link Button - <a>]
+   - Action: Navigates to /exam/<exam_id>/monitor/
+   - Behind The Scenes: Opens real-time proctoring dashboard for that exam.
+4. "Edit ✎" [Button - <button type="button">]
+   - Action: Triggers JS openVisPanel(event, 'edit-exam-<id>')
+   - Behind The Scenes: Opens floating popup to adjust start and end schedule datetimes.
+5. "Save Schedule" (In Popup) [Button - <button type="submit">]
+   - Action: Submits POST form to teacher_edit_exam_schedule.
+   - Behind The Scenes: Updates start_time and end_time attributes on Exam model.
+
+INPUT FIELDS & OPTIONS:
+- Floating Edit Schedule Inputs:
+  * Start Datetime: <input type="datetime-local" name="start_time">.
+  * End Datetime: <input type="datetime-local" name="end_time">.
+
+
+--------------------------------------------------------------------------------
+PAGE 11: Schedule Exam Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/exams/schedule/
+• Template: templates/dashboard/teacher_schedule_exam.html
+• What This Page Does: Configures and publishes timed online examinations. 
+  Selects source topics and pre-assigns unique access codes per class group.
+
+LINKS & BUTTONS:
+1. "Schedule Exam" [Button - <button type="submit">]
+   - Action: Submits form (POST) to teacher_create_exam.
+   - Behind The Scenes: Creates Exam record, links topics, and generates unique 
+     ExamCode entries for each checked class.
+
+INPUT FIELDS & OPTIONS:
+- Exam Title Field: <input type="text" name="name">.
+- Scheduled Start Window Field: <input type="datetime-local" name="start_time"> (Required).
+- Scheduled End Window Field: <input type="datetime-local" name="end_time"> (Required).
+- Draw Questions From Topics Checkboxes: <input type="checkbox" name="topic_ids"> 
+  showing exam question counts.
+- Assign Class Groups Checkboxes: <input type="checkbox" name="class_ids">.
+
+
+--------------------------------------------------------------------------------
+PAGE 12: Live Exam Proctoring Room Page
+--------------------------------------------------------------------------------
+• URL: /exam/<exam_id>/monitor/
+• Template: templates/exams/teacher_monitor.html
+• What This Page Does: Real-time proctoring dashboard powered by Daphne WebSockets. 
+  Displays live candidate progress, tab-switch alerts, and copy-paste warnings.
+
+LINKS & BUTTONS:
+1. "Filter Candidate Status" [Select Dropdown]
+   - Action: Filters visible candidate grid in real-time.
+2. "Flag Candidate" [Button Action]
+   - Action: Sends flag command via WebSocket to log MonitoringEvent.
+3. "Force Submit Candidate" [Button Action]
+   - Action: Sends terminate command via WebSocket to enforce auto-submission.
+
+INPUT FIELDS & OPTIONS:
+- WebSocket Stream Feed: Automated bi-directional channel receiving student 
+  browser events (tab_switch, blur, copy_paste) and updating the telemetry log.
+
+
+--------------------------------------------------------------------------------
+PAGE 13: Exam Results & Grade Review Page
+--------------------------------------------------------------------------------
+• URL: /dashboard/teacher/results/
+• What This Page Does: Gradebook interface where teachers inspect candidate scores 
+  (MCQ score + coding test case pass percentages), view submitted code, and 
+  release final grades to students.
+
+LINKS & BUTTONS:
+1. "View Code Submission" [Link Button - <a>]
+   - Action: Opens submission detail modal with candidate code stdout/stderr.
+2. "Release Results to Students" [Button - <button type="submit">]
+   - Action: Submits POST form updating OfficialGrade.
+   - Behind The Scenes: Sets is_results_released = True on OfficialGrade table, 
+     unlocking student score access.
+
+INPUT FIELDS & OPTIONS:
+- Filter by Class Select Dropdown: Filter results by class group.
+- Release Results Toggle Switch: <input type="checkbox" name="is_released">.
+================================================================================

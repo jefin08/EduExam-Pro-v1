@@ -106,6 +106,15 @@
         <p style="color: var(--ink-soft); font-size: 0.95rem;">Enter your credentials to enter the platform.</p>
       </div>
 
+      {% if request.GET.pending %}
+        <div class="alert-box alert-success" style="border-left: 4px solid var(--pass-teal); padding: 1rem;">
+          <strong style="font-size: 0.9rem;">⏳ Account Pending Approval</strong>
+          <p style="margin-top: 0.25rem; font-family: var(--font-sans); font-size: 0.85rem; color: var(--ink);">
+            Your teacher account request has been submitted successfully. An administrator must approve your account before you can log in.
+          </p>
+        </div>
+      {% endif %}
+
       <!-- Messages / Errors -->
       {% if messages %}
         {% for message in messages %}

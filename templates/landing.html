@@ -10,6 +10,18 @@
 </head>
 <body>
 
+  <!-- Framer Motion Preloader Overlay -->
+  <div id="app-preloader">
+    <div class="preloader-brand">
+      <div class="preloader-stamp">A+</div>
+      <div class="preloader-title">EduExam Pro</div>
+    </div>
+    <div class="preloader-track">
+      <div class="preloader-bar" id="preloader-progress"></div>
+    </div>
+    <div class="preloader-subtitle" id="preloader-status">Initializing Assessment Sandbox...</div>
+  </div>
+
   <!-- Header / Navigation -->
   <header>
     <div class="container nav-wrapper">
@@ -309,7 +321,7 @@
   <div class="perf" aria-hidden="true"></div>
 
   <!-- Final CTA -->
-  <section class="final-cta" id="cta">
+  <section class="final-cta revealed" id="cta">
     <div class="container">
       <h2>Deploy secure evaluations at your institution.</h2>
       <p style="color: var(--ink-soft); font-size: 1.1rem;">Coordinate exams and open programming study modules under a single interface.</p>
@@ -327,6 +339,15 @@
       <p style="color: var(--ink-soft); font-size: 0.8rem; margin-top: 0.5rem;">Built for Academic Integrity. Python, C++, and Java Sandboxing Ready.</p>
     </div>
   </footer>
+
+  <!-- Framer Motion Engine & Preloader Initializer -->
+  <script src="https://cdn.jsdelivr.net/npm/motion@11.11.16/dist/motion.js"></script>
+  <script src="{% static 'js/framer-motion-init.js' %}"></script>
+  
+  <!-- GSAP 3 & ScrollTrigger Section Motion Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="{% static 'js/landing-gsap.js' %}"></script>
 
   <script src="{% static 'js/main.js' %}"></script>
 </body>
