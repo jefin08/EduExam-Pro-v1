@@ -8,7 +8,8 @@ from .views import (
     teacher_create_practice, teacher_create_exam, student_join_exam, teacher_toggle_visibility, teacher_practice_toggle_visibility,
     teacher_edit_exam_schedule, teacher_toggle_exam_code_visibility,
     teacher_delete_mcq, teacher_delete_coding, teacher_edit_mcq, teacher_edit_coding,
-    teacher_bulk_upload_view, teacher_bulk_save_view, teacher_import_practice_to_exam
+    teacher_bulk_upload_view, teacher_bulk_save_view, teacher_import_practice_to_exam,
+    student_profile_view
 )
 
 urlpatterns = [
@@ -28,6 +29,7 @@ urlpatterns = [
     path('dashboard/teacher/practice/questions/bulk/', teacher_bulk_upload_view, name='teacher_bulk_upload'),
     path('dashboard/teacher/practice/questions/bulk/save/', teacher_bulk_save_view, name='teacher_bulk_save'),
     path('dashboard/student/', student_dashboard_view, name='student_dashboard'),
+    path('dashboard/student/profile/', student_profile_view, name='student_profile'),
     
     # Admin Actions
     path('dashboard/admin/class/create/', admin_create_class, name='admin_create_class'),

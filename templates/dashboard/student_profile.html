@@ -1,0 +1,75 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}My Profile — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'student_dashboard' %}">← Back to Dashboard</a></li>
+<li class="active"><a href="{% url 'student_profile' %}">My Profile</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <h2 class="section-title" style="margin-bottom: 2rem;">Student Profile</h2>
+
+  <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+    
+    <!-- Profile Avatar & Overview -->
+    <div class="dash-form" style="display: flex; align-items: center; gap: 2rem; padding: 2.5rem;">
+      <div style="width: 80px; height: 80px; min-width: 80px; border-radius: 50%; background-color: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-family: var(--font-serif); font-weight: 600;">
+        {{ student.first_name|first|default:student.username|first|upper }}
+      </div>
+      <div>
+        <h3 style="margin-bottom: 0.25rem; font-size: 1.8rem; font-family: var(--font-serif); border: none; padding: 0;">{{ student.first_name }} {{ student.last_name }}</h3>
+        <span class="mono-text" style="color: var(--ink-soft); font-size: 0.9rem;">@{{ student.username }}</span>
+      </div>
+    </div>
+
+    <!-- Details Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+      
+      <!-- Personal Information -->
+      <div class="ledger">
+        <div class="ledger-header">
+          Personal Information
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 1fr 2fr;">
+          <strong style="color: var(--ink-soft); font-size: 0.85rem; font-family: var(--font-mono); text-transform: uppercase;">Full Name</strong>
+          <span>{{ student.first_name }} {{ student.last_name }}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 1fr 2fr;">
+          <strong style="color: var(--ink-soft); font-size: 0.85rem; font-family: var(--font-mono); text-transform: uppercase;">Email</strong>
+          <span>{{ student.email }}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 1fr 2fr;">
+          <strong style="color: var(--ink-soft); font-size: 0.85rem; font-family: var(--font-mono); text-transform: uppercase;">Role</strong>
+          <span style="text-transform: capitalize;">{{ student.role }}</span>
+        </div>
+      </div>
+
+      <!-- Academic & Account Info -->
+      <div style="display: flex; flex-direction: column; gap: 2rem;">
+        
+        <div class="ledger">
+          <div class="ledger-header">
+            Academic Information
+          </div>
+          <div class="ledger-row" style="grid-template-columns: 1fr 2fr;">
+            <strong style="color: var(--ink-soft); font-size: 0.85rem; font-family: var(--font-mono); text-transform: uppercase;">Class</strong>
+            <span>{{ student.class_group.name|default:"Not assigned" }}</span>
+          </div>
+        </div>
+
+        <div class="ledger">
+          <div class="ledger-header">
+            Account Information
+          </div>
+          <div class="ledger-row" style="grid-template-columns: 1fr 2fr;">
+            <strong style="color: var(--ink-soft); font-size: 0.85rem; font-family: var(--font-mono); text-transform: uppercase;">Joined</strong>
+            <span>{{ student.date_joined|date:"F j, Y" }}</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+{% endblock %}

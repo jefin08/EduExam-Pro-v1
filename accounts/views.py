@@ -634,6 +634,16 @@ def student_join_exam(request):
     return redirect('/dashboard/student/')
 
 @login_required
+def student_profile_view(request):
+    if request.user.role != 'student':
+        return redirect_to_dashboard(request.user)
+    
+    context = {
+        'student': request.user
+    }
+    return render(request, 'dashboard/student_profile.html', context)
+
+@login_required
 def teacher_toggle_visibility(request, topic_id, class_id):
     if request.user.role != 'teacher' or request.method != 'POST':
         return redirect('/dashboard/teacher/')
