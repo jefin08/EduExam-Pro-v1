@@ -1,0 +1,74 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Teacher Profile — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}">← Back to Dashboard</a></li>
+<li class="active"><a href="#">My Profile</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div style="margin-bottom: 2rem;">
+    <h3 class="section-title" style="margin-bottom: 0.5rem;">Teacher Profile</h3>
+    <p style="color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.85rem; margin: 0;">Manage your academic and account information.</p>
+  </div>
+
+  <div style="display: grid; gap: 2rem;">
+    
+    <!-- Personal Information -->
+    <div class="dash-form" style="padding: 1.5rem 2rem;">
+      <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+        Personal Information
+      </h3>
+      <div class="ledger">
+        <div class="ledger-row" style="grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--rule-strong);">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Full Name</span>
+          <span style="font-weight: 500;">{% if teacher.first_name or teacher.last_name %}{{ teacher.first_name }} {{ teacher.last_name }}{% else %}&mdash;{% endif %}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--rule-strong);">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Username</span>
+          <span class="mono-text" style="color: var(--ink);">{{ teacher.username }}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--rule-strong);">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Email</span>
+          <span>{% if teacher.email %}{{ teacher.email }}{% else %}&mdash;{% endif %}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 150px 1fr;">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Role</span>
+          <span class="mode-tag practice-tag" style="justify-self: start; font-size: 0.75rem; padding: 0.25rem 0.6rem;">{{ teacher.get_role_display }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Professional Information -->
+    <div class="dash-form" style="padding: 1.5rem 2rem;">
+      <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+        Professional Information
+      </h3>
+      <div class="ledger">
+        <div class="ledger-row" style="grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--rule-strong);">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Department</span>
+          <span>{% if teacher.department %}{{ teacher.department }}{% else %}&mdash;{% endif %}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 150px 1fr;">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Teacher ID</span>
+          <span class="mono-text" style="color: var(--ink-soft);">#{{ teacher.id }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account Information -->
+    <div class="dash-form" style="padding: 1.5rem 2rem;">
+      <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+        Account Information
+      </h3>
+      <div class="ledger">
+        <div class="ledger-row" style="grid-template-columns: 150px 1fr;">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Date Joined</span>
+          <span>{{ teacher.date_joined|date:"F j, Y" }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}

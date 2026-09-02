@@ -575,10 +575,10 @@ def student_dashboard_view(request):
     context = {
         'class_group': class_group,
         'visible_topics': visible_topics,
-        'practice_sets': practice_sets,
+        'practice_sets': practice_sets[:3],
         'attempts': attempts,
-        'official_grades': official_grades,
-        'upcoming_exams': upcoming_exams,
+        'official_grades': official_grades[:3],
+        'upcoming_exams': upcoming_exams[:3],
         'now': timezone.now(),
     }
     return render(request, 'dashboard/student.html', context)
@@ -611,10 +611,11 @@ def student_join_exam(request):
             messages.error(request, f"This exam hasn't started yet. Early entry opens at {entry_time.strftime('%I:%M %p')}.")
             return redirect('/dashboard/student/')
 
-        # Block entry after the start time — students must join before or exactly at start time
-        if now > exam.start_time:
+        # Block entry after the 15-minute late-entry window
+        late_deadline = exam.start_time + timedelta(minutes=15)
+        if now > late_deadline:
             local_start = timezone.localtime(exam.start_time)
-            messages.error(request, f"Entry closed. This exam started at {local_start.strftime('%I:%M %p')} and no late entries are allowed.")
+            messages.error(request, f"Entry closed. The 15-minute late-entry window for this exam has ended. It started at {local_start.strftime('%I:%M %p')}.")
             return redirect('/dashboard/student/')
 
         # Block if exam window has fully expired
@@ -634,6 +635,53 @@ def student_join_exam(request):
     return redirect('/dashboard/student/')
 
 @login_required
+def student_scheduled_exams_view(request):
+    if request.user.role != 'student':
+        return redirect_to_dashboard(request.user)
+    
+    class_group = request.user.class_group
+    from exams.models import ExamCode
+    upcoming_exams = ExamCode.objects.filter(
+        class_group=class_group, is_active=True
+    ).select_related('exam').order_by('exam__start_time')
+    
+    context = {
+        'upcoming_exams': upcoming_exams,
+        'now': timezone.now(),
+    }
+    return render(request, 'dashboard/student_scheduled_exams.html', context)
+
+@login_required
+def student_practice_sets_view(request):
+    if request.user.role != 'student':
+        return redirect_to_dashboard(request.user)
+    
+    class_group = request.user.class_group
+    visible_topics = Topic.objects.filter(is_active=True, visibilities__class_group=class_group).exclude(purpose='exam').distinct()
+    visible_topic_ids = visible_topics.values_list('id', flat=True)
+    
+    practice_sets = PracticeSet.objects.filter(assignments__class_group=class_group).exclude(
+        topics__in=Topic.objects.exclude(id__in=visible_topic_ids)
+    ).distinct()
+    
+    context = {
+        'practice_sets': practice_sets,
+    }
+    return render(request, 'dashboard/student_practice_sets.html', context)
+
+@login_required
+def student_assessment_history_view(request):
+    if request.user.role != 'student':
+        return redirect_to_dashboard(request.user)
+    
+    official_grades = OfficialGrade.objects.filter(student=request.user).order_by('-submitted_at')
+    
+    context = {
+        'official_grades': official_grades,
+    }
+    return render(request, 'dashboard/student_assessment_history.html', context)
+
+@login_required
 def student_profile_view(request):
     if request.user.role != 'student':
         return redirect_to_dashboard(request.user)
@@ -642,6 +690,16 @@ def student_profile_view(request):
         'student': request.user
     }
     return render(request, 'dashboard/student_profile.html', context)
+
+@login_required
+def teacher_profile_view(request):
+    if request.user.role != 'teacher':
+        return redirect_to_dashboard(request.user)
+    
+    context = {
+        'teacher': request.user
+    }
+    return render(request, 'dashboard/teacher_profile.html', context)
 
 @login_required
 def teacher_toggle_visibility(request, topic_id, class_id):

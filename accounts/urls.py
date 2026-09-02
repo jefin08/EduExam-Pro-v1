@@ -9,7 +9,8 @@ from .views import (
     teacher_edit_exam_schedule, teacher_toggle_exam_code_visibility,
     teacher_delete_mcq, teacher_delete_coding, teacher_edit_mcq, teacher_edit_coding,
     teacher_bulk_upload_view, teacher_bulk_save_view, teacher_import_practice_to_exam,
-    student_profile_view
+    student_profile_view, student_scheduled_exams_view, student_practice_sets_view, student_assessment_history_view,
+    teacher_profile_view
 )
 
 urlpatterns = [
@@ -23,6 +24,7 @@ urlpatterns = [
     # Dashboards
     path('dashboard/admin/', admin_dashboard_view, name='admin_dashboard'),
     path('dashboard/teacher/', teacher_dashboard_view, name='teacher_dashboard'),
+    path('dashboard/teacher/profile/', teacher_profile_view, name='teacher_profile'),
     path('dashboard/teacher/exams/', teacher_exams_view, name='teacher_exams'),
     path('dashboard/teacher/exams/code/<int:exam_code_id>/toggle/', teacher_toggle_exam_code_visibility, name='teacher_toggle_exam_code_visibility'),
     path('dashboard/teacher/practice/', teacher_practice_view, name='teacher_practice'),
@@ -57,5 +59,8 @@ urlpatterns = [
     path('dashboard/teacher/exam/<int:exam_id>/edit-schedule/', teacher_edit_exam_schedule, name='teacher_edit_exam_schedule'),
     
     # Student Actions
+    path('dashboard/student/scheduled-exams/', student_scheduled_exams_view, name='student_scheduled_exams'),
+    path('dashboard/student/practice-sets/', student_practice_sets_view, name='student_practice_sets'),
+    path('dashboard/student/assessment-history/', student_assessment_history_view, name='student_assessment_history'),
     path('dashboard/student/exam/join/', student_join_exam, name='student_join_exam'),
 ]

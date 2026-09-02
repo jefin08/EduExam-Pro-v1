@@ -231,6 +231,10 @@
           <a href="{% url 'student_profile' %}" style="text-decoration: underline; color: inherit; font-weight: 500;" title="My Profile">
             {{ request.user.username }}
           </a>
+        {% elif request.user.role == 'teacher' %}
+          <a href="{% url 'teacher_profile' %}" style="text-decoration: underline; color: inherit; font-weight: 500;" title="Teacher Profile">
+            {{ request.user.username }}
+          </a>
         {% else %}
           <span>{{ request.user.username }}</span>
         {% endif %}

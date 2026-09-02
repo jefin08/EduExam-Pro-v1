@@ -1,0 +1,39 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Practice Sets — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
+<li><a href="{% url 'student_scheduled_exams' %}">Scheduled Exams</a></li>
+<li class="active"><a href="{% url 'student_practice_sets' %}">Practice Sets</a></li>
+<li><a href="{% url 'student_assessment_history' %}">Assessment History</a></li>
+<li><a href="{% url 'student_profile' %}">My Profile</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div id="practice-list-sec">
+    <h3 class="section-title">All Practice Sets</h3>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 1.5fr 2fr 100px;">
+        <span>Set Name</span>
+        <span>Topics Included</span>
+        <span>Action</span>
+      </div>
+      {% for set in practice_sets %}
+        <div class="ledger-row" style="grid-template-columns: 1.5fr 2fr 100px;">
+          <strong>{{ set.name }}</strong>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            {% for topic in set.topics.all %}
+              <span class="mode-tag practice-tag" style="font-size: 0.7rem;">{{ topic.name }}</span>
+            {% endfor %}
+          </div>
+          <div>
+            <a href="/practice/{{ set.id }}/" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background-color: var(--pass-teal); border-color: var(--pass-teal);">Practice</a>
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No practice sessions assigned to your class.</div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

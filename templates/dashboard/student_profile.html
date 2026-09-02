@@ -3,7 +3,10 @@
 {% block title %}My Profile — EduExam Pro{% endblock %}
 
 {% block sidebar_menu %}
-<li><a href="{% url 'student_dashboard' %}">← Back to Dashboard</a></li>
+<li><a href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
+<li><a href="{% url 'student_scheduled_exams' %}">Scheduled Exams</a></li>
+<li><a href="{% url 'student_practice_sets' %}">Practice Sets</a></li>
+<li><a href="{% url 'student_assessment_history' %}">Assessment History</a></li>
 <li class="active"><a href="{% url 'student_profile' %}">My Profile</a></li>
 {% endblock %}
 
