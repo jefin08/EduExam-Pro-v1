@@ -1,0 +1,51 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Scheduled Exams — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
+<li class="active"><a href="{% url 'student_scheduled_exams' %}">Scheduled Exams</a></li>
+<li><a href="{% url 'student_practice_sets' %}">Practice Sets</a></li>
+<li><a href="{% url 'student_assessment_history' %}">Assessment History</a></li>
+<li><a href="{% url 'student_profile' %}">My Profile</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div id="scheduled-exams-sec">
+    <h3 class="section-title">All Scheduled Exams</h3>
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 2fr 1.2fr 1fr 1fr;">
+        <span>Exam</span>
+        <span>Window</span>
+        <span>Duration</span>
+        <span>Status</span>
+      </div>
+      {% for ec in upcoming_exams %}
+        {% with exam=ec.exam %}
+        <div class="ledger-row" style="grid-template-columns: 2fr 1.2fr 1fr 1fr; align-items: center; {% if exam.end_time < now %}opacity:0.65;{% endif %}">
+          <div>
+            <strong>{{ exam.name }}</strong>
+            <span style="display:block; font-size:0.72rem; color:var(--ink-soft);">Code: <span class="mono-text" style="font-weight:700; color:var(--red-pen);">{{ ec.code }}</span></span>
+          </div>
+          <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--ink-soft);">
+            <span style="display:block;">▶ {{ exam.start_time|date:"d M, H:i" }}</span>
+            <span style="display:block;">■ {{ exam.end_time|date:"d M, H:i" }}</span>
+          </div>
+          <span class="mono-text" style="font-size:0.85rem;">{{ exam.duration_minutes }} mins</span>
+          <div>
+            {% if exam.end_time < now %}
+              <span style="display:inline-block; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.15rem 0.5rem; border-radius:2px; background:rgba(178,58,46,0.09); color:var(--red-pen); border:1px solid var(--red-pen);">● ENDED</span>
+            {% elif exam.start_time <= now and now <= exam.end_time %}
+              <span style="display:inline-block; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.15rem 0.5rem; border-radius:2px; background:rgba(46,110,96,0.09); color:var(--pass-teal); border:1px solid var(--pass-teal);">● LIVE — enter now!</span>
+            {% else %}
+              <span style="display:inline-block; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; letter-spacing:0.08em; padding:0.15rem 0.5rem; border-radius:2px; background:rgba(0,0,0,0.04); color:var(--ink-soft); border:1px solid var(--rule-strong);">○ UPCOMING</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endwith %}
+      {% empty %}
+        <div style="padding:2rem; text-align:center; color:var(--ink-soft); font-size:0.9rem;">No exams scheduled for your class yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

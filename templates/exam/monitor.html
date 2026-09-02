@@ -35,16 +35,28 @@
           <div class="ledger-row" style="grid-template-columns: 1.2fr 1fr 100px;">
             <strong>{{ grade.student.username }}</strong>
             <div>
-              {% if grade.is_submitted %}
-                <span class="mode-tag practice-tag" style="font-size: 0.75rem;">Submitted</span>
-                <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">At: {{ grade.submitted_at|date:"H:i:s" }}</span>
-              {% elif exam.start_time > now %}
-                <span class="mode-tag waiting-tag" style="font-size: 0.75rem; background-color: rgba(0, 150, 255, 0.08); color: #007bff; border-color: #007bff;">Waiting</span>
-                <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">Joined: {{ grade.started_at|date:"H:i:s" }}</span>
-              {% else %}
-                <span class="mode-tag exam-tag" style="font-size: 0.75rem; background-color: rgba(180, 132, 42, 0.08); color: var(--gold); border-color: var(--gold);">In Progress</span>
-                <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">Started: {{ grade.started_at|date:"H:i:s" }}</span>
-              {% endif %}
+              <div style="margin-bottom: 0.25rem;">
+                {% if grade.is_submitted %}
+                  <span class="mode-tag practice-tag" style="font-size: 0.75rem;">Submitted</span>
+                {% elif exam.start_time > now %}
+                  <span class="mode-tag waiting-tag" style="font-size: 0.75rem; background-color: rgba(0, 150, 255, 0.08); color: #007bff; border-color: #007bff;">Waiting</span>
+                {% else %}
+                  <span class="mode-tag exam-tag" style="font-size: 0.75rem; background-color: rgba(180, 132, 42, 0.08); color: var(--gold); border-color: var(--gold);">In Progress</span>
+                {% endif %}
+                
+                {% if grade.started_at > exam.start_time %}
+                  <span class="mode-tag" style="font-size: 0.7rem; margin-left: 0.25rem; background-color: rgba(178, 58, 46, 0.08); color: var(--red-pen); border-color: var(--red-pen);">Late</span>
+                {% else %}
+                  <span class="mode-tag" style="font-size: 0.7rem; margin-left: 0.25rem; background-color: rgba(46, 110, 96, 0.08); color: var(--pass-teal); border-color: var(--pass-teal);">On Time</span>
+                {% endif %}
+              </div>
+              
+              <span style="display: block; font-size: 0.65rem; color: var(--ink-soft);">
+                Joined: {{ grade.started_at|date:"H:i:s" }}
+                {% if grade.is_submitted %}
+                  &bull; Submitted: {{ grade.submitted_at|date:"H:i:s" }}
+                {% endif %}
+              </span>
             </div>
             <span class="mono-text" style="font-weight: 600; font-size: 0.95rem;">
               {% if grade.is_submitted %}{{ grade.score }} pt{% else %}&mdash;{% endif %}

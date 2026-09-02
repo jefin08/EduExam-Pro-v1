@@ -643,20 +643,21 @@ Marks: 5
     </div>
 
     <!-- One Unified Question Table -->
-    <div class="ledger">
-      <div class="ledger-header" style="grid-template-columns: 2.2fr 1.2fr 1fr 1fr 0.8fr 0.8fr 1.8fr;">
-        <span>Question / Title</span>
-        <span>Topic</span>
-        <span>Purpose</span>
-        <span>Format</span>
-        <span>Difficulty</span>
-        <span>Marks</span>
-        <span style="text-align: right;">Actions</span>
-      </div>
+    <div style="overflow-x: auto;">
+      <div class="ledger">
+        <div class="ledger-header" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr);">
+          <span>Question / Title</span>
+          <span>Topic</span>
+          <span>Purpose</span>
+          <span>Format</span>
+          <span>Difficulty</span>
+          <span>Marks</span>
+          <span style="text-align: right;">Actions</span>
+        </div>
 
-      <!-- Practice MCQs -->
-      {% for q in practice_mcqs %}
-        <div class="ledger-row qb-row" id="qb-row-practice-mcq-{{ q.id }}" data-topic-id="{{ q.topic.id }}" data-type="practice_mcq" data-text="{{ q.question_text|lower }}" style="grid-template-columns: 2.2fr 1.2fr 1fr 1fr 0.8fr 0.8fr 1.8fr; align-items: center;">
+        <!-- Practice MCQs -->
+        {% for q in practice_mcqs %}
+          <div class="ledger-row qb-row" id="qb-row-practice-mcq-{{ q.id }}" data-topic-id="{{ q.topic.id }}" data-type="practice_mcq" data-text="{{ q.question_text|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
           <div>
             <strong>{{ q.question_text|truncatechars:80 }}</strong>
             <div style="font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.15rem;">{{ q.options|length }} Options</div>
@@ -764,7 +765,7 @@ Marks: 5
 
       <!-- Exam MCQs -->
       {% for q in exam_mcqs %}
-        <div class="ledger-row qb-row" data-topic-id="{{ q.topic.id }}" data-type="exam_mcq" data-text="{{ q.question_text|lower }}" style="grid-template-columns: 2.2fr 1.2fr 1fr 1fr 0.8fr 0.8fr 1.8fr; align-items: center;">
+        <div class="ledger-row qb-row" data-topic-id="{{ q.topic.id }}" data-type="exam_mcq" data-text="{{ q.question_text|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
           <div>
             <strong>{{ q.question_text|truncatechars:80 }}</strong>
             <div style="font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.15rem;">{{ q.options|length }} Options</div>
@@ -840,7 +841,7 @@ Marks: 5
 
       <!-- Practice Coding Questions -->
       {% for q in practice_coding_qs %}
-        <div class="ledger-row qb-row" id="qb-row-practice-coding-{{ q.id }}" data-topic-id="{{ q.topic.id }}" data-type="practice_coding" data-text="{{ q.title|lower }} {{ q.description|lower }}" style="grid-template-columns: 2.2fr 1.2fr 1fr 1fr 0.8fr 0.8fr 1.8fr; align-items: center;">
+        <div class="ledger-row qb-row" id="qb-row-practice-coding-{{ q.id }}" data-topic-id="{{ q.topic.id }}" data-type="practice_coding" data-text="{{ q.title|lower }} {{ q.description|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
           <div>
             <strong>{{ q.title }}</strong>
             <div style="font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.15rem;">{{ q.description|truncatechars:60 }}</div>
@@ -1021,7 +1022,7 @@ Marks: 5
 
       <!-- Exam Coding Questions -->
       {% for q in exam_coding_qs %}
-        <div class="ledger-row qb-row" data-topic-id="{{ q.topic.id }}" data-type="exam_coding" data-text="{{ q.title|lower }} {{ q.description|lower }}" style="grid-template-columns: 2.2fr 1.2fr 1fr 1fr 0.8fr 0.8fr 1.8fr; align-items: center;">
+        <div class="ledger-row qb-row" data-topic-id="{{ q.topic.id }}" data-type="exam_coding" data-text="{{ q.title|lower }} {{ q.description|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
           <div>
             <strong>{{ q.title }}</strong>
             <div style="font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.15rem;">{{ q.description|truncatechars:60 }}</div>
@@ -1168,6 +1169,7 @@ Marks: 5
         <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No questions added to the bank yet.</div>
       {% endif %}
     </div>
+  </div>
   </div>
 
   <!-- ================= TAB 3: PRACTICE SETS SECTION ================= -->

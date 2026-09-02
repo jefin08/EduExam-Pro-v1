@@ -3,10 +3,11 @@
 {% block title %}Student Portal — EduExam Pro{% endblock %}
 
 {% block sidebar_menu %}
-<li class="active"><a href="#dashboard-sec">Student Dashboard</a></li>
-<li><a href="#scheduled-exams-sec">Scheduled Exams</a></li>
-<li><a href="#practice-list-sec">Practice Sets</a></li>
-<li><a href="#history-sec">Assessment History</a></li>
+<li class="active"><a href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
+<li><a href="{% url 'student_scheduled_exams' %}">Scheduled Exams</a></li>
+<li><a href="{% url 'student_practice_sets' %}">Practice Sets</a></li>
+<li><a href="{% url 'student_assessment_history' %}">Assessment History</a></li>
+<li><a href="{% url 'student_profile' %}">My Profile</a></li>
 {% endblock %}
 
 {% block main_content %}
@@ -27,20 +28,53 @@
     </div>
   </div>
 
-  <!-- Join Timed Exam Code Entry Form -->
-  <div class="dash-form" style="border: 2px solid var(--red-pen); background-color: rgba(178, 58, 46, 0.01);">
-    <h3 style="color: var(--red-pen); border-bottom-color: var(--red-pen);">Join Official Examination</h3>
-    <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1.5rem;">Enter the unique 6-digit access code provided by your instructor to begin a timed exam session.</p>
-    <form action="{% url 'student_join_exam' %}" method="POST">
-      {% csrf_token %}
-      <div class="form-grid" style="grid-template-columns: 1fr auto; align-items: end;">
-        <div class="form-group" style="margin-bottom: 0;">
-          <label for="exam_code" style="color: var(--red-pen);">Exam Access Code</label>
-          <input type="text" id="exam_code" name="exam_code" placeholder="e.g. EXM87A" style="font-family: var(--font-mono); font-weight: 600; text-transform: uppercase;" required>
+  <!-- Primary Modes Section -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+    
+    <!-- EXAM MODE -->
+    <div class="dash-form" style="border: 2px solid var(--red-pen); background-color: rgba(178, 58, 46, 0.01); display: flex; flex-direction: column;">
+      <h3 style="color: var(--red-pen); border-bottom-color: var(--red-pen);">Join Official Examination</h3>
+      <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1.5rem;">High-stakes, timed official examination. Enter the unique 6-digit access code provided by your instructor to begin your attempt.</p>
+      
+      <form action="{% url 'student_join_exam' %}" method="POST" style="margin-top: auto;">
+        {% csrf_token %}
+        <div class="form-grid" style="grid-template-columns: 1fr auto; align-items: end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="exam_code" style="color: var(--red-pen);">Exam Access Code</label>
+            <input type="text" id="exam_code" name="exam_code" placeholder="e.g. EXM87A" style="font-family: var(--font-mono); font-weight: 600; text-transform: uppercase;" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="background-color: var(--red-pen); border-color: var(--red-pen); height: 42px; display: inline-flex; align-items: center; justify-content: center;">Attend Exam</button>
         </div>
-        <button type="submit" class="btn btn-primary" style="background-color: var(--red-pen); border-color: var(--red-pen); height: 42px; display: inline-flex; align-items: center; justify-content: center;">Attend Exam</button>
+      </form>
+    </div>
+
+    <!-- PRACTICE MODE -->
+    <div class="dash-form" style="border: 2px solid var(--pass-teal); background-color: rgba(46, 110, 96, 0.01); display: flex; flex-direction: column;">
+      <h3 style="color: var(--pass-teal); border-bottom-color: var(--pass-teal);">Practice Mode</h3>
+      <p style="color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 1.5rem;">Self-paced learning with unlimited attempts. Practice by topic to get immediate feedback without affecting your official grades.</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+        {% for set in practice_sets %}
+          <div style="border: 1px solid var(--rule); border-radius: 4px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; background: var(--paper);">
+            <div>
+              <strong style="display: block; font-size: 0.9rem; margin-bottom: 0.25rem; color: var(--ink);">{{ set.name }}</strong>
+              <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                {% for topic in set.topics.all %}
+                  <span class="mode-tag practice-tag" style="font-size: 0.65rem;">{{ topic.name }}</span>
+                {% endfor %}
+              </div>
+            </div>
+            <a href="/practice/{{ set.id }}/" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background-color: var(--pass-teal); border-color: var(--pass-teal); white-space: nowrap;">Practice</a>
+          </div>
+        {% empty %}
+          <div style="padding: 1rem; text-align: center; color: var(--ink-soft); font-size: 0.85rem;">No practice sets available yet.</div>
+        {% endfor %}
       </div>
-    </form>
+      
+      <div style="text-align: right; margin-top: auto;">
+        <a href="{% url 'student_practice_sets' %}" class="btn btn-ghost" style="font-size: 0.85rem;">View All →</a>
+      </div>
+    </div>
   </div>
 
   <!-- Scheduled Exams for this Class -->
@@ -80,67 +114,18 @@
         <div style="padding:2rem; text-align:center; color:var(--ink-soft); font-size:0.9rem;">No exams scheduled for your class yet.</div>
       {% endfor %}
     </div>
-  </div>
-
-  <!-- Visible Practice Sets Section -->
-  <div id="practice-list-sec">
-    <h3 class="section-title">Available Practice Sets</h3>
-    <div class="ledger">
-      <div class="ledger-header" style="grid-template-columns: 1.5fr 2fr 100px;">
-        <span>Set Name</span>
-        <span>Topics Included</span>
-        <span>Action</span>
-      </div>
-      {% for set in practice_sets %}
-        <div class="ledger-row" style="grid-template-columns: 1.5fr 2fr 100px;">
-          <strong>{{ set.name }}</strong>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            {% for topic in set.topics.all %}
-              <span class="mode-tag practice-tag" style="font-size: 0.7rem;">{{ topic.name }}</span>
-            {% endfor %}
-          </div>
-          <div>
-            <a href="/practice/{{ set.id }}/" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background-color: var(--pass-teal); border-color: var(--pass-teal);">Practice</a>
-          </div>
-        </div>
-      {% empty %}
-        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No practice sessions assigned to your class.</div>
-      {% endfor %}
+    <div style="text-align: right; margin-top: 1rem;">
+      <a href="{% url 'student_scheduled_exams' %}" class="btn btn-ghost" style="font-size: 0.85rem;">View All →</a>
     </div>
   </div>
 
+
+
   <!-- History & Gradebook lists -->
   <div id="history-sec">
-    <h3 class="section-title">Assessment History</h3>
+    <h3 class="section-title">Assessment Summary</h3>
     
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
-      
-      <!-- Practice Session Logs -->
-      <div>
-        <h4 class="serif-text" style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--pass-teal);">Practice History</h4>
-        <div class="ledger">
-          <div class="ledger-header" style="grid-template-columns: 1.2fr 1fr;">
-            <span>Practice Set</span>
-            <span>Date & Score</span>
-          </div>
-          {% for attempt in attempts %}
-            <div class="ledger-row practice-history-item" style="grid-template-columns: 1.2fr 1fr; font-size: 0.85rem; {% if forloop.counter > 5 %}display: none;{% endif %}">
-              <strong>{{ attempt.practice_set.name }}</strong>
-              <div>
-                <span class="mono-text" style="font-weight: 600; color: var(--pass-teal);">Grade: {{ attempt.score }}</span>
-                <span style="display: block; font-size: 0.7rem; color: var(--ink-soft);">{{ attempt.attempted_at|date:"Y-m-d H:i" }}</span>
-              </div>
-            </div>
-          {% empty %}
-            <div style="padding: 1.5rem; text-align: center; color: var(--ink-soft); font-size: 0.85rem;">No practice history logged yet.</div>
-          {% endfor %}
-        </div>
-        {% if attempts.count > 5 %}
-          <div style="text-align: center; margin-top: 0.75rem;">
-            <button class="btn btn-ghost" id="show-more-practice-btn" style="font-size: 0.8rem; padding: 0.3rem 0.85rem;" onclick="togglePracticeHistory()">See More ▾</button>
-          </div>
-        {% endif %}
-      </div>
+    <div style="margin-top: 1rem;">
 
       <!-- Exam Session Logs -->
       <div>
@@ -151,7 +136,7 @@
             <span>Date & Score</span>
           </div>
           {% for og in official_grades %}
-            <div class="ledger-row exam-grade-item" style="grid-template-columns: 1.2fr 1fr; font-size: 0.85rem; {% if forloop.counter > 5 %}display: none;{% endif %}">
+            <div class="ledger-row" style="grid-template-columns: 1.2fr 1fr; font-size: 0.85rem;">
               <strong>{{ og.exam.name }}</strong>
               <div>
                 <span class="mono-text" style="font-weight: 600; color: var(--red-pen);">Grade: {{ og.score }}</span>
@@ -162,42 +147,12 @@
             <div style="padding: 1.5rem; text-align: center; color: var(--ink-soft); font-size: 0.85rem;">No exam grades recorded yet.</div>
           {% endfor %}
         </div>
-        {% if official_grades.count > 5 %}
-          <div style="text-align: center; margin-top: 0.75rem;">
-            <button class="btn btn-ghost" id="show-more-exams-btn" style="font-size: 0.8rem; padding: 0.3rem 0.85rem;" onclick="toggleExamsHistory()">See More ▾</button>
-          </div>
-        {% endif %}
+        <div style="text-align: right; margin-top: 1rem;">
+          <a href="{% url 'student_assessment_history' %}" class="btn btn-ghost" style="font-size: 0.85rem;">View All →</a>
+        </div>
       </div>
 
     </div>
   </div>
-
-  <script>
-    let practiceExpanded = false;
-    function togglePracticeHistory() {
-      const items = document.querySelectorAll('.practice-history-item');
-      const btn = document.getElementById('show-more-practice-btn');
-      practiceExpanded = !practiceExpanded;
-      items.forEach((item, index) => {
-        if (index >= 5) {
-          item.style.display = practiceExpanded ? 'grid' : 'none';
-        }
-      });
-      btn.textContent = practiceExpanded ? 'See Less ▴' : 'See More ▾';
-    }
-
-    let examsExpanded = false;
-    function toggleExamsHistory() {
-      const items = document.querySelectorAll('.exam-grade-item');
-      const btn = document.getElementById('show-more-exams-btn');
-      examsExpanded = !examsExpanded;
-      items.forEach((item, index) => {
-        if (index >= 5) {
-          item.style.display = examsExpanded ? 'grid' : 'none';
-        }
-      });
-      btn.textContent = examsExpanded ? 'See Less ▴' : 'See More ▾';
-    }
-  </script>
 
 {% endblock %}

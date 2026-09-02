@@ -227,7 +227,17 @@
       </a>
       <div class="user-info">
         <span class="user-role-badge">{{ request.user.role }}</span>
-        <span>{{ request.user.username }}</span>
+        {% if request.user.role == 'student' %}
+          <a href="{% url 'student_profile' %}" style="text-decoration: underline; color: inherit; font-weight: 500;" title="My Profile">
+            {{ request.user.username }}
+          </a>
+        {% elif request.user.role == 'teacher' %}
+          <a href="{% url 'teacher_profile' %}" style="text-decoration: underline; color: inherit; font-weight: 500;" title="Teacher Profile">
+            {{ request.user.username }}
+          </a>
+        {% else %}
+          <span>{{ request.user.username }}</span>
+        {% endif %}
         <a href="{% url 'signout' %}" class="btn btn-ghost" style="padding: 0.4rem 1rem; font-size: 0.8rem;">Logout</a>
       </div>
     </div>
