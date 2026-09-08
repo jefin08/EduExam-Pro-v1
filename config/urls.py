@@ -20,7 +20,7 @@ from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 from practice.views import attempt_practice_set_view, publish_comment_view
-from exams.views import take_exam_view, teacher_monitor_view, log_monitoring_event
+from exams.views import take_exam_view, teacher_monitor_view, log_monitoring_event, teacher_exam_summary_api
 from judge.views import run_custom_code_view, run_sample_tests_view
 
 urlpatterns = [
@@ -32,6 +32,7 @@ urlpatterns = [
     path('exam/<int:exam_id>/', take_exam_view, name='take_exam'),
     path('exam/<int:exam_id>/monitor/', teacher_monitor_view, name='teacher_monitor'),
     path('exam/<int:exam_id>/event/', log_monitoring_event, name='log_monitoring_event'),
+    path('exam/<int:exam_id>/summary/', teacher_exam_summary_api, name='teacher_exam_summary'),
     path('judge/run-custom/', run_custom_code_view, name='run_custom_code'),
     path('judge/run-samples/', run_sample_tests_view, name='run_sample_tests'),
 ]
