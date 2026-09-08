@@ -28,7 +28,7 @@
       <input type="hidden" name="topic_id" value="{{ topic.id }}">
 
       {% for q in questions %}
-        <div class="card" style="margin-bottom: 2rem; border: 1px solid {% if q.has_warnings %}var(--red-pen){% else %}var(--rule-strong){% endif %}; position: relative; padding: 1.5rem;">
+        <div class="card" {% if q.has_warnings %}style="margin-bottom: 2rem; border: 1px solid var(--red-pen); position: relative; padding: 1.5rem;"{% else %}style="margin-bottom: 2rem; border: 1px solid var(--rule-strong); position: relative; padding: 1.5rem;"{% endif %}>
           
           <!-- Top checkbox to include/skip -->
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule-strong); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">

@@ -195,7 +195,7 @@
     </div>
 
     <!-- Inline Bulk Upload Panel (2-Step Workflow: 1. Paste/Upload -> 2. Parse & Verify) -->
-    <div id="bulk-upload-entry-panel" class="dash-form" style="display: {% if open_bulk_verify %}block{% else %}none{% endif %}; margin-bottom: 1.5rem; border-left: 4px solid var(--ink);">
+    <div id="bulk-upload-entry-panel" class="dash-form" {% if open_bulk_verify %}style="display: block; margin-bottom: 1.5rem; border-left: 4px solid var(--ink);"{% else %}style="display: none; margin-bottom: 1.5rem; border-left: 4px solid var(--ink);"{% endif %}>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h4 style="margin: 0; font-family: var(--font-serif); font-size: 1.1rem; color: var(--ink);">
           {% if open_bulk_verify %}Step 2: Verify & Edit Parsed Questions{% else %}Bulk Question Import{% endif %}
@@ -219,7 +219,7 @@
           <input type="hidden" name="topic_id" value="{{ bulk_topic.id }}">
 
           {% for q in parsed_questions %}
-            <div class="card" style="margin-bottom: 1rem; border: 1px solid {% if q.has_warnings %}var(--red-pen){% else %}var(--rule-strong){% endif %}; padding: 1rem;">
+            <div class="card" {% if q.has_warnings %}style="margin-bottom: 1rem; border: 1px solid var(--red-pen); padding: 1rem;"{% else %}style="margin-bottom: 1rem; border: 1px solid var(--rule-strong); padding: 1rem;"{% endif %}>
               <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule-strong); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <input type="checkbox" name="include_{{ forloop.counter0 }}" id="include_{{ forloop.counter0 }}" value="yes" checked style="width: auto; cursor: pointer;">
@@ -1380,7 +1380,7 @@ Marks: 5
       </div>
 
       {% for exam in exams %}
-        <div class="ledger-row" style="grid-template-columns: 1.8fr 1fr 1.5fr 1.5fr; align-items: center;{% if exam.end_time < now %} opacity: 0.75;{% endif %}">
+        <div class="ledger-row" {% if exam.end_time < now %}style="grid-template-columns: 1.8fr 1fr 1.5fr 1.5fr; align-items: center; opacity: 0.75;"{% else %}style="grid-template-columns: 1.8fr 1fr 1.5fr 1.5fr; align-items: center;"{% endif %}>
           <div>
             <strong>{{ exam.name }}</strong>
             <span style="display: block; font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.15rem;">Window: {{ exam.start_time|date:"m-d H:i" }} to {{ exam.end_time|date:"m-d H:i" }}</span>

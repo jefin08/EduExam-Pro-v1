@@ -411,6 +411,8 @@ def teacher_create_coding(request):
     output_format = request.POST.get('output_format')
     sample_input = request.POST.get('sample_input')
     sample_output = request.POST.get('sample_output')
+    hidden_input = request.POST.get('hidden_input')
+    hidden_output = request.POST.get('hidden_output')
     starter_code = request.POST.get('starter_code', '')
     time_limit = request.POST.get('time_limit', 2)
     memory_limit = request.POST.get('memory_limit', 256)

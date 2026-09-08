@@ -1,0 +1,6 @@
+.env
+user_credentials.txt
+__pycache__/
+*.pyc
+db_check.ps1
+seed_data.py
