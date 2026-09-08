@@ -2,6 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth import get_user_model
+from django.contrib import messages
 from .models import Exam, OfficialGrade, MonitoringEvent
 from content.models import ExamMCQQuestion, ExamCodingQuestion
 from judge.models import Submission, TestCaseResult
@@ -176,3 +179,74 @@ def log_monitoring_event(request, exam_id):
         return JsonResponse({'success': True})
         
     return JsonResponse({'success': False}, status=400)
+
+User = get_user_model()
+
+@login_required
+def teacher_exam_summary_api(request, exam_id):
+    if request.user.role != 'teacher':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    exam = get_object_or_404(Exam, id=exam_id, teacher=request.user)
+    now = timezone.now()
+    
+    # 1. Total Assigned Students
+    assigned_classes = exam.codes.filter(is_active=True).values_list('class_group', flat=True)
+    assigned_students = User.objects.filter(role='student', class_group__in=assigned_classes).select_related('class_group')
+    
+    # 2. Grades
+    grades = OfficialGrade.objects.filter(exam=exam).select_related('student')
+    
+    # Lists
+    completed_students = []
+    completed_late_students = []
+    in_progress_students = []
+    
+    grade_student_ids = set()
+    
+    for grade in grades:
+        grade_student_ids.add(grade.student_id)
+        student_data = {
+            'id': grade.student.id,
+            'name': grade.student.username,
+            'entry_time': grade.started_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'submit_time': grade.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if grade.submitted_at else 'N/A',
+            'score': grade.score,
+            'status': 'In Progress' if not grade.is_submitted else 'Completed'
+        }
+        
+        if grade.is_submitted:
+            if grade.started_at > exam.start_time and grade.started_at <= exam.start_time + timedelta(minutes=15):
+                student_data['scheduled_start'] = exam.start_time.strftime('%Y-%m-%d %H:%M:%S')
+                student_data['status'] = 'Completed Late'
+                completed_late_students.append(student_data)
+            else:
+                completed_students.append(student_data)
+        else:
+            in_progress_students.append(student_data)
+            
+    # Absent / Not Started
+    absent_students = []
+    for student in assigned_students:
+        if student.id not in grade_student_ids:
+            absent_students.append({
+                'id': student.id,
+                'name': student.username,
+                'status': 'Absent' if now > exam.end_time else 'Not Started'
+            })
+            
+    data = {
+        'total_students': assigned_students.count(),
+        'completed_count': len(completed_students),
+        'completed_late_count': len(completed_late_students),
+        'in_progress_count': len(in_progress_students),
+        'absent_count': len(absent_students),
+        'exam_active': now <= exam.end_time,
+        
+        'completed_students': completed_students,
+        'completed_late_students': completed_late_students,
+        'in_progress_students': in_progress_students,
+        'absent_students': absent_students,
+    }
+    
+    return JsonResponse(data)

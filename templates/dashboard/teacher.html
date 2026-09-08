@@ -1500,13 +1500,14 @@ Marks: 5
     </div>
   </div>
 
-  <!-- ================= TAB 5: RESULTS & ANALYTICS SECTION ================= -->
+  <!-- ================= TAB 5: RESULTS & EXAM MONITORING SECTION ================= -->
   <div id="tab-sec-results" class="dash-tab-content" style="display: none;">
+    <!-- 1. Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-      <h3 class="section-title" style="margin: 0;">Results &amp; Grade Evaluation</h3>
+      <h3 class="section-title" style="margin: 0;">Results &amp; Exam Monitoring</h3>
     </div>
 
-    <!-- Results Filter Bar -->
+    <!-- 2. Filters -->
     <div class="dash-form" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
       <div style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 1rem; align-items: end;">
         <div>
@@ -1534,14 +1535,130 @@ Marks: 5
       </div>
     </div>
 
-    <!-- Per-Class Result Release Controls Panel (Expandable per Exam) -->
-    <details open style="margin-bottom: 1.5rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0.75rem 1.25rem;">
+    <!-- 3. Selected Exam Info & 4. Exam Monitoring Summary -->
+    <div id="student-stats-placeholder" style="margin-bottom: 1.5rem; background: var(--paper); border: 1px dashed var(--rule-strong); border-radius: 12px; padding: 2rem; text-align: center; color: var(--ink-soft);">
+      Select an exam from the filter above to view monitoring statistics.
+    </div>
+
+    <div id="student-stats-widget" style="display: none; margin-bottom: 1.5rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.04); transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden; position: relative;">
+      <!-- Decorative background accent -->
+      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, var(--pass-teal) 0%, #3b82f6 50%, #f59e0b 100%);"></div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px dashed var(--rule-strong); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+        <div>
+          <h4 id="summary-exam-name" style="margin: 0; font-family: var(--font-sans); font-size: 1.4rem; font-weight: 800; color: var(--ink); letter-spacing: -0.02em;">Selected Exam</h4>
+          <span style="font-size: 0.85rem; color: var(--ink-soft); font-weight: 500;"><span id="summary-total-students">0</span> Students Assigned</span>
+        </div>
+        <div class="stats-progress-bar" style="display: flex; height: 8px; width: 200px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,0.05);">
+           <div id="summary-bar-completed" style="width: 0%; background: var(--pass-teal); transition: width 0.5s ease;" title="Completed: 0"></div>
+           <div id="summary-bar-late" style="width: 0%; background: #f59e0b; transition: width 0.5s ease;" title="Completed Late: 0"></div>
+           <div id="summary-bar-progress" style="width: 0%; background: #3b82f6; transition: width 0.5s ease;" title="In Progress: 0"></div>
+           <div id="summary-bar-absent" style="width: 0%; background: #9ca3af; transition: width 0.5s ease;" title="Absent: 0"></div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
+        <!-- Completed -->
+        <div class="stat-card" onclick="showStatusStudents('completed')" style="padding: 1rem; border-radius: 8px; background: rgba(46,110,96,0.03); border: 1px solid rgba(46,110,96,0.15); display: flex; flex-direction: column; align-items: center; text-align: center; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 16px rgba(46,110,96,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+          <div style="font-size: 1.5rem; margin-bottom: 0.35rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">✅</div>
+          <div id="summary-completed-count" style="font-size: 1.8rem; font-weight: 800; color: var(--pass-teal); font-family: var(--font-sans); line-height: 1;">0</div>
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--ink-soft); margin-top: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;">Completed</div>
+        </div>
+
+        <!-- Completed Late -->
+        <div class="stat-card" onclick="showStatusStudents('late')" style="padding: 1rem; border-radius: 8px; background: rgba(245,158,11,0.03); border: 1px solid rgba(245,158,11,0.15); display: flex; flex-direction: column; align-items: center; text-align: center; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 16px rgba(245,158,11,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+          <div style="font-size: 1.5rem; margin-bottom: 0.35rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">🟠</div>
+          <div id="summary-late-count" style="font-size: 1.8rem; font-weight: 800; color: #d97706; font-family: var(--font-sans); line-height: 1;">0</div>
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--ink-soft); margin-top: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;">Completed Late</div>
+        </div>
+
+        <!-- In Progress -->
+        <div class="stat-card" onclick="showStatusStudents('progress')" style="padding: 1rem; border-radius: 8px; background: rgba(59,130,246,0.03); border: 1px solid rgba(59,130,246,0.15); display: flex; flex-direction: column; align-items: center; text-align: center; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 16px rgba(59,130,246,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+          <div style="font-size: 1.5rem; margin-bottom: 0.35rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">🔵</div>
+          <div id="summary-progress-count" style="font-size: 1.8rem; font-weight: 800; color: #2563eb; font-family: var(--font-sans); line-height: 1;">0</div>
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--ink-soft); margin-top: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;">In Progress</div>
+        </div>
+
+        <!-- Absent / Not Started -->
+        <div class="stat-card" onclick="showStatusStudents('absent')" style="padding: 1rem; border-radius: 8px; background: rgba(156,163,175,0.03); border: 1px solid rgba(156,163,175,0.15); display: flex; flex-direction: column; align-items: center; text-align: center; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 16px rgba(156,163,175,0.08)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+          <div style="font-size: 1.5rem; margin-bottom: 0.35rem; opacity: 0.8; filter: grayscale(100%) drop-shadow(0 2px 4px rgba(0,0,0,0.1));">⚪</div>
+          <div id="summary-absent-count" style="font-size: 1.8rem; font-weight: 800; color: #4b5563; font-family: var(--font-sans); line-height: 1;">0</div>
+          <div id="summary-absent-label" style="font-size: 0.75rem; font-weight: 700; color: var(--ink-soft); margin-top: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;">Absent</div>
+        </div>
+      </div>
+      
+      <!-- Container for displaying clicked student list -->
+      <div id="summary-student-list-container" style="display: none; margin-top: 1.5rem; border-top: 1px dashed var(--rule-strong); padding-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem;" id="summary-student-tabs">
+            <button type="button" onclick="showStatusStudents('all')" class="btn btn-ghost active-tab" id="status-tab-all" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; border-bottom: 2px solid var(--ink); border-radius: 0;">All</button>
+            <button type="button" onclick="showStatusStudents('completed')" class="btn btn-ghost" id="status-tab-completed" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 0;">Completed</button>
+            <button type="button" onclick="showStatusStudents('late')" class="btn btn-ghost" id="status-tab-late" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 0;">Late</button>
+            <button type="button" onclick="showStatusStudents('progress')" class="btn btn-ghost" id="status-tab-progress" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 0;">In Progress</button>
+            <button type="button" onclick="showStatusStudents('absent')" class="btn btn-ghost" id="status-tab-absent" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 0;">Absent</button>
+          </div>
+          <button type="button" onclick="document.getElementById('summary-student-list-container').style.display='none';" style="background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--ink-soft);">✕</button>
+        </div>
+        <div style="max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.01); border: 1px solid var(--rule-strong); border-radius: 4px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+            <thead style="background: rgba(0,0,0,0.03); border-bottom: 1px solid var(--rule-strong);">
+              <tr id="summary-student-list-header">
+                <!-- Dynamic Headers -->
+              </tr>
+            </thead>
+            <tbody id="summary-student-list-body">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. STUDENT MONITORING / RESULTS (Global Ledger) -->
+    <div class="ledger">
+      <div class="ledger-header" style="grid-template-columns: 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr;">
+        <span>Student / Class</span>
+        <span>Exam Title</span>
+        <span>Entry Time</span>
+        <span>Submission Time</span>
+        <span>MCQ Score</span>
+        <span>Coding Score</span>
+        <span style="text-align: right;">Total Score / Status</span>
+      </div>
+
+      {% for grade in all_official_grades %}
+        <div class="ledger-row results-row" data-exam-id="{{ grade.exam.id }}" data-class-id="{{ grade.student.class_group.id }}" data-search="{{ grade.student.username|lower }} {{ grade.exam.name|lower }}" style="grid-template-columns: 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr; align-items: center;">
+          <div style="overflow: hidden;">
+            <strong style="white-space: nowrap; text-overflow: ellipsis; display: block; overflow: hidden;" title="{{ grade.student.username }}">{{ grade.student.username }}</strong>
+            <span class="mode-tag practice-tag" style="font-size: 0.65rem; margin-top: 0.2rem; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;" title="{{ grade.student.class_group.name }}">{{ grade.student.class_group.name }}</span>
+          </div>
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 0.5rem;" title="{{ grade.exam.name }}">{{ grade.exam.name }}</span>
+          <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft);">{{ grade.started_at|date:"m-d H:i" }}</span>
+          <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft);">{% if grade.submitted_at %}{{ grade.submitted_at|date:"m-d H:i" }}{% else %}--{% endif %}</span>
+          <span class="mono-text" style="font-size: 0.85rem;">{{ grade.mcq_score }} pt</span>
+          <span class="mono-text" style="font-size: 0.85rem;">{{ grade.coding_score }} pt</span>
+          <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <span class="mono-text" style="font-size: 0.9rem; font-weight: 700; color: var(--pass-teal);">{{ grade.score }} pt</span>
+            {% if grade.is_submitted %}
+              <span class="mode-tag practice-tag" style="font-size: 0.7rem; margin-top: 0.2rem;">✓ Submitted</span>
+            {% else %}
+              <span class="mode-tag exam-tag" style="font-size: 0.7rem; margin-top: 0.2rem; background: rgba(180,132,42,0.08); color: var(--gold); border-color: var(--gold);">In Progress</span>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No student exam submissions recorded yet.</div>
+      {% endfor %}
+    </div>
+
+    <!-- 6. PER-CLASS RESULT RELEASE CONTROLS -->
+    <details style="margin-top: 1.5rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0.75rem 1.25rem;">
       <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; cursor: pointer; color: var(--ink);">
-        ⚙ PER-CLASS RESULT RELEASE CONTROLS
+        ▸ Result Release Settings
       </summary>
       <div style="margin-top: 0.75rem;">
         <p style="font-size: 0.82rem; color: var(--ink-soft); margin-top: 0; margin-bottom: 0.75rem;">
-          Toggle class access &amp; result availability per scheduled exam:
+          Control whether exam results are currently visible to students for each class.
         </p>
         <div style="display: grid; gap: 0.75rem;">
           {% for exam in exams %}
@@ -1577,41 +1694,7 @@ Marks: 5
         </div>
       </div>
     </details>
-
-    <!-- Student Grades Evaluation Ledger -->
-    <div class="ledger">
-      <div class="ledger-header" style="grid-template-columns: 1.5fr 1.8fr 1fr 1fr 1fr 1fr 1fr;">
-        <span>Student</span>
-        <span>Exam Title</span>
-        <span>Class</span>
-        <span>MCQ Score</span>
-        <span>Coding Score</span>
-        <span>Total Score</span>
-        <span style="text-align: right;">Status</span>
-      </div>
-
-      {% for grade in all_official_grades %}
-        <div class="ledger-row results-row" data-exam-id="{{ grade.exam.id }}" data-class-id="{{ grade.student.class_group.id }}" data-search="{{ grade.student.username|lower }} {{ grade.exam.name|lower }}" style="grid-template-columns: 1.5fr 1.8fr 1fr 1fr 1fr 1fr 1fr; align-items: center;">
-          <strong>{{ grade.student.username }}</strong>
-          <span>{{ grade.exam.name }}</span>
-          <span class="mode-tag practice-tag" style="font-size: 0.7rem;">{{ grade.student.class_group.name }}</span>
-          <span class="mono-text" style="font-size: 0.85rem;">{{ grade.mcq_score }} pt</span>
-          <span class="mono-text" style="font-size: 0.85rem;">{{ grade.coding_score }} pt</span>
-          <span class="mono-text" style="font-size: 0.9rem; font-weight: 700; color: var(--pass-teal);">{{ grade.score }} pt</span>
-          <div style="display: flex; justify-content: flex-end;">
-            {% if grade.is_submitted %}
-              <span class="mode-tag practice-tag" style="font-size: 0.72rem;">✓ Submitted</span>
-            {% else %}
-              <span class="mode-tag exam-tag" style="font-size: 0.72rem; background: rgba(180,132,42,0.08); color: var(--gold); border-color: var(--gold);">In Progress</span>
-            {% endif %}
-          </div>
-        </div>
-      {% empty %}
-        <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No student exam submissions recorded yet.</div>
-      {% endfor %}
-    </div>
   </div>
-
 {% endblock %}
 
 {% block extra_script %}
@@ -1830,6 +1913,130 @@ Marks: 5
     }
   }
 
+  let currentExamSummaryData = null;
+
+  function fetchExamSummary(examId) {
+    fetch('/exam/' + examId + '/summary/')
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.error(data.error);
+          return;
+        }
+        currentExamSummaryData = data;
+        
+        document.getElementById('student-stats-placeholder').style.display = 'none';
+        document.getElementById('student-stats-widget').style.display = 'block';
+        
+        document.getElementById('summary-total-students').innerText = data.total_students;
+        document.getElementById('summary-completed-count').innerText = data.completed_count;
+        document.getElementById('summary-late-count').innerText = data.completed_late_count;
+        document.getElementById('summary-progress-count').innerText = data.in_progress_count;
+        document.getElementById('summary-absent-count').innerText = data.absent_count;
+        
+        document.getElementById('summary-absent-label').innerText = data.exam_active ? 'Not Started' : 'Absent';
+        
+        if (data.total_students > 0) {
+          document.getElementById('summary-bar-completed').style.width = (data.completed_count / data.total_students * 100) + '%';
+          document.getElementById('summary-bar-completed').title = 'Completed: ' + data.completed_count;
+          
+          document.getElementById('summary-bar-late').style.width = (data.completed_late_count / data.total_students * 100) + '%';
+          document.getElementById('summary-bar-late').title = 'Completed Late: ' + data.completed_late_count;
+          
+          document.getElementById('summary-bar-progress').style.width = (data.in_progress_count / data.total_students * 100) + '%';
+          document.getElementById('summary-bar-progress').title = 'In Progress: ' + data.in_progress_count;
+          
+          document.getElementById('summary-bar-absent').style.width = (data.absent_count / data.total_students * 100) + '%';
+          document.getElementById('summary-bar-absent').title = (data.exam_active ? 'Not Started: ' : 'Absent: ') + data.absent_count;
+        } else {
+          document.getElementById('summary-bar-completed').style.width = '0%';
+          document.getElementById('summary-bar-late').style.width = '0%';
+          document.getElementById('summary-bar-progress').style.width = '0%';
+          document.getElementById('summary-bar-absent').style.width = '0%';
+        }
+        
+        showStatusStudents('all');
+      })
+      .catch(err => console.error('Error fetching exam summary:', err));
+  }
+
+  function showStatusStudents(statusType) {
+    if (!currentExamSummaryData) return;
+    
+    const tabs = ['all', 'completed', 'late', 'progress', 'absent'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('status-tab-' + t);
+      if (btn) {
+        if (t === statusType) {
+          btn.classList.add('active-tab');
+          btn.style.borderBottom = '2px solid var(--ink)';
+        } else {
+          btn.classList.remove('active-tab');
+          btn.style.borderBottom = 'none';
+        }
+      }
+    });
+
+    const container = document.getElementById('summary-student-list-container');
+    const headerRow = document.getElementById('summary-student-list-header');
+    const body = document.getElementById('summary-student-list-body');
+    
+    let students = [];
+    
+    if (statusType === 'all') {
+      students = [
+        ...currentExamSummaryData.completed_students,
+        ...currentExamSummaryData.completed_late_students,
+        ...currentExamSummaryData.in_progress_students,
+        ...currentExamSummaryData.absent_students
+      ];
+    } else if (statusType === 'completed') {
+      students = currentExamSummaryData.completed_students;
+    } else if (statusType === 'late') {
+      students = currentExamSummaryData.completed_late_students;
+    } else if (statusType === 'progress') {
+      students = currentExamSummaryData.in_progress_students;
+    } else if (statusType === 'absent') {
+      students = currentExamSummaryData.absent_students;
+    }
+    
+    const headers = '<th style="padding: 0.75rem;">Student</th><th style="padding: 0.75rem;">Status</th><th style="padding: 0.75rem;">Entry Time</th><th style="padding: 0.75rem;">Submission Time</th><th style="padding: 0.75rem;">Total Score</th>';
+    headerRow.innerHTML = headers;
+    body.innerHTML = '';
+    
+    if (students.length === 0) {
+      body.innerHTML = `<tr><td colspan="5" style="padding: 1rem; text-align: center; color: var(--ink-soft);">No students found for this status.</td></tr>`;
+    } else {
+      students.forEach(s => {
+        let rowHtml = '<tr>';
+        rowHtml += `<td style="padding: 0.75rem; border-bottom: 1px solid var(--rule-light); font-weight: 500;">${s.name}</td>`;
+        
+        let statusHtml = '';
+        if (s.status === 'Completed') {
+          statusHtml = '<span style="background: rgba(46,110,96,0.1); color: var(--pass-teal); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">Completed</span>';
+        } else if (s.status === 'Completed Late') {
+          statusHtml = '<span style="background: rgba(245,158,11,0.1); color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">Completed Late</span>';
+        } else if (s.status === 'In Progress') {
+          statusHtml = '<span style="background: rgba(59,130,246,0.1); color: #2563eb; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">In Progress</span>';
+        } else if (s.status === 'Absent' || s.status === 'Not Started') {
+          statusHtml = `<span style="background: rgba(156,163,175,0.1); color: #4b5563; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">${s.status}</span>`;
+        } else {
+          statusHtml = `<span style="background: rgba(245,158,11,0.1); color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">${s.status}</span>`;
+        }
+        
+        rowHtml += `<td style="padding: 0.75rem; border-bottom: 1px solid var(--rule-light);">${statusHtml}</td>`;
+        rowHtml += `<td style="padding: 0.75rem; border-bottom: 1px solid var(--rule-light);">${s.entry_time || '--'}</td>`;
+        rowHtml += `<td style="padding: 0.75rem; border-bottom: 1px solid var(--rule-light);">${s.submit_time || '--'}</td>`;
+        rowHtml += `<td style="padding: 0.75rem; border-bottom: 1px solid var(--rule-light); font-weight: 700;">${s.score !== undefined ? s.score + ' pt' : '--'}</td>`;
+        
+        rowHtml += '</tr>';
+        body.innerHTML += rowHtml;
+      });
+    }
+    
+    container.style.display = 'block';
+  }
+
   function filterResults() {
     const examSelect = document.getElementById('results-filter-exam');
     const classSelect = document.getElementById('results-filter-class');
@@ -1838,6 +2045,18 @@ Marks: 5
     const selectedExam = examSelect ? examSelect.value : 'all';
     const selectedClass = classSelect ? classSelect.value : 'all';
     const searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    if (selectedExam !== 'all') {
+      const examName = examSelect.options[examSelect.selectedIndex].text;
+      const titleEl = document.getElementById('summary-exam-name');
+      if (titleEl) titleEl.innerText = examName;
+      fetchExamSummary(selectedExam);
+    } else {
+      const ph = document.getElementById('student-stats-placeholder');
+      const w = document.getElementById('student-stats-widget');
+      if (ph) ph.style.display = 'block';
+      if (w) w.style.display = 'none';
+    }
 
     const rows = document.querySelectorAll('.results-row');
     rows.forEach(row => {
