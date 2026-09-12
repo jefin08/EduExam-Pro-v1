@@ -1,0 +1,123 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Bulk Upload Students — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'admin_dashboard' %}">Admin Overview</a></li>
+<li><a href="{% url 'admin_classes_departments' %}">Classes &amp; Departments</a></li>
+<li><a href="{% url 'admin_pending_approvals' %}">Pending Approvals</a></li>
+<li><a href="{% url 'admin_users_directory' %}">Users Directory</a></li>
+<li><a href="{% url 'admin_onboard_users' %}">User Onboarding</a></li>
+<li class="active"><a href="#">Bulk Student Upload</a></li>
+<li><a href="/admin/">Django Site Admin</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div style="max-width: 1000px; width: 100%;">
+
+    <!-- Top Header & Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <a href="{% url 'admin_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; margin-bottom: 0.5rem; transition: color 0.15s ease;">
+          &larr; Back to Admin Overview
+        </a>
+        <h2 class="section-title" style="margin: 0; font-size: 1.6rem;">Bulk Upload Students</h2>
+        <p style="margin: 0.35rem 0 0 0; font-size: 0.88rem; color: var(--ink-soft);">
+          Upload an <strong>Excel sheet (.xlsx)</strong>, <strong>CSV file (.csv)</strong>, <strong>Text file (.txt)</strong>, or paste student records below.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <span class="mono-text" style="font-size: 0.75rem; background: var(--paper); border: 1px solid var(--rule-strong); padding: 0.35rem 0.75rem; border-radius: 4px;">
+          Columns: <code>Name, Email, RegNo, Department, Class</code>
+        </span>
+      </div>
+    </div>
+
+    <!-- Bulk Upload Form Container -->
+    <div class="dash-form" style="border-left: 4px solid var(--pass-teal); padding: 1.75rem; background: var(--paper); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+
+      <!-- Automated Account Credentials Dropdown Extension -->
+      <details id="credentials-guide-details" style="background: rgba(46,110,96,0.05); border: 1px solid var(--pass-teal); border-radius: 4px; margin-bottom: 1.5rem; font-size: 0.84rem; color: var(--ink);">
+        <summary style="padding: 0.75rem 1rem; font-weight: 600; font-size: 0.86rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; list-style: none;">
+          <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+            <span style="color: var(--pass-teal); font-weight: 700; font-size: 1rem;">&#9432;</span>
+            <span>Automated Account Credentials &amp; Verification Rules</span>
+          </span>
+          <span id="credentials-toggle-label" class="mono-text" style="font-size: 0.72rem; color: var(--pass-teal); background: rgba(46,110,96,0.12); padding: 0.2rem 0.55rem; border-radius: 3px; font-weight: 600;">
+            Show Rules &#9662;
+          </span>
+        </summary>
+        <div style="padding: 0.65rem 1.25rem 1rem 1.25rem; border-top: 1px solid rgba(46,110,96,0.18);">
+          <ul style="margin: 0.25rem 0 0 1.25rem; padding: 0; line-height: 1.6;">
+            <li><strong>Name:</strong> Student's full name (automatically split into First and Last Name).</li>
+            <li><strong>Username:</strong> Extracted from the email prefix before <code>@</code> (e.g., <code>john.doe@college.edu</code> &rarr; <code>john.doe</code>).</li>
+            <li><strong>Password:</strong> Automatically set to the student's <strong>Registration Number</strong>.</li>
+            <li><strong>Verification:</strong> Automatically verifies Department &amp; Class against existing records. If any are not found, you can verify or map them manually before enrolling.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- Upload / Paste Form -->
+      <form action="{% url 'admin_bulk_upload_students' %}" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+          
+          <!-- Option A: File Upload -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="bulk_file" style="font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); display: block; margin-bottom: 0.5rem;">
+              Option A: Upload File (.xlsx, .csv, .txt)
+            </label>
+            <input type="file" id="bulk_file" name="file" accept=".xlsx,.xls,.csv,.txt" style="padding: 0.65rem; background: var(--bg); border: 1px solid var(--rule-strong); border-radius: 4px; width: 100%; font-size: 0.85rem;">
+            <span style="font-size: 0.78rem; color: var(--ink-soft); display: block; margin-top: 0.5rem;">
+              Supports Excel (.xlsx, .xls), CSV (.csv), or comma/tab-separated TXT.
+            </span>
+          </div>
+
+          <!-- Option B: Direct Paste -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="bulk_paste" style="font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); display: block; margin-bottom: 0.5rem;">
+              Option B: Or Paste Rows (from Excel / Notepad)
+            </label>
+            <textarea id="bulk_paste" name="paste_data" rows="6" placeholder="Alex Smith, alex.smith@college.edu, REG2026001, Computer Science, CS-A&#10;Sarah Lee, sarah.lee@college.edu, REG2026002, Electronics, EC-B" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.65rem; border: 1px solid var(--rule-strong); border-radius: 4px; resize: vertical; line-height: 1.5;"></textarea>
+            <span style="font-size: 0.78rem; color: var(--ink-soft); display: block; margin-top: 0.5rem;">
+              Columns: <code>Name, Email, Registration Number, Department, Class</code> (comma or tab separated).
+            </span>
+          </div>
+
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--rule-soft);">
+          <button type="submit" class="btn btn-primary" style="padding: 0.7rem 1.6rem; font-size: 0.92rem; font-weight: 600; cursor: pointer;">
+            Upload &amp; Enroll Students
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <style>
+    #credentials-guide-details summary::-webkit-details-marker {
+      display: none;
+    }
+    #credentials-guide-details summary {
+      outline: none;
+      transition: background-color 0.15s ease;
+    }
+    #credentials-guide-details summary:hover {
+      background-color: rgba(46,110,96,0.08);
+    }
+  </style>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const credDetails = document.getElementById("credentials-guide-details");
+      const credToggleLabel = document.getElementById("credentials-toggle-label");
+      if (credDetails && credToggleLabel) {
+        credDetails.addEventListener("toggle", function() {
+          credToggleLabel.innerHTML = credDetails.open ? "Hide Rules &#9652;" : "Show Rules &#9662;";
+        });
+      }
+    });
+  </script>
+{% endblock %}

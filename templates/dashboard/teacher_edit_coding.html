@@ -3,74 +3,292 @@
 {% block title %}Edit Coding Question — EduExam Pro{% endblock %}
 
 {% block sidebar_menu %}
-<li><a href="{% url 'teacher_topic_questions' question.topic.id %}">← Back to Questions</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#topics">Topics</a></li>
+<li class="active"><a href="{% url 'teacher_dashboard' %}#questions">Question bank</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#practice">Practice</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#exams">Exams</a></li>
+<li><a href="{% url 'teacher_students_progress' %}">Students Progress</a></li>
+<li><a href="{% url 'teacher_practice_comments' %}">Practice Comments</a></li>
+<li><a href="{% url 'teacher_profile' %}">My Profile</a></li>
 {% endblock %}
 
 {% block main_content %}
-  <div class="main-panel-section">
-    <h3 class="section-title">Edit Coding Question</h3>
+  <div style="max-width: 960px; margin: 0 auto; width: 100%;">
     
-    <div class="dash-form">
-      <form action="{% url 'teacher_edit_coding' question.id %}" method="POST">
+    <!-- Top Header & Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <a href="{% url 'teacher_dashboard' %}#questions" style="display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; margin-bottom: 0.5rem; transition: color 0.15s ease;">
+          ← Back to Question Bank
+        </a>
+        <h2 class="section-title" style="margin: 0; font-size: 1.6rem;">Edit Coding Question</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        {% if is_both %}
+          <span class="mode-tag both-tag" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; background-color: rgba(0,102,204,0.09); color: #0066cc; border: 1px solid #0066cc; border-radius: 3px; font-family: var(--font-mono); font-weight: 600;">BOTH MODES</span>
+        {% elif q_type == 'exam' %}
+          <span class="mode-tag exam-tag" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">EXAM ONLY</span>
+        {% else %}
+          <span class="mode-tag practice-tag" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">PRACTICE ONLY</span>
+        {% endif %}
+        <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft); background: var(--paper); border: 1px solid var(--rule-strong); padding: 0.25rem 0.55rem; border-radius: 3px;">ID #{{ question.id }}</span>
+      </div>
+    </div>
+
+    <!-- Edit Form Card -->
+    <div class="dash-form" style="background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 2rem; box-shadow: 2px 2px 0px rgba(29, 39, 51, 0.04);">
+      <form action="{% url 'teacher_edit_coding' question.id %}?type={{ q_type }}" method="POST">
         {% csrf_token %}
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Topic</label>
-            <input type="text" value="{{ question.topic.name }} ({{ question.topic.subject }})" disabled style="background-color: rgba(0,0,0,0.02);">
+
+        <!-- Section 1: Settings & Classification -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--rule);">
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-bottom: 1rem;">
+            1. Settings &amp; Execution Limits
           </div>
-          <div class="form-group">
-            <label for="code_title">Problem Title</label>
-            <input type="text" id="code_title" name="title" value="{{ question.title }}" required>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="code_topic" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Topic</label>
+              <select id="code_topic" name="topic_id" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+                {% for t in topics %}
+                  <option value="{{ t.id }}" {% if t.id == question.topic.id %}selected{% endif %}>{{ t.name }} ({{ t.subject }})</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="code_purpose" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Purpose / Target Mode</label>
+              <select id="code_purpose" name="purpose" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+                <option value="both" {% if is_both %}selected{% endif %}>Both (Exam &amp; Practice)</option>
+                <option value="practice" {% if not is_both and q_type == 'practice' %}selected{% endif %}>Practice Only</option>
+                <option value="exam" {% if not is_both and q_type == 'exam' %}selected{% endif %}>Exam Only</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="code_difficulty" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Difficulty</label>
+              <select id="code_difficulty" name="difficulty" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+                <option value="easy" {% if question.difficulty == 'easy' %}selected{% endif %}>Easy</option>
+                <option value="medium" {% if question.difficulty == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="hard" {% if question.difficulty == 'hard' %}selected{% endif %}>Hard</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="code_marks" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Marks</label>
+              <input type="number" id="code_marks" name="marks" value="{{ question.marks }}" min="1" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="code_time" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Time Limit (s)</label>
+              <input type="number" id="code_time" name="time_limit" value="{{ question.time_limit|default:2 }}" min="1" max="10" step="1" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="code_mem" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Memory (MB)</label>
+              <input type="number" id="code_mem" name="memory_limit" value="{{ question.memory_limit|default:256 }}" min="64" max="1024" step="64" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+            </div>
           </div>
-          <div class="form-group">
-            <label for="code_difficulty">Difficulty</label>
-            <select id="code_difficulty" name="difficulty" required>
-              <option value="easy" {% if question.difficulty == 'easy' %}selected{% endif %}>Easy</option>
-              <option value="medium" {% if question.difficulty == 'medium' %}selected{% endif %}>Medium</option>
-              <option value="hard" {% if question.difficulty == 'hard' %}selected{% endif %}>Hard</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="code_marks">Marks</label>
-            <input type="number" id="code_marks" name="marks" value="{{ question.marks }}" min="1" required>
-          </div>
-          <div class="form-group full-width">
-            <label for="code_desc">Description</label>
-            <textarea id="code_desc" name="description" rows="3" required>{{ question.description }}</textarea>
-          </div>
-          <div class="form-group">
-            <label for="code_in">Input Format</label>
-            <textarea id="code_in" name="input_format" rows="2" required>{{ question.input_format }}</textarea>
-          </div>
-          <div class="form-group">
-            <label for="code_out">Output Format</label>
-            <textarea id="code_out" name="output_format" rows="2" required>{{ question.output_format }}</textarea>
-          </div>
-          <div class="form-group">
-            <label for="sample_in">Sample Input</label>
-            <textarea id="sample_in" name="sample_input" rows="2" required>{{ question.sample_test_cases.0.input }}</textarea>
-          </div>
-          <div class="form-group">
-            <label for="sample_out">Sample Output</label>
-            <textarea id="sample_out" name="sample_output" rows="2" required>{{ question.sample_test_cases.0.output }}</textarea>
-          </div>
-          <div class="form-group">
-            <label for="hidden_in">Hidden Test Input</label>
-            <textarea id="hidden_in" name="hidden_input" rows="2" required>{{ question.hidden_test_cases.0.input }}</textarea>
-          </div>
-          <div class="form-group">
-            <label for="hidden_out">Hidden Test Output</label>
-            <textarea id="hidden_out" name="hidden_output" rows="2" required>{{ question.hidden_test_cases.0.output }}</textarea>
-          </div>
-          {% if q_type != 'exam' %}
-          <div class="form-group full-width">
-            <label for="code_explanation">Explanation (Optional)</label>
-            <textarea id="code_explanation" name="explanation" rows="2" placeholder="Provide correct solution and explanation...">{{ question.explanation }}</textarea>
-          </div>
-          {% endif %}
         </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Save Changes</button>
+
+        <!-- Section 2: Problem Details -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--rule);">
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-bottom: 1rem;">
+            2. Problem Title &amp; Description
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="code_title" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Problem Title</label>
+            <input type="text" id="code_title" name="title" value="{{ question.title }}" required placeholder="e.g., Two Sum Problem" style="width: 100%; font-size: 0.9rem; padding: 0.55rem 0.75rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="code_desc" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Problem Description &amp; Constraints</label>
+            <textarea id="code_desc" name="description" rows="4" required placeholder="Describe the problem, requirements, constraints, and edge cases..." style="width: 100%; font-size: 0.88rem; line-height: 1.45; padding: 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong); resize: vertical;">{{ question.description }}</textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="code_in" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Input Format</label>
+              <textarea id="code_in" name="input_format" rows="3" required placeholder="e.g., First line contains integer N..." style="width: 100%; font-size: 0.85rem; padding: 0.55rem; border-radius: 4px; border: 1px solid var(--rule-strong); resize: vertical;">{{ question.input_format }}</textarea>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="code_out" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Output Format</label>
+              <textarea id="code_out" name="output_format" rows="3" required placeholder="e.g., Print the result on a single line..." style="width: 100%; font-size: 0.85rem; padding: 0.55rem; border-radius: 4px; border: 1px solid var(--rule-strong); resize: vertical;">{{ question.output_format }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Sample Test Cases -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--rule);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div>
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--pass-teal); letter-spacing: 0.05em;">
+                3. Sample Test Cases (Student Visible)
+              </div>
+              <p style="margin: 0.2rem 0 0 0; font-size: 0.78rem; color: var(--ink-soft);">These examples will be displayed directly to students on the problem page.</p>
+            </div>
+            <button type="button" class="btn btn-ghost" onclick="addTestCaseRow('sample-cases-container', 'sample')" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; color: var(--pass-teal); border: 1px solid var(--pass-teal);">+ Add Sample Case</button>
+          </div>
+
+          <div id="sample-cases-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% if question.sample_test_cases %}
+              {% for tc in question.sample_test_cases %}
+                <div class="test-case-card" style="background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.85rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--pass-teal);">Sample Case #{{ forloop.counter }}</span>
+                    {% if not forloop.first %}
+                      <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.72rem; color: var(--red-pen); padding: 0.15rem 0.5rem; border: none; cursor: pointer;">✕ Remove</button>
+                    {% endif %}
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div>
+                      <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Input</label>
+                      <textarea name="sample_inputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" required>{{ tc.input }}</textarea>
+                    </div>
+                    <div>
+                      <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Expected Output</label>
+                      <textarea name="sample_outputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" required>{{ tc.output }}</textarea>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="test-case-card" style="background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--pass-teal);">Sample Case #1</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                  <div>
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Input</label>
+                    <textarea name="sample_inputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" required></textarea>
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Expected Output</label>
+                    <textarea name="sample_outputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" required></textarea>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Section 4: Hidden Test Cases -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--rule);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div>
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--red-pen); letter-spacing: 0.05em;">
+                4. Hidden Test Cases (Private Auto-Grading)
+              </div>
+              <p style="margin: 0.2rem 0 0 0; font-size: 0.78rem; color: var(--ink-soft);">Evaluated during grading; hidden from students to test edge cases.</p>
+            </div>
+            <button type="button" class="btn btn-ghost" onclick="addTestCaseRow('hidden-cases-container', 'hidden')" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; color: var(--red-pen); border: 1px solid var(--red-pen);">+ Add Hidden Case</button>
+          </div>
+
+          <div id="hidden-cases-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% if question.hidden_test_cases %}
+              {% for tc in question.hidden_test_cases %}
+                <div class="test-case-card" style="background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.85rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--red-pen);">Hidden Case #{{ forloop.counter }}</span>
+                    {% if not forloop.first %}
+                      <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.72rem; color: var(--red-pen); padding: 0.15rem 0.5rem; border: none; cursor: pointer;">✕ Remove</button>
+                    {% endif %}
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div>
+                      <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Input</label>
+                      <textarea name="hidden_inputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" required>{{ tc.input }}</textarea>
+                    </div>
+                    <div>
+                      <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Expected Output</label>
+                      <textarea name="hidden_outputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" required>{{ tc.output }}</textarea>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="test-case-card" style="background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--red-pen);">Hidden Case #1</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                  <div>
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Input</label>
+                    <textarea name="hidden_inputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" required></textarea>
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Expected Output</label>
+                    <textarea name="hidden_outputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" required></textarea>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Section 5: Starter Code & Explanation -->
+        <div style="margin-bottom: 2rem;">
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-bottom: 1rem;">
+            5. Starter Template &amp; Solution Notes
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="code_starter" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Starter Code / Boilerplate (Optional)</label>
+            <textarea id="code_starter" name="starter_code" rows="3" placeholder="// Boilerplate code shown initially to students in the code editor..." style="width: 100%; font-family: var(--font-mono); font-size: 0.85rem; padding: 0.6rem; border-radius: 4px; border: 1px solid var(--rule-strong); resize: vertical;">{{ question.starter_code }}</textarea>
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label for="code_explanation" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Explanation / Solution Walkthrough (Optional)</label>
+            <textarea id="code_explanation" name="explanation" rows="3" placeholder="Provide approach, algorithm walkthrough, and complexity analysis..." style="width: 100%; font-size: 0.85rem; padding: 0.6rem; border-radius: 4px; border: 1px solid var(--rule-strong); resize: vertical;">{{ question.explanation }}</textarea>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.85rem; padding-top: 1rem; border-top: 1px solid var(--rule);">
+          <a href="{% url 'teacher_dashboard' %}#questions" class="btn btn-ghost" style="padding: 0.55rem 1.25rem; font-size: 0.88rem; text-decoration: none;">Cancel</a>
+          <button type="submit" class="btn btn-primary" style="padding: 0.55rem 1.5rem; font-size: 0.88rem; font-weight: 600;">Save Changes</button>
+        </div>
       </form>
     </div>
   </div>
+
+  <script>
+    function addTestCaseRow(containerId, type) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const isSample = (type === 'sample');
+      const color = isSample ? 'var(--pass-teal)' : 'var(--red-pen)';
+      const namePrefix = isSample ? 'sample' : 'hidden';
+      const labelPrefix = isSample ? 'Sample' : 'Hidden';
+      const count = container.children.length + 1;
+      
+      const div = document.createElement('div');
+      div.className = 'test-case-card';
+      div.style = 'background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.85rem;';
+      div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: ${color};">${labelPrefix} Case #${count}</span>
+          <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.72rem; color: var(--red-pen); padding: 0.15rem 0.5rem; border: none; cursor: pointer;">✕ Remove</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Input</label>
+            <textarea name="${namePrefix}_inputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" placeholder="${labelPrefix} input..." required></textarea>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 0.25rem;">Expected Output</label>
+            <textarea name="${namePrefix}_outputs[]" rows="2" style="width: 100%; font-family: var(--font-mono); font-size: 0.82rem; padding: 0.45rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);" placeholder="Expected output..." required></textarea>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    function removeTestCaseRow(btn) {
+      const card = btn.closest('.test-case-card');
+      if (card) {
+        card.remove();
+      }
+    }
+  </script>
 {% endblock %}

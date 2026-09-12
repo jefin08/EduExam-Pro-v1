@@ -3,26 +3,27 @@
 {% block title %}Teacher Portal — EduExam Pro{% endblock %}
 
 {% block sidebar_menu %}
-<li class="active" id="nav-topics"><a href="#topics" onclick="switchTeacherTab('topics'); return false;">Topics</a></li>
-<li id="nav-questions"><a href="#questions" onclick="switchTeacherTab('questions'); return false;">Question bank</a></li>
+<li {% if not open_bulk_verify %}class="active"{% endif %} id="nav-topics"><a href="#topics" onclick="switchTeacherTab('topics'); return false;">Topics</a></li>
+<li {% if open_bulk_verify %}class="active"{% endif %} id="nav-questions"><a href="#questions" onclick="switchTeacherTab('questions'); return false;">Question bank</a></li>
 <li id="nav-practice"><a href="#practice" onclick="switchTeacherTab('practice'); return false;">Practice</a></li>
 <li id="nav-exams"><a href="#exams" onclick="switchTeacherTab('exams'); return false;">Exams</a></li>
-<li id="nav-results"><a href="#results" onclick="switchTeacherTab('results'); return false;">Results</a></li>
+<li><a href="{% url 'teacher_students_progress' %}">Students Progress</a></li>
+<li><a href="{% url 'teacher_practice_comments' %}">Practice Comments</a></li>
+<li><a href="{% url 'teacher_profile' %}">My Profile</a></li>
 {% endblock %}
 
 {% block main_content %}
 
-  <!-- ================= PERSISTENT 5-TAB BAR ================= -->
+  <!-- ================= PERSISTENT 4-TAB BAR ================= -->
   <div class="dash-tabs-bar" style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--rule-strong); margin-bottom: 2rem; background: var(--paper); padding: 0.5rem 0.5rem 0 0.5rem; border-radius: 4px 4px 0 0;">
-    <button type="button" class="btn btn-ghost active-tab" onclick="switchTeacherTab('topics')" id="tab-btn-topics" style="font-weight: 600; border-bottom: 3px solid var(--ink); border-radius: 0; padding: 0.6rem 1.2rem;">Topics</button>
-    <button type="button" class="btn btn-ghost" onclick="switchTeacherTab('questions')" id="tab-btn-questions" style="font-weight: 600; border-bottom: 3px solid transparent; border-radius: 0; padding: 0.6rem 1.2rem;">Question bank</button>
+    <button type="button" class="btn btn-ghost {% if not open_bulk_verify %}active-tab{% endif %}" onclick="switchTeacherTab('topics')" id="tab-btn-topics" style="font-weight: 600; border-bottom: 3px solid {% if not open_bulk_verify %}var(--ink){% else %}transparent{% endif %}; border-radius: 0; padding: 0.6rem 1.2rem;">Topics</button>
+    <button type="button" class="btn btn-ghost {% if open_bulk_verify %}active-tab{% endif %}" onclick="switchTeacherTab('questions')" id="tab-btn-questions" style="font-weight: 600; border-bottom: 3px solid {% if open_bulk_verify %}var(--ink){% else %}transparent{% endif %}; border-radius: 0; padding: 0.6rem 1.2rem;">Question bank</button>
     <button type="button" class="btn btn-ghost" onclick="switchTeacherTab('practice')" id="tab-btn-practice" style="font-weight: 600; border-bottom: 3px solid transparent; border-radius: 0; padding: 0.6rem 1.2rem;">Practice</button>
     <button type="button" class="btn btn-ghost" onclick="switchTeacherTab('exams')" id="tab-btn-exams" style="font-weight: 600; border-bottom: 3px solid transparent; border-radius: 0; padding: 0.6rem 1.2rem;">Exams</button>
-    <button type="button" class="btn btn-ghost" onclick="switchTeacherTab('results')" id="tab-btn-results" style="font-weight: 600; border-bottom: 3px solid transparent; border-radius: 0; padding: 0.6rem 1.2rem;">Results</button>
   </div>
 
   <!-- ================= TAB 1: TOPICS SECTION ================= -->
-  <div id="tab-sec-topics" class="dash-tab-content">
+  <div id="tab-sec-topics" class="dash-tab-content" {% if open_bulk_verify %}style="display: none;"{% endif %}>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
       <h3 class="section-title" style="margin: 0;">Topics Builder</h3>
       <button type="button" class="btn btn-primary" onclick="toggleNewTopicForm()" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">+ New topic</button>
@@ -61,6 +62,8 @@
                   <input type="checkbox" name="class_ids" value="{{ class.id }}" style="width: auto;">
                   {{ class.name }}
                 </label>
+              {% empty %}
+                <span style="color: var(--ink-soft); font-size: 0.85rem; font-style: italic;">No classes registered in your department{% if request.user.department %} ({{ request.user.department }}){% endif %}. Please contact an administrator to register classes under your department.</span>
               {% endfor %}
             </div>
           </div>
@@ -74,7 +77,7 @@
 
     <!-- Topics Ledger Table -->
     <div class="ledger">
-      <div class="ledger-header" style="grid-template-columns: 1.5fr 1fr 1fr 1.2fr 1.8fr 1fr;">
+      <div class="ledger-header" style="grid-template-columns: 1.5fr 1fr 0.8fr 1.8fr 1.3fr 105px; column-gap: 1rem; padding: 0.85rem 1.25rem; align-items: center;">
         <span>Topic Name</span>
         <span>Subject</span>
         <span>Purpose</span>
@@ -83,43 +86,49 @@
         <span style="text-align: right;">Action</span>
       </div>
       {% for topic in topics %}
-        <div class="ledger-row" style="grid-template-columns: 1.5fr 1fr 1fr 1.2fr 1.8fr 1fr; align-items: center;">
-          <strong>{{ topic.name }}</strong>
-          <span class="mono-text" style="font-size: 0.85rem;">{{ topic.subject }}</span>
+        <div class="ledger-row" style="grid-template-columns: 1.5fr 1fr 0.8fr 1.8fr 1.3fr 105px; column-gap: 1rem; padding: 0.85rem 1.25rem; align-items: center;">
+          <strong style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ topic.name }}">{{ topic.name }}</strong>
+          <span class="mono-text" style="font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ topic.subject }}</span>
 
           <div>
             {% if topic.purpose == 'exam' %}
-              <span class="mode-tag exam-tag" style="font-size: 0.72rem; padding: 0.2rem 0.5rem; background-color: rgba(178,58,46,0.09); color: var(--red-pen); border-color: var(--red-pen);">Exam</span>
+              <span class="mode-tag exam-tag" style="font-size: 0.7rem; padding: 0.15rem 0.45rem; background-color: rgba(178,58,46,0.09); color: var(--red-pen); border-color: var(--red-pen);">Exam</span>
             {% elif topic.purpose == 'practice' %}
-              <span class="mode-tag practice-tag" style="font-size: 0.72rem; padding: 0.2rem 0.5rem; background-color: rgba(46,110,96,0.09); color: var(--pass-teal); border-color: var(--pass-teal);">Practice</span>
+              <span class="mode-tag practice-tag" style="font-size: 0.7rem; padding: 0.15rem 0.45rem; background-color: rgba(46,110,96,0.09); color: var(--pass-teal); border-color: var(--pass-teal);">Practice</span>
             {% else %}
-              <span class="mode-tag both-tag" style="font-size: 0.72rem; padding: 0.2rem 0.5rem; background-color: rgba(0,102,204,0.09); color: #0066cc; border: 1px solid #0066cc; border-radius: 3px; font-family: var(--font-mono); font-weight: 600;">Both</span>
+              <span class="mode-tag both-tag" style="font-size: 0.7rem; padding: 0.15rem 0.45rem; background-color: rgba(0,102,204,0.09); color: #0066cc; border: 1px solid #0066cc; border-radius: 3px; font-family: var(--font-mono); font-weight: 600;">Both</span>
             {% endif %}
           </div>
 
-          <!-- Question Count per Topic Row -->
-          <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft);">
-            {{ topic.practice_questions_count }} practice · {{ topic.exam_questions_count }} exam
-          </span>
+          <!-- Question Count per Topic Row (2 lines) -->
+          <div style="display: flex; flex-direction: column; gap: 0.15rem; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.35;">
+            {% if topic.both_questions_count > 0 %}
+              <span style="font-weight: 600; color: #0066cc;">{{ topic.both_questions_count }} Both</span>
+              <span style="font-size: 0.73rem; color: var(--ink-soft); white-space: nowrap;">{{ topic.practice_questions_count }} practice · {{ topic.exam_questions_count }} exam</span>
+            {% else %}
+              <span style="color: var(--pass-teal); font-weight: 600; white-space: nowrap;">{{ topic.practice_questions_count }} practice</span>
+              <span style="color: var(--red-pen); font-weight: 600; white-space: nowrap;">{{ topic.exam_questions_count }} exam</span>
+            {% endif %}
+          </div>
 
           <!-- Compact visible class chips summary -->
-          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+          <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
             {% for vis in topic.visibilities.all %}
-              <span class="mode-tag practice-tag" style="font-size: 0.68rem; padding: 0.15rem 0.4rem;">{{ vis.class_group.name }}</span>
+              <span class="mode-tag practice-tag" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">{{ vis.class_group.name }}</span>
             {% empty %}
               <span class="mode-tag exam-tag" style="font-size: 0.68rem; padding: 0.15rem 0.5rem; background-color: rgba(178,58,46,0.07); color: var(--red-pen); border-color: var(--red-pen);">INVISIBLE</span>
             {% endfor %}
           </div>
 
-          <!-- Action buttons for Questions and inline row expand -->
-          <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end;">
-            <button type="button" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.3rem 0.75rem;"
+          <!-- Action buttons stacked in 2 lines -->
+          <div style="display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end;">
+            <button type="button" class="btn btn-primary" style="font-size: 0.72rem; padding: 0.22rem 0.55rem; width: 95px; text-align: center; white-space: nowrap;"
               onclick="openTopicQuestions('{{ topic.id }}')">
               Questions
             </button>
-            <button type="button" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.3rem 0.75rem;"
+            <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.22rem 0.55rem; width: 95px; text-align: center; white-space: nowrap;"
               onclick="toggleTopicExpand('{{ topic.id }}')">
-              Manage & Visibility ▾
+              Manage ▾
             </button>
           </div>
         </div>
@@ -185,7 +194,7 @@
   </div>
 
   <!-- ================= TAB 2: QUESTION BANK SECTION ================= -->
-  <div id="tab-sec-questions" class="dash-tab-content" style="display: none;">
+  <div id="tab-sec-questions" class="dash-tab-content" {% if not open_bulk_verify %}style="display: none;"{% endif %}>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
       <h3 class="section-title" style="margin: 0;">Question Bank</h3>
       <div style="display: flex; gap: 0.75rem;">
@@ -205,31 +214,49 @@
 
       {% if open_bulk_verify %}
         <!-- STEP 2: PARSE & VERIFY QUESTIONS INLINE -->
-        <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background-color: rgba(46, 110, 96, 0.08); border: 1px solid var(--pass-teal); border-radius: 4px;">
-          <p style="margin: 0; font-weight: 600; color: var(--pass-teal);">
-            Parsed {{ parsed_questions|length }} question(s) for Topic: <strong>{{ bulk_topic.name }}</strong>
-          </p>
-          <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: var(--ink-soft);">
-            Verify and adjust fields below before saving to the Question Bank. Uncheck any questions you wish to skip.
-          </p>
+        <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background-color: rgba(46, 110, 96, 0.08); border: 1px solid var(--pass-teal); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <p style="margin: 0; font-weight: 600; color: var(--pass-teal);">
+              Parsed {{ parsed_questions|length }} question(s) for Topic: <strong>{{ bulk_topic.name }}</strong>
+            </p>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: var(--ink-soft);">
+              Verify and adjust fields below before saving to the Question Bank. Uncheck any questions you wish to skip.
+            </p>
+          </div>
+          <div>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 3px; background: var(--bg); border: 1px solid var(--rule-strong); text-transform: uppercase;">
+              Target Purpose: {{ bulk_purpose|upper }}
+            </span>
+          </div>
         </div>
 
         <form action="{% url 'teacher_bulk_save' %}" method="POST" style="margin: 0;">
           {% csrf_token %}
           <input type="hidden" name="topic_id" value="{{ bulk_topic.id }}">
+          <input type="hidden" name="bulk_purpose" value="{{ bulk_purpose }}">
 
           {% for q in parsed_questions %}
             <div class="card" {% if q.has_warnings %}style="margin-bottom: 1rem; border: 1px solid var(--red-pen); padding: 1rem;"{% else %}style="margin-bottom: 1rem; border: 1px solid var(--rule-strong); padding: 1rem;"{% endif %}>
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule-strong); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule-strong); padding-bottom: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <input type="checkbox" name="include_{{ forloop.counter0 }}" id="include_{{ forloop.counter0 }}" value="yes" checked style="width: auto; cursor: pointer;">
                   <label for="include_{{ forloop.counter0 }}" style="font-weight: 700; font-family: var(--font-sans); font-size: 0.9rem; color: var(--ink); margin: 0; cursor: pointer;">
                     Include Question #{{ forloop.counter }} (Type: {{ q.type }})
                   </label>
                 </div>
-                <span class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft);">
-                  STATUS: {% if q.has_warnings %}<span style="color: var(--red-pen); font-weight: 700;">ATTENTION NEEDED</span>{% else %}<span style="color: var(--pass-teal); font-weight: 700;">VALID</span>{% endif %}
-                </span>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <div style="display: flex; align-items: center; gap: 0.35rem;">
+                    <label style="font-size: 0.72rem; font-weight: 600; color: var(--ink-soft); margin: 0;">Purpose:</label>
+                    <select name="purpose_{{ forloop.counter0 }}" style="font-size: 0.78rem; padding: 0.15rem 0.45rem; border-radius: 3px; border: 1px solid var(--rule-strong);">
+                      <option value="both" {% if bulk_purpose == 'both' %}selected{% endif %}>Both (Exam &amp; Practice)</option>
+                      <option value="practice" {% if bulk_purpose == 'practice' %}selected{% endif %}>Practice Only</option>
+                      <option value="exam" {% if bulk_purpose == 'exam' %}selected{% endif %}>Exam Only</option>
+                    </select>
+                  </div>
+                  <span class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft);">
+                    STATUS: {% if q.has_warnings %}<span style="color: var(--red-pen); font-weight: 700;">ATTENTION NEEDED</span>{% else %}<span style="color: var(--pass-teal); font-weight: 700;">VALID</span>{% endif %}
+                  </span>
+                </div>
               </div>
 
               <input type="hidden" name="type_{{ forloop.counter0 }}" value="{{ q.type }}">
@@ -274,15 +301,74 @@
                   <label style="font-size: 0.75rem; font-weight: 600;">Description</label>
                   <textarea name="description_{{ forloop.counter0 }}" rows="2" style="width: 100%; font-size: 0.85rem;">{{ q.description }}</textarea>
                 </div>
-                <div class="form-grid" style="margin-bottom: 0.5rem;">
-                  <div class="form-group">
-                    <label style="font-size: 0.72rem;">Sample Input</label>
-                    <textarea name="sample_input_{{ forloop.counter0 }}" rows="2" style="font-size: 0.85rem;">{{ q.sample_input }}</textarea>
+                <!-- Sample Test Cases -->
+                <div style="margin-bottom: 0.75rem;">
+                  <label style="font-size: 0.72rem; font-weight: 600; color: var(--pass-teal);">Sample Test Cases</label>
+                  <div id="bulk-sample-container-{{ forloop.counter0 }}" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+                    {% if q.sample_cases %}
+                      {% for sc in q.sample_cases %}
+                        <div class="test-case-row" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; align-items: center; background: rgba(46,110,96,0.03); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem;">
+                          <div class="form-group" style="margin: 0;">
+                            <label style="font-size: 0.68rem; color: var(--pass-teal);">Input</label>
+                            <textarea name="sample_input_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" rows="2" style="font-size: 0.82rem; width: 100%;">{{ sc.input }}</textarea>
+                          </div>
+                          <div class="form-group" style="margin: 0;">
+                            <label style="font-size: 0.68rem; color: var(--pass-teal);">Output</label>
+                            <textarea name="sample_output_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" rows="2" style="font-size: 0.82rem; width: 100%;">{{ sc.output }}</textarea>
+                          </div>
+                          <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.7rem; color: var(--red-pen); padding: 0.2rem 0.4rem; height: fit-content; margin-top: 1rem;">✕</button>
+                        </div>
+                      {% endfor %}
+                    {% else %}
+                      <div class="test-case-row" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; align-items: center; background: rgba(46,110,96,0.03); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem;">
+                        <div class="form-group" style="margin: 0;">
+                          <label style="font-size: 0.68rem; color: var(--pass-teal);">Input</label>
+                          <textarea name="sample_input_{{ forloop.counter0 }}_0" rows="2" style="font-size: 0.82rem; width: 100%;">{{ q.sample_input }}</textarea>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                          <label style="font-size: 0.68rem; color: var(--pass-teal);">Output</label>
+                          <textarea name="sample_output_{{ forloop.counter0 }}_0" rows="2" style="font-size: 0.82rem; width: 100%;">{{ q.sample_output }}</textarea>
+                        </div>
+                        <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.7rem; color: var(--red-pen); padding: 0.2rem 0.4rem; height: fit-content; margin-top: 1rem;">✕</button>
+                      </div>
+                    {% endif %}
                   </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.72rem;">Sample Output</label>
-                    <textarea name="sample_output_{{ forloop.counter0 }}" rows="2" style="font-size: 0.85rem;">{{ q.sample_output }}</textarea>
+                  <button type="button" class="btn btn-ghost" onclick="addBulkTestCaseRow('bulk-sample-container-{{ forloop.counter0 }}', 'sample_input_{{ forloop.counter0 }}', 'sample_output_{{ forloop.counter0 }}', 'var(--pass-teal)')" style="margin-top: 0.4rem; font-size: 0.7rem; padding: 0.2rem 0.5rem; color: var(--pass-teal); border-color: var(--pass-teal);">+ Add Sample Case</button>
+                </div>
+
+                <!-- Hidden Test Cases -->
+                <div style="margin-bottom: 0.75rem;">
+                  <label style="font-size: 0.72rem; font-weight: 600; color: var(--red-pen);">Hidden Test Cases</label>
+                  <div id="bulk-hidden-container-{{ forloop.counter0 }}" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+                    {% if q.hidden_cases %}
+                      {% for hc in q.hidden_cases %}
+                        <div class="test-case-row" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; align-items: center; background: rgba(178,58,46,0.03); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem;">
+                          <div class="form-group" style="margin: 0;">
+                            <label style="font-size: 0.68rem; color: var(--red-pen);">Input</label>
+                            <textarea name="hidden_input_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" rows="2" style="font-size: 0.82rem; width: 100%;">{{ hc.input }}</textarea>
+                          </div>
+                          <div class="form-group" style="margin: 0;">
+                            <label style="font-size: 0.68rem; color: var(--red-pen);">Output</label>
+                            <textarea name="hidden_output_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" rows="2" style="font-size: 0.82rem; width: 100%;">{{ hc.output }}</textarea>
+                          </div>
+                          <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.7rem; color: var(--red-pen); padding: 0.2rem 0.4rem; height: fit-content; margin-top: 1rem;">✕</button>
+                        </div>
+                      {% endfor %}
+                    {% else %}
+                      <div class="test-case-row" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; align-items: center; background: rgba(178,58,46,0.03); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem;">
+                        <div class="form-group" style="margin: 0;">
+                          <label style="font-size: 0.68rem; color: var(--red-pen);">Input</label>
+                          <textarea name="hidden_input_{{ forloop.counter0 }}_0" rows="2" style="font-size: 0.82rem; width: 100%;">{{ q.hidden_input }}</textarea>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                          <label style="font-size: 0.68rem; color: var(--red-pen);">Output</label>
+                          <textarea name="hidden_output_{{ forloop.counter0 }}_0" rows="2" style="font-size: 0.82rem; width: 100%;">{{ q.hidden_output }}</textarea>
+                        </div>
+                        <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.7rem; color: var(--red-pen); padding: 0.2rem 0.4rem; height: fit-content; margin-top: 1rem;">✕</button>
+                      </div>
+                    {% endif %}
                   </div>
+                  <button type="button" class="btn btn-ghost" onclick="addBulkTestCaseRow('bulk-hidden-container-{{ forloop.counter0 }}', 'hidden_input_{{ forloop.counter0 }}', 'hidden_output_{{ forloop.counter0 }}', 'var(--red-pen)')" style="margin-top: 0.4rem; font-size: 0.7rem; padding: 0.2rem 0.5rem; color: var(--red-pen); border-color: var(--red-pen);">+ Add Hidden Case</button>
                 </div>
                 <div class="form-grid" style="margin-bottom: 0.5rem;">
                   <div class="form-group">
@@ -331,25 +417,47 @@ Title: Two Sum Problem
 Description: Given an array of integers, return indices of the two numbers...
 Input Format: First line N, second line N integers...
 Output Format: Two space-separated indices...
-Sample Input: 4
+Sample Input 1:
+4
 2 7 11 15
-Sample Output: 0 1
+Sample Output 1:
+0 1
+Sample Input 2:
+3
+3 2 4
+Sample Output 2:
+1 2
+Hidden Input 1:
+4
+1 2 3 4
+Hidden Output 1:
+0 1
 Difficulty: medium
 Marks: 5
 </pre>
           </div>
         </details>
 
-        <form action="{% url 'teacher_bulk_upload' %}" method="POST" enctype="multipart/form-data">
+        <form action="{% url 'teacher_bulk_upload' %}#questions" method="POST" enctype="multipart/form-data">
           {% csrf_token %}
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label for="bulk_topic_id">Select Target Topic</label>
-            <select name="topic_id" id="bulk_topic_id" required style="width: 100%;">
-              <option value="" disabled selected>-- Select Topic for Bulk Import --</option>
-              {% for topic in topics %}
-                <option value="{{ topic.id }}">{{ topic.name }} ({{ topic.subject }})</option>
-              {% endfor %}
-            </select>
+          <div class="form-grid" style="grid-template-columns: 1.5fr 1fr; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label for="bulk_topic_id">Select Target Topic</label>
+              <select name="topic_id" id="bulk_topic_id" required style="width: 100%;" onchange="updateBulkUploadPurposeOptions()">
+                <option value="" disabled selected>-- Select Topic for Bulk Import --</option>
+                {% for topic in topics %}
+                  <option value="{{ topic.id }}" data-purpose="{{ topic.purpose }}">{{ topic.name }} ({{ topic.subject }}) [{{ topic.get_purpose_display }}]</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="bulk_purpose_select">Question Purpose</label>
+              <select name="bulk_purpose" id="bulk_purpose_select" required style="width: 100%;">
+                <option value="both" selected>Both (Exam &amp; Practice)</option>
+                <option value="practice">Practice Only</option>
+                <option value="exam">Exam Only</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-group" style="margin-bottom: 1rem;">
@@ -379,29 +487,30 @@ Marks: 5
       
       <!-- Step 1: Selection -->
       <div id="qb-add-step1">
-        <p style="font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 1rem;">Select question purpose, type, and topic to launch the editor:</p>
-        <div class="form-grid" style="margin-bottom: 1rem;">
+        <p style="font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 1rem;">Select target topic and question format to launch the editor:</p>
+        <div class="form-grid" style="grid-template-columns: 1.4fr 1fr 1fr; margin-bottom: 1rem;">
           <div class="form-group">
-            <label>1. Purpose</label>
-            <select id="qb-select-mode">
-              <option value="practice" selected>Practice Question</option>
-              <option value="exam">Exam Question</option>
+            <label>1. Select Target Topic</label>
+            <select id="qb-select-topic" onchange="updateTopicPurposeOptions()">
+              <option value="" disabled selected>-- Select Target Topic --</option>
+              {% for topic in topics %}
+                <option value="{{ topic.id }}" data-purpose="{{ topic.purpose }}">{{ topic.name }} ({{ topic.subject }}) [{{ topic.get_purpose_display }}]</option>
+              {% endfor %}
             </select>
           </div>
           <div class="form-group">
-            <label>2. Format</label>
+            <label>2. Question Format</label>
             <select id="qb-select-format">
               <option value="mcq" selected>Multiple Choice (MCQ)</option>
               <option value="coding">Coding Problem</option>
             </select>
           </div>
-          <div class="form-group full-width">
-            <label>3. Select Topic</label>
-            <select id="qb-select-topic">
-              <option value="" disabled selected>-- Select Target Topic --</option>
-              {% for topic in topics %}
-                <option value="{{ topic.id }}">{{ topic.name }} ({{ topic.subject }})</option>
-              {% endfor %}
+          <div class="form-group">
+            <label>3. Question Purpose</label>
+            <select id="qb-select-mode">
+              <option value="both" selected>Both (Exam &amp; Practice)</option>
+              <option value="practice">Practice Only</option>
+              <option value="exam">Exam Only</option>
             </select>
           </div>
         </div>
@@ -552,16 +661,24 @@ Marks: 5
               <span class="mode-tag practice-tag" style="font-size: 0.68rem; margin-left: auto;">PUBLIC / STUDENT VISIBLE</span>
             </summary>
             <div style="margin-top: 0.85rem;">
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="sample_input" style="color: var(--pass-teal);">Sample Test Case Input</label>
-                  <textarea id="sample_input" name="sample_input" rows="2" placeholder="Input visible to student..." required></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="sample_output" style="color: var(--pass-teal);">Sample Test Case Output</label>
-                  <textarea id="sample_output" name="sample_output" rows="2" placeholder="Expected output for sample input..." required></textarea>
+              <div id="sample-cases-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="test-case-card" style="background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 0.75rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--pass-teal);">Sample Case #1</span>
+                  </div>
+                  <div class="form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="color: var(--pass-teal); font-size: 0.75rem;">Input</label>
+                      <textarea name="sample_inputs[]" rows="2" placeholder="Input visible to student..." required></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="color: var(--pass-teal); font-size: 0.75rem;">Output</label>
+                      <textarea name="sample_outputs[]" rows="2" placeholder="Expected output..." required></textarea>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <button type="button" class="btn btn-ghost" onclick="addTestCaseRow('sample-cases-container', 'sample')" style="margin-top: 0.6rem; font-size: 0.75rem; padding: 0.3rem 0.6rem; color: var(--pass-teal); border-color: var(--pass-teal);">+ Add Another Sample Test Case</button>
             </div>
           </details>
 
@@ -572,16 +689,24 @@ Marks: 5
               <span class="mode-tag exam-tag" style="font-size: 0.68rem; margin-left: auto; background-color: rgba(178,58,46,0.08); color: var(--red-pen); border-color: var(--red-pen);">🔒 PRIVATE / HIDDEN EVALUATION</span>
             </summary>
             <div style="margin-top: 0.85rem;">
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="hidden_input" style="color: var(--red-pen);">Hidden Evaluation Input</label>
-                  <textarea id="hidden_input" name="hidden_input" rows="2" placeholder="Hidden input used strictly during evaluation..."></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="hidden_output" style="color: var(--red-pen);">Hidden Evaluation Output</label>
-                  <textarea id="hidden_output" name="hidden_output" rows="2" placeholder="Expected output for hidden input..."></textarea>
+              <div id="hidden-cases-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="test-case-card" style="background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 0.75rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--red-pen);">Hidden Case #1</span>
+                  </div>
+                  <div class="form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="color: var(--red-pen); font-size: 0.75rem;">Input</label>
+                      <textarea name="hidden_inputs[]" rows="2" placeholder="Hidden input used during evaluation..." required></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="color: var(--red-pen); font-size: 0.75rem;">Output</label>
+                      <textarea name="hidden_outputs[]" rows="2" placeholder="Expected hidden output..." required></textarea>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <button type="button" class="btn btn-ghost" onclick="addTestCaseRow('hidden-cases-container', 'hidden')" style="margin-top: 0.6rem; font-size: 0.75rem; padding: 0.3rem 0.6rem; color: var(--red-pen); border-color: var(--red-pen);">+ Add Another Hidden Test Case</button>
             </div>
           </details>
 
@@ -630,6 +755,7 @@ Marks: 5
         <label style="font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--ink-soft);">Type:</label>
         <select id="qb-filter-type" onchange="filterQuestionBank()" style="font-size: 0.85rem; padding: 0.35rem 0.6rem; border: 1px solid var(--rule-strong); border-radius: 3px; background: var(--paper); color: var(--ink);">
           <option value="all">-- All Types --</option>
+          <option value="both">Both (Exam & Practice)</option>
           <option value="practice_mcq">Practice MCQ</option>
           <option value="exam_mcq">Exam MCQ</option>
           <option value="practice_coding">Practice Coding</option>
@@ -655,80 +781,34 @@ Marks: 5
           <span style="text-align: right;">Actions</span>
         </div>
 
-        <!-- Practice MCQs -->
+        <!-- Practice MCQs & Both MCQs -->
         {% for q in practice_mcqs %}
-          <div class="ledger-row qb-row" id="qb-row-practice-mcq-{{ q.id }}" data-topic-id="{{ q.topic.id }}" data-type="practice_mcq" data-text="{{ q.question_text|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
+          <div class="ledger-row qb-row" id="qb-row-practice-mcq-{{ q.id }}" data-topic-id="{{ q.topic.id }}" data-type="{% if q.is_both %}both_mcq{% else %}practice_mcq{% endif %}" data-purpose="{% if q.is_both %}both{% else %}practice{% endif %}" data-format="mcq" data-text="{{ q.question_text|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
           <div>
             <strong>{{ q.question_text|truncatechars:80 }}</strong>
             <div style="font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.15rem;">{{ q.options|length }} Options</div>
           </div>
           <span class="mono-text" style="font-size: 0.8rem;">{{ q.topic.name }}</span>
-          <div><span class="mode-tag practice-tag" style="font-size: 0.7rem;">Practice</span></div>
+          <div>
+            {% if q.is_both %}
+              <span class="mode-tag both-tag" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; background-color: rgba(0,102,204,0.09); color: #0066cc; border: 1px solid #0066cc; border-radius: 3px; font-family: var(--font-mono); font-weight: 600;">Both</span>
+            {% else %}
+              <span class="mode-tag practice-tag" style="font-size: 0.7rem;">Practice</span>
+            {% endif %}
+          </div>
           <div><span class="mono-text" style="font-size: 0.75rem;">MCQ</span></div>
           <span class="mode-tag {% if q.difficulty == 'easy' %}practice-tag{% elif q.difficulty == 'hard' %}exam-tag{% else %}medium-tag{% endif %}" style="font-size: 0.7rem; justify-self: start;">{{ q.get_difficulty_display }}</span>
           <span class="mono-text">{{ q.marks }}</span>
           <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
-            <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: var(--pass-teal); border: 1px solid var(--pass-teal);" onclick="toggleCopyExamInline('mcq', '{{ q.id }}')">Copy to exam</button>
-            <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem;" onclick="toggleEditMcqInline('practice', '{{ q.id }}')">Edit</button>
-            <form action="{% url 'teacher_delete_mcq' q.id %}?type=practice" method="POST" onsubmit="return confirm('Delete this practice MCQ?');" style="margin: 0;">
+            {% if not q.is_both and q.can_copy_to_exam %}
+              <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: var(--pass-teal); border: 1px solid var(--pass-teal);" onclick="toggleCopyExamInline('mcq', '{{ q.id }}')">Copy to exam</button>
+            {% endif %}
+            <a href="{% url 'teacher_edit_mcq' q.id %}?type=practice" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; text-decoration: none;">Edit</a>
+            <form action="{% url 'teacher_delete_mcq' q.id %}?type=practice" method="POST" onsubmit="return confirm('Delete this multiple-choice question?');" style="margin: 0;">
               {% csrf_token %}
               <button type="submit" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: var(--red-pen);">Delete</button>
             </form>
           </div>
-        </div>
-
-        <!-- Inline Edit Panel for Practice MCQ -->
-        <div id="edit-mcq-panel-practice-{{ q.id }}" class="qb-edit-expand" style="display: none; background: var(--paper); border-bottom: 1px solid var(--rule-strong); padding: 1.25rem 1.5rem;">
-          <form action="{% url 'teacher_edit_mcq' q.id %}?type=practice" method="POST">
-            {% csrf_token %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <h5 style="margin: 0; font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink);">EDIT PRACTICE MCQ</h5>
-              <button type="button" onclick="toggleEditMcqInline('practice', '{{ q.id }}')" style="background: none; border: none; cursor: pointer; font-size: 0.9rem;">✕</button>
-            </div>
-            <div class="form-group" style="margin-bottom: 0.75rem;">
-              <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Question Statement</label>
-              <textarea name="question_text" rows="2" style="width: 100%; font-size: 0.85rem;" required>{{ q.question_text }}</textarea>
-            </div>
-            <div class="form-grid" style="margin-bottom: 0.75rem;">
-              {% for opt in q.options %}
-                <div class="form-group">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Option #{{ forloop.counter }}</label>
-                  <input type="text" name="option_{{ forloop.counter0 }}" value="{{ opt }}" required>
-                </div>
-              {% endfor %}
-            </div>
-            <div class="form-grid" style="margin-bottom: 0.75rem;">
-              <div class="form-group">
-                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Correct Option Index</label>
-                <select name="correct_option_index">
-                  <option value="0" {% if q.correct_option_index == 0 %}selected{% endif %}>Option A (0)</option>
-                  <option value="1" {% if q.correct_option_index == 1 %}selected{% endif %}>Option B (1)</option>
-                  <option value="2" {% if q.correct_option_index == 2 %}selected{% endif %}>Option C (2)</option>
-                  <option value="3" {% if q.correct_option_index == 3 %}selected{% endif %}>Option D (3)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Difficulty</label>
-                <select name="difficulty">
-                  <option value="easy" {% if q.difficulty == 'easy' %}selected{% endif %}>Easy</option>
-                  <option value="medium" {% if q.difficulty == 'medium' %}selected{% endif %}>Medium</option>
-                  <option value="hard" {% if q.difficulty == 'hard' %}selected{% endif %}>Hard</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Marks</label>
-                <input type="number" name="marks" value="{{ q.marks }}" required>
-              </div>
-            </div>
-            <div class="form-group" style="margin-bottom: 0.75rem;">
-              <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Explanation</label>
-              <textarea name="explanation" rows="2" style="width: 100%; font-size: 0.85rem;">{{ q.explanation }}</textarea>
-            </div>
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-              <button type="button" class="btn btn-ghost" onclick="toggleEditMcqInline('practice', '{{ q.id }}')">Cancel</button>
-              <button type="submit" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">Save Changes</button>
-            </div>
-          </form>
         </div>
 
         <!-- Row-Level "Copy to exam" Inline Confirm/Edit Panel for Practice MCQ -->
@@ -765,7 +845,7 @@ Marks: 5
 
       <!-- Exam MCQs -->
       {% for q in exam_mcqs %}
-        <div class="ledger-row qb-row" data-topic-id="{{ q.topic.id }}" data-type="exam_mcq" data-text="{{ q.question_text|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
+        <div class="ledger-row qb-row" data-topic-id="{{ q.topic.id }}" data-type="exam_mcq" data-purpose="exam" data-format="mcq" data-text="{{ q.question_text|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
           <div>
             <strong>{{ q.question_text|truncatechars:80 }}</strong>
             <div style="font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.15rem;">{{ q.options|length }} Options</div>
@@ -776,216 +856,43 @@ Marks: 5
           <span class="mode-tag {% if q.difficulty == 'easy' %}practice-tag{% elif q.difficulty == 'hard' %}exam-tag{% else %}medium-tag{% endif %}" style="font-size: 0.7rem; justify-self: start;">{{ q.get_difficulty_display }}</span>
           <span class="mono-text">{{ q.marks }}</span>
           <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
-            <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem;" onclick="toggleEditMcqInline('exam', '{{ q.id }}')">Edit</button>
+            <a href="{% url 'teacher_edit_mcq' q.id %}?type=exam" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; text-decoration: none;">Edit</a>
             <form action="{% url 'teacher_delete_mcq' q.id %}?type=exam" method="POST" onsubmit="return confirm('Delete this exam MCQ?');" style="margin: 0;">
               {% csrf_token %}
               <button type="submit" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: var(--red-pen);">Delete</button>
             </form>
           </div>
         </div>
-
-        <!-- Inline Edit Panel for Exam MCQ -->
-        <div id="edit-mcq-panel-exam-{{ q.id }}" class="qb-edit-expand" style="display: none; background: var(--paper); border-bottom: 1px solid var(--rule-strong); padding: 1.25rem 1.5rem;">
-          <form action="{% url 'teacher_edit_mcq' q.id %}?type=exam" method="POST">
-            {% csrf_token %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <h5 style="margin: 0; font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink);">EDIT EXAM MCQ</h5>
-              <button type="button" onclick="toggleEditMcqInline('exam', '{{ q.id }}')" style="background: none; border: none; cursor: pointer; font-size: 0.9rem;">✕</button>
-            </div>
-            <div class="form-group" style="margin-bottom: 0.75rem;">
-              <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Question Statement</label>
-              <textarea name="question_text" rows="2" style="width: 100%; font-size: 0.85rem;" required>{{ q.question_text }}</textarea>
-            </div>
-            <div class="form-grid" style="margin-bottom: 0.75rem;">
-              {% for opt in q.options %}
-                <div class="form-group">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Option #{{ forloop.counter }}</label>
-                  <input type="text" name="option_{{ forloop.counter0 }}" value="{{ opt }}" required>
-                </div>
-              {% endfor %}
-            </div>
-            <div class="form-grid" style="margin-bottom: 0.75rem;">
-              <div class="form-group">
-                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Correct Option Index</label>
-                <select name="correct_option_index">
-                  <option value="0" {% if q.correct_option_index == 0 %}selected{% endif %}>Option A (0)</option>
-                  <option value="1" {% if q.correct_option_index == 1 %}selected{% endif %}>Option B (1)</option>
-                  <option value="2" {% if q.correct_option_index == 2 %}selected{% endif %}>Option C (2)</option>
-                  <option value="3" {% if q.correct_option_index == 3 %}selected{% endif %}>Option D (3)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Difficulty</label>
-                <select name="difficulty">
-                  <option value="easy" {% if q.difficulty == 'easy' %}selected{% endif %}>Easy</option>
-                  <option value="medium" {% if q.difficulty == 'medium' %}selected{% endif %}>Medium</option>
-                  <option value="hard" {% if q.difficulty == 'hard' %}selected{% endif %}>Hard</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Marks</label>
-                <input type="number" name="marks" value="{{ q.marks }}" required>
-              </div>
-            </div>
-            <div class="form-group" style="margin-bottom: 0.75rem;">
-              <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Explanation</label>
-              <textarea name="explanation" rows="2" style="width: 100%; font-size: 0.85rem;">{{ q.explanation }}</textarea>
-            </div>
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-              <button type="button" class="btn btn-ghost" onclick="toggleEditMcqInline('exam', '{{ q.id }}')">Cancel</button>
-              <button type="submit" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">Save Changes</button>
-            </div>
-          </form>
-        </div>
       {% endfor %}
 
       <!-- Practice Coding Questions -->
       {% for q in practice_coding_qs %}
-        <div class="ledger-row qb-row" id="qb-row-practice-coding-{{ q.id }}" data-topic-id="{{ q.topic.id }}" data-type="practice_coding" data-text="{{ q.title|lower }} {{ q.description|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
+        <div class="ledger-row qb-row" id="qb-row-practice-coding-{{ q.id }}" data-topic-id="{{ q.topic.id }}" data-type="{% if q.is_both %}both_coding{% else %}practice_coding{% endif %}" data-purpose="{% if q.is_both %}both{% else %}practice{% endif %}" data-format="coding" data-text="{{ q.title|lower }} {{ q.description|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
           <div>
             <strong>{{ q.title }}</strong>
             <div style="font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.15rem;">{{ q.description|truncatechars:60 }}</div>
           </div>
           <span class="mono-text" style="font-size: 0.8rem;">{{ q.topic.name }}</span>
-          <div><span class="mode-tag practice-tag" style="font-size: 0.7rem;">Practice</span></div>
+          <div>
+            {% if q.is_both %}
+              <span class="mode-tag both-tag" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; background-color: rgba(0,102,204,0.09); color: #0066cc; border: 1px solid #0066cc; border-radius: 3px; font-family: var(--font-mono); font-weight: 600;">Both</span>
+            {% else %}
+              <span class="mode-tag practice-tag" style="font-size: 0.7rem;">Practice</span>
+            {% endif %}
+          </div>
           <div><span class="mono-text" style="font-size: 0.75rem;">Coding</span></div>
           <span class="mode-tag {% if q.difficulty == 'easy' %}practice-tag{% elif q.difficulty == 'hard' %}exam-tag{% else %}medium-tag{% endif %}" style="font-size: 0.7rem; justify-self: start;">{{ q.get_difficulty_display }}</span>
           <span class="mono-text">{{ q.marks }}</span>
           <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
-            <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: var(--pass-teal); border: 1px solid var(--pass-teal);" onclick="toggleCopyExamInline('coding', '{{ q.id }}')">Copy to exam</button>
-            <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem;" onclick="toggleEditCodingInline('practice', '{{ q.id }}')">Edit</button>
+            {% if not q.is_both and q.can_copy_to_exam %}
+              <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: var(--pass-teal); border: 1px solid var(--pass-teal);" onclick="toggleCopyExamInline('coding', '{{ q.id }}')">Copy to exam</button>
+            {% endif %}
+            <a href="{% url 'teacher_edit_coding' q.id %}?type=practice" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; text-decoration: none;">Edit</a>
             <form action="{% url 'teacher_delete_coding' q.id %}?type=practice" method="POST" onsubmit="return confirm('Delete this practice coding question?');" style="margin: 0;">
               {% csrf_token %}
               <button type="submit" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: var(--red-pen);">Delete</button>
             </form>
           </div>
-        </div>
-
-        <!-- Inline Edit Panel for Practice Coding Question (5 Collapsible Sections) -->
-        <div id="edit-coding-panel-practice-{{ q.id }}" class="qb-edit-expand" style="display: none; background: var(--paper); border-bottom: 1px solid var(--rule-strong); padding: 1.25rem 1.5rem;">
-          <form action="{% url 'teacher_edit_coding' q.id %}?type=practice" method="POST">
-            {% csrf_token %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-              <h5 style="margin: 0; font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink);">EDIT PRACTICE CODING QUESTION</h5>
-              <button type="button" onclick="toggleEditCodingInline('practice', '{{ q.id }}')" style="background: none; border: none; cursor: pointer; font-size: 0.9rem;">✕</button>
-            </div>
-
-            <!-- Section 1: Basics -->
-            <details open style="background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer;">1. Basics (Title, Description, Formats & Marks)</summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Title</label>
-                  <input type="text" name="title" value="{{ q.title }}" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Description & Constraints</label>
-                  <textarea name="description" rows="3" style="width: 100%; font-size: 0.85rem;" required>{{ q.description }}</textarea>
-                </div>
-                <div class="form-grid" style="margin-bottom: 0.75rem;">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Input Format</label>
-                    <textarea name="input_format" rows="2" style="width: 100%; font-size: 0.85rem;">{{ q.input_format }}</textarea>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Output Format</label>
-                    <textarea name="output_format" rows="2" style="width: 100%; font-size: 0.85rem;">{{ q.output_format }}</textarea>
-                  </div>
-                </div>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Difficulty</label>
-                    <select name="difficulty">
-                      <option value="easy" {% if q.difficulty == 'easy' %}selected{% endif %}>Easy</option>
-                      <option value="medium" {% if q.difficulty == 'medium' %}selected{% endif %}>Medium</option>
-                      <option value="hard" {% if q.difficulty == 'hard' %}selected{% endif %}>Hard</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Marks</label>
-                    <input type="number" name="marks" value="{{ q.marks }}" required>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <!-- Section 2: Starter Code Template -->
-            <details open style="background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer;">2. Starter Code Template</summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-group">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Initial Starter Code</label>
-                  <textarea name="starter_code" rows="3" style="font-family: var(--font-mono); font-size: 0.82rem; width: 100%;">{{ q.starter_code }}</textarea>
-                </div>
-              </div>
-            </details>
-
-            <!-- Section 3: Sample Test Cases (Student Visible) -->
-            <details open style="background: rgba(46,110,96,0.02); border: 1px solid var(--pass-teal); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer; color: var(--pass-teal); display: flex; align-items: center; justify-content: space-between;">
-                <span>3. Sample Test Cases (Student Visible)</span>
-                <span class="mode-tag practice-tag" style="font-size: 0.65rem;">PUBLIC / STUDENT VISIBLE</span>
-              </summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--pass-teal);">Sample Input</label>
-                    <textarea name="sample_input" rows="2" style="width: 100%; font-size: 0.85rem;" required>{% for tc in q.sample_test_cases %}{{ tc.input }}{% endfor %}</textarea>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--pass-teal);">Sample Output</label>
-                    <textarea name="sample_output" rows="2" style="width: 100%; font-size: 0.85rem;" required>{% for tc in q.sample_test_cases %}{{ tc.output }}{% endfor %}</textarea>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <!-- Section 4: Hidden Test Cases (Private Auto-Grading) -->
-            <details open style="background: rgba(178,58,46,0.02); border: 1px solid var(--red-pen); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer; color: var(--red-pen); display: flex; align-items: center; justify-content: space-between;">
-                <span>4. Hidden Test Cases (Private Auto-Grading)</span>
-                <span class="mode-tag exam-tag" style="font-size: 0.65rem; background-color: rgba(178,58,46,0.08); color: var(--red-pen); border-color: var(--red-pen);">🔒 PRIVATE / HIDDEN EVALUATION</span>
-              </summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--red-pen);">Hidden Test Input</label>
-                    <textarea name="hidden_input" rows="2" style="width: 100%; font-size: 0.85rem;">{% for tc in q.hidden_test_cases %}{{ tc.input }}{% endfor %}</textarea>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--red-pen);">Hidden Test Output</label>
-                    <textarea name="hidden_output" rows="2" style="width: 100%; font-size: 0.85rem;">{% for tc in q.hidden_test_cases %}{{ tc.output }}{% endfor %}</textarea>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <!-- Section 5: Limits & Notes -->
-            <details open style="background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer;">5. Execution Limits & Solution Notes</summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-grid" style="margin-bottom: 0.75rem;">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Time Limit (Seconds)</label>
-                    <input type="number" name="time_limit" value="{{ q.time_limit }}" min="1" required>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Memory Limit (MB)</label>
-                    <input type="number" name="memory_limit" value="{{ q.memory_limit }}" min="16" required>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Explanation</label>
-                  <textarea name="explanation" rows="2" style="width: 100%; font-size: 0.85rem;">{{ q.explanation }}</textarea>
-                </div>
-              </div>
-            </details>
-
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-              <button type="button" class="btn btn-ghost" onclick="toggleEditCodingInline('practice', '{{ q.id }}')">Cancel</button>
-              <button type="submit" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">Save Changes</button>
-            </div>
-          </form>
         </div>
 
         <!-- Row-Level "Copy to exam" Inline Confirm/Edit Panel for Practice Coding -->
@@ -1022,7 +929,7 @@ Marks: 5
 
       <!-- Exam Coding Questions -->
       {% for q in exam_coding_qs %}
-        <div class="ledger-row qb-row" data-topic-id="{{ q.topic.id }}" data-type="exam_coding" data-text="{{ q.title|lower }} {{ q.description|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
+        <div class="ledger-row qb-row" data-topic-id="{{ q.topic.id }}" data-type="exam_coding" data-purpose="exam" data-format="coding" data-text="{{ q.title|lower }} {{ q.description|lower }}" style="grid-template-columns: minmax(250px, 2.2fr) minmax(120px, 1.2fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(90px, 0.8fr) minmax(70px, 0.8fr) minmax(220px, 1.8fr); align-items: center;">
           <div>
             <strong>{{ q.title }}</strong>
             <div style="font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.15rem;">{{ q.description|truncatechars:60 }}</div>
@@ -1033,135 +940,12 @@ Marks: 5
           <span class="mode-tag {% if q.difficulty == 'easy' %}practice-tag{% elif q.difficulty == 'hard' %}exam-tag{% else %}medium-tag{% endif %}" style="font-size: 0.7rem; justify-self: start;">{{ q.get_difficulty_display }}</span>
           <span class="mono-text">{{ q.marks }}</span>
           <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
-            <button type="button" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem;" onclick="toggleEditCodingInline('exam', '{{ q.id }}')">Edit</button>
+            <a href="{% url 'teacher_edit_coding' q.id %}?type=exam" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; text-decoration: none;">Edit</a>
             <form action="{% url 'teacher_delete_coding' q.id %}?type=exam" method="POST" onsubmit="return confirm('Delete this exam coding question?');" style="margin: 0;">
               {% csrf_token %}
               <button type="submit" class="btn btn-ghost" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; color: var(--red-pen);">Delete</button>
             </form>
           </div>
-        </div>
-
-        <!-- Inline Edit Panel for Exam Coding Question (5 Collapsible Sections) -->
-        <div id="edit-coding-panel-exam-{{ q.id }}" class="qb-edit-expand" style="display: none; background: var(--paper); border-bottom: 1px solid var(--rule-strong); padding: 1.25rem 1.5rem;">
-          <form action="{% url 'teacher_edit_coding' q.id %}?type=exam" method="POST">
-            {% csrf_token %}
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-              <h5 style="margin: 0; font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink);">EDIT EXAM CODING QUESTION</h5>
-              <button type="button" onclick="toggleEditCodingInline('exam', '{{ q.id }}')" style="background: none; border: none; cursor: pointer; font-size: 0.9rem;">✕</button>
-            </div>
-
-            <!-- Section 1: Basics -->
-            <details open style="background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer;">1. Basics (Title, Description, Formats & Marks)</summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Title</label>
-                  <input type="text" name="title" value="{{ q.title }}" required>
-                </div>
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Description & Constraints</label>
-                  <textarea name="description" rows="3" style="width: 100%; font-size: 0.85rem;" required>{{ q.description }}</textarea>
-                </div>
-                <div class="form-grid" style="margin-bottom: 0.75rem;">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Input Format</label>
-                    <textarea name="input_format" rows="2" style="width: 100%; font-size: 0.85rem;">{{ q.input_format }}</textarea>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Output Format</label>
-                    <textarea name="output_format" rows="2" style="width: 100%; font-size: 0.85rem;">{{ q.output_format }}</textarea>
-                  </div>
-                </div>
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Difficulty</label>
-                    <select name="difficulty">
-                      <option value="easy" {% if q.difficulty == 'easy' %}selected{% endif %}>Easy</option>
-                      <option value="medium" {% if q.difficulty == 'medium' %}selected{% endif %}>Medium</option>
-                      <option value="hard" {% if q.difficulty == 'hard' %}selected{% endif %}>Hard</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Marks</label>
-                    <input type="number" name="marks" value="{{ q.marks }}" required>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <!-- Section 2: Starter Code Template -->
-            <details open style="background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer;">2. Starter Code Template</summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-group">
-                  <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Initial Starter Code</label>
-                  <textarea name="starter_code" rows="3" style="font-family: var(--font-mono); font-size: 0.82rem; width: 100%;">{{ q.starter_code }}</textarea>
-                </div>
-              </div>
-            </details>
-
-            <!-- Section 3: Sample Test Cases (Student Visible) -->
-            <details open style="background: rgba(46,110,96,0.02); border: 1px solid var(--pass-teal); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer; color: var(--pass-teal); display: flex; align-items: center; justify-content: space-between;">
-                <span>3. Sample Test Cases (Student Visible)</span>
-                <span class="mode-tag practice-tag" style="font-size: 0.65rem;">PUBLIC / STUDENT VISIBLE</span>
-              </summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--pass-teal);">Sample Input</label>
-                    <textarea name="sample_input" rows="2" style="width: 100%; font-size: 0.85rem;" required>{% for tc in q.sample_test_cases %}{{ tc.input }}{% endfor %}</textarea>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--pass-teal);">Sample Output</label>
-                    <textarea name="sample_output" rows="2" style="width: 100%; font-size: 0.85rem;" required>{% for tc in q.sample_test_cases %}{{ tc.output }}{% endfor %}</textarea>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <!-- Section 4: Hidden Test Cases (Private Auto-Grading) -->
-            <details open style="background: rgba(178,58,46,0.02); border: 1px solid var(--red-pen); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer; color: var(--red-pen); display: flex; align-items: center; justify-content: space-between;">
-                <span>4. Hidden Test Cases (Private Auto-Grading)</span>
-                <span class="mode-tag exam-tag" style="font-size: 0.65rem; background-color: rgba(178,58,46,0.08); color: var(--red-pen); border-color: var(--red-pen);">🔒 PRIVATE / HIDDEN EVALUATION</span>
-              </summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--red-pen);">Hidden Test Input</label>
-                    <textarea name="hidden_input" rows="2" style="width: 100%; font-size: 0.85rem;">{% for tc in q.hidden_test_cases %}{{ tc.input }}{% endfor %}</textarea>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--red-pen);">Hidden Test Output</label>
-                    <textarea name="hidden_output" rows="2" style="width: 100%; font-size: 0.85rem;">{% for tc in q.hidden_test_cases %}{{ tc.output }}{% endfor %}</textarea>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <!-- Section 5: Limits & Notes -->
-            <details open style="background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
-              <summary style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; cursor: pointer;">5. Execution Limits & Solution Notes</summary>
-              <div style="margin-top: 0.75rem;">
-                <div class="form-grid" style="margin-bottom: 0.75rem;">
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Time Limit (Seconds)</label>
-                    <input type="number" name="time_limit" value="{{ q.time_limit }}" min="1" required>
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--ink-soft);">Memory Limit (MB)</label>
-                    <input type="number" name="memory_limit" value="{{ q.memory_limit }}" min="16" required>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-              <button type="button" class="btn btn-ghost" onclick="toggleEditCodingInline('exam', '{{ q.id }}')">Cancel</button>
-              <button type="submit" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">Save Changes</button>
-            </div>
-          </form>
         </div>
       {% endfor %}
 
@@ -1176,7 +960,8 @@ Marks: 5
   <div id="tab-sec-practice" class="dash-tab-content" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
       <h3 class="section-title" style="margin: 0;">Practice Sets</h3>
-      <div style="display: flex; gap: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <a href="{% url 'teacher_practice_comments' %}" class="btn btn-ghost" style="font-size: 0.85rem; padding: 0.4rem 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">💬 Practice Comments</a>
         <button type="button" class="btn btn-primary" onclick="toggleNewPracticeSetForm()" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">+ Create practice set</button>
       </div>
     </div>
@@ -1191,17 +976,17 @@ Marks: 5
       <form action="{% url 'teacher_create_practice' %}" method="POST">
         {% csrf_token %}
         <div class="form-grid" style="margin-bottom: 1rem;">
-          <div class="form-group">
+          <div class="form-group full-width">
             <label for="practice_set_name">Practice Set Title</label>
             <input type="text" id="practice_set_name" name="name" placeholder="e.g. BST Trees Practice Session" required>
           </div>
-          <div class="form-group">
-            <label for="practice_reveal_rule">Solution Reveal Rule</label>
-            <select id="practice_reveal_rule" name="reveal_rule" required>
-              <option value="immediate" selected>After First Attempt</option>
-              <option value="never">Never</option>
-            </select>
-          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="display: inline-flex; align-items: center; gap: 0.6rem; cursor: pointer; padding: 0.55rem 0.9rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; user-select: none;">
+            <input type="checkbox" name="is_randomized" value="true" style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--pass-teal);">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--ink);">🔀 Shuffle questions for students attending</span>
+          </label>
         </div>
 
         <div class="form-group" style="margin-bottom: 1rem;">
@@ -1242,7 +1027,7 @@ Marks: 5
     <div class="ledger">
       <div class="ledger-header" style="grid-template-columns: 1.8fr 1.2fr 2fr 1.2fr;">
         <span>Set Title</span>
-        <span>Reveal Rule</span>
+        <span>Question Order</span>
         <span>Assigned Classes</span>
         <span style="text-align: right;">Visibility Action</span>
       </div>
@@ -1255,7 +1040,13 @@ Marks: 5
               Topics: {% for t in set.topics.all %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% empty %}None{% endfor %}
             </div>
           </div>
-          <span class="mono-text" style="font-size: 0.82rem;">{{ set.get_solution_reveal_rule_display }}</span>
+          <div>
+            {% if set.is_randomized %}
+              <span class="mode-tag practice-tag" style="font-size: 0.72rem; padding: 0.15rem 0.45rem;">🔀 Shuffled</span>
+            {% else %}
+              <span class="mono-text" style="font-size: 0.78rem; color: var(--ink-soft);">Standard</span>
+            {% endif %}
+          </div>
           <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
             {% for assignment in set.assignments.all %}
               <span class="mode-tag practice-tag" style="font-size: 0.7rem;">{{ assignment.class_group.name }}</span>
@@ -1308,7 +1099,6 @@ Marks: 5
       <h3 class="section-title" style="margin: 0;">Scheduled Exams</h3>
       <div style="display: flex; gap: 0.75rem;">
         <button type="button" class="btn btn-primary" onclick="toggleScheduleExamForm()" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">+ Schedule exam</button>
-        <button type="button" class="btn btn-ghost" onclick="switchTeacherTab('questions')" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">+ Add Exam Questions</button>
       </div>
     </div>
 
@@ -1334,6 +1124,13 @@ Marks: 5
             <label for="exam_end_time_input">End Date &amp; Time</label>
             <input type="datetime-local" id="exam_end_time_input" name="end_time" required style="font-family: var(--font-mono); font-size: 0.85rem;">
           </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="display: inline-flex; align-items: center; gap: 0.6rem; cursor: pointer; padding: 0.55rem 0.9rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px; user-select: none;">
+            <input type="checkbox" name="is_randomized" value="true" style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--pass-teal);">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--ink);">🔀 Shuffle questions for students attending</span>
+          </label>
         </div>
 
         <div class="form-group" style="margin-bottom: 1rem;">
@@ -1372,7 +1169,7 @@ Marks: 5
 
     <!-- Scheduled Exams Ledger -->
     <div class="ledger">
-      <div class="ledger-header" style="grid-template-columns: 1.8fr 1fr 1.5fr 1.5fr;">
+      <div class="ledger-header" style="grid-template-columns: minmax(240px, 1.8fr) minmax(90px, 0.8fr) minmax(140px, 1.2fr) minmax(210px, 1.8fr);">
         <span>Exam Title</span>
         <span>Duration</span>
         <span>Assigned Codes</span>
@@ -1380,7 +1177,7 @@ Marks: 5
       </div>
 
       {% for exam in exams %}
-        <div class="ledger-row" {% if exam.end_time < now %}style="grid-template-columns: 1.8fr 1fr 1.5fr 1.5fr; align-items: center; opacity: 0.75;"{% else %}style="grid-template-columns: 1.8fr 1fr 1.5fr 1.5fr; align-items: center;"{% endif %}>
+        <div class="ledger-row" {% if exam.end_time < now %}style="grid-template-columns: minmax(240px, 1.8fr) minmax(90px, 0.8fr) minmax(140px, 1.2fr) minmax(210px, 1.8fr); align-items: center; opacity: 0.75;"{% else %}style="grid-template-columns: minmax(240px, 1.8fr) minmax(90px, 0.8fr) minmax(140px, 1.2fr) minmax(210px, 1.8fr); align-items: center;"{% endif %}>
           <div>
             <strong>{{ exam.name }}</strong>
             <span style="display: block; font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.15rem;">Window: {{ exam.start_time|date:"m-d H:i" }} to {{ exam.end_time|date:"m-d H:i" }}</span>
@@ -1390,6 +1187,9 @@ Marks: 5
               <span style="display:inline-block; margin-top:0.2rem; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; padding:0.1rem 0.45rem; border-radius:2px; background:rgba(46,110,96,0.09); color:var(--pass-teal); border:1px solid var(--pass-teal);">● LIVE</span>
             {% else %}
               <span style="display:inline-block; margin-top:0.2rem; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; padding:0.1rem 0.45rem; border-radius:2px; background:rgba(0,0,0,0.04); color:var(--ink-soft); border:1px solid var(--rule-strong);">○ UPCOMING</span>
+            {% endif %}
+            {% if exam.is_randomized %}
+              <span style="display:inline-block; margin-top:0.2rem; margin-left:0.25rem; font-family:var(--font-mono); font-size:0.65rem; font-weight:700; padding:0.1rem 0.45rem; border-radius:2px; background:rgba(0,102,204,0.09); color:#0066cc; border:1px solid #0066cc;">🔀 SHUFFLED</span>
             {% endif %}
           </div>
 
@@ -1405,25 +1205,22 @@ Marks: 5
             {% endfor %}
           </div>
 
-          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
-            <button type="button" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;" onclick="toggleExamDetailExpand('{{ exam.id }}')">Details ▾</button>
+          <div style="display: flex; gap: 0.4rem; justify-content: flex-end; align-items: center;">
+            <button type="button" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; white-space: nowrap; color: var(--pass-teal); border: 1px solid var(--pass-teal);" onclick="openExamResults('{{ exam.id }}')">Monitor &amp; Results</button>
+            <button type="button" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; white-space: nowrap;" onclick="toggleExamDetailExpand('{{ exam.id }}')">Details ▾</button>
           </div>
         </div>
 
-        <!-- Inline Expandable Panel with 3 Sub-Views (Overview / Monitor / Results) -->
+        <!-- Inline Expandable Details Panel for Exam -->
         <div id="exam-detail-expand-{{ exam.id }}" class="dash-form" style="display: none; background: var(--paper); border-bottom: 1px solid var(--rule-strong); padding: 1rem 1.25rem; border-left: 3px solid var(--pass-teal);">
-          <!-- Sub-View Navigation Bar -->
+          <!-- Panel Header -->
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule-strong); padding-bottom: 0.5rem; margin-bottom: 1rem;">
-            <div style="display: flex; gap: 0.5rem;">
-              <button type="button" id="exam-tab-overview-{{ exam.id }}" onclick="switchExamSubTab('{{ exam.id }}', 'overview')" class="btn btn-ghost active-sub-tab" style="font-size: 0.78rem; font-weight: 700; padding: 0.3rem 0.7rem; border-bottom: 2px solid var(--ink);">Overview</button>
-              <button type="button" id="exam-tab-monitor-{{ exam.id }}" onclick="switchExamSubTab('{{ exam.id }}', 'monitor')" class="btn btn-ghost" style="font-size: 0.78rem; font-weight: 700; padding: 0.3rem 0.7rem;">Monitor</button>
-              <button type="button" id="exam-tab-results-{{ exam.id }}" onclick="switchExamSubTab('{{ exam.id }}', 'results')" class="btn btn-ghost" style="font-size: 0.78rem; font-weight: 700; padding: 0.3rem 0.7rem;">Results</button>
-            </div>
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-mono);">Overview &amp; Schedule Details</span>
             <button type="button" onclick="toggleExamDetailExpand('{{ exam.id }}')" style="background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--ink-soft);">✕</button>
           </div>
 
-          <!-- Sub-View 1: Overview -->
-          <div id="exam-sub-overview-{{ exam.id }}" class="exam-sub-view">
+          <!-- Overview Content -->
+          <div id="exam-sub-overview-{{ exam.id }}">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem;">
               <div>
                 <p style="font-size: 0.8rem; color: var(--ink-soft); margin: 0 0 0.25rem 0;">Window &amp; Duration</p>
@@ -1464,35 +1261,6 @@ Marks: 5
               </form>
             </details>
           </div>
-
-          <!-- Sub-View 2: Monitor -->
-          <div id="exam-sub-monitor-{{ exam.id }}" class="exam-sub-view" style="display: none;">
-            <div style="padding: 1rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <div>
-                  <h5 style="margin: 0; font-size: 0.95rem; color: var(--ink);">Live Proctoring &amp; Real-Time Activity</h5>
-                  <p style="margin: 0.2rem 0 0 0; font-size: 0.8rem; color: var(--ink-soft);">Monitor active student sessions, tab switches, and live submissions.</p>
-                </div>
-                {% if exam.end_time < now %}
-                  <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:var(--red-pen);">● EXAM ENDED</span>
-                {% elif exam.start_time <= now and now <= exam.end_time %}
-                  <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:var(--pass-teal);">● LIVE NOW</span>
-                {% else %}
-                  <span style="font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:var(--ink-soft);">○ UPCOMING</span>
-                {% endif %}
-              </div>
-              <a href="/exam/{{ exam.id }}/monitor/" target="_blank" class="btn btn-primary" style="display: inline-block; font-size: 0.85rem; padding: 0.45rem 1rem; text-decoration: none;">🚀 Launch Live Proctoring Monitor Dashboard →</a>
-            </div>
-          </div>
-
-          <!-- Sub-View 3: Results -->
-          <div id="exam-sub-results-{{ exam.id }}" class="exam-sub-view" style="display: none;">
-            <div style="padding: 1rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px;">
-              <h5 style="margin: 0 0 0.4rem 0; font-size: 0.95rem; color: var(--ink);">Exam Performance &amp; Evaluation Summary</h5>
-              <p style="font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 0.75rem;">Review submissions, official grades, and student scores for {{ exam.name }}.</p>
-              <button type="button" class="btn btn-primary" onclick="openExamResults('{{ exam.id }}')" style="font-size: 0.85rem; padding: 0.45rem 1rem;">📊 View Detailed Results in Results Tab →</button>
-            </div>
-          </div>
         </div>
       {% empty %}
         <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No exams scheduled yet. Click "+ Schedule exam" to create your first exam.</div>
@@ -1505,6 +1273,7 @@ Marks: 5
     <!-- 1. Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
       <h3 class="section-title" style="margin: 0;">Results &amp; Exam Monitoring</h3>
+      <button type="button" class="btn btn-ghost" onclick="switchTeacherTab('exams')" style="font-size: 0.82rem; padding: 0.35rem 0.8rem;">← Back to Exams</button>
     </div>
 
     <!-- 2. Filters -->
@@ -1544,16 +1313,19 @@ Marks: 5
       <!-- Decorative background accent -->
       <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, var(--pass-teal) 0%, #3b82f6 50%, #f59e0b 100%);"></div>
       
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px dashed var(--rule-strong); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px dashed var(--rule-strong); padding-bottom: 1rem; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;">
         <div>
           <h4 id="summary-exam-name" style="margin: 0; font-family: var(--font-sans); font-size: 1.4rem; font-weight: 800; color: var(--ink); letter-spacing: -0.02em;">Selected Exam</h4>
           <span style="font-size: 0.85rem; color: var(--ink-soft); font-weight: 500;"><span id="summary-total-students">0</span> Students Assigned</span>
         </div>
-        <div class="stats-progress-bar" style="display: flex; height: 8px; width: 200px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,0.05);">
-           <div id="summary-bar-completed" style="width: 0%; background: var(--pass-teal); transition: width 0.5s ease;" title="Completed: 0"></div>
-           <div id="summary-bar-late" style="width: 0%; background: #f59e0b; transition: width 0.5s ease;" title="Completed Late: 0"></div>
-           <div id="summary-bar-progress" style="width: 0%; background: #3b82f6; transition: width 0.5s ease;" title="In Progress: 0"></div>
-           <div id="summary-bar-absent" style="width: 0%; background: #9ca3af; transition: width 0.5s ease;" title="Absent: 0"></div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <a id="summary-live-feed-btn" href="#" class="btn btn-ghost" style="display: none; font-size: 0.78rem; padding: 0.35rem 0.75rem; text-decoration: none; color: var(--pass-teal); border: 1px solid var(--pass-teal);">📡 Live Proctoring Feed →</a>
+          <div class="stats-progress-bar" style="display: flex; height: 8px; width: 180px; border-radius: 4px; overflow: hidden; background: rgba(0,0,0,0.05);">
+             <div id="summary-bar-completed" style="width: 0%; background: var(--pass-teal); transition: width 0.5s ease;" title="Completed: 0"></div>
+             <div id="summary-bar-late" style="width: 0%; background: #f59e0b; transition: width 0.5s ease;" title="Completed Late: 0"></div>
+             <div id="summary-bar-progress" style="width: 0%; background: #3b82f6; transition: width 0.5s ease;" title="In Progress: 0"></div>
+             <div id="summary-bar-absent" style="width: 0%; background: #9ca3af; transition: width 0.5s ease;" title="Absent: 0"></div>
+          </div>
         </div>
       </div>
 
@@ -1699,7 +1471,7 @@ Marks: 5
 
 {% block extra_script %}
 <script>
-  function switchTeacherTab(tabName) {
+  function switchTeacherTab(tabName, updateHistory = true) {
     const tabs = ['topics', 'questions', 'practice', 'exams', 'results'];
     tabs.forEach(t => {
       const sec = document.getElementById('tab-sec-' + t);
@@ -1720,8 +1492,10 @@ Marks: 5
         else nav.classList.remove('active');
       }
     });
-    if (history.pushState) {
-      history.pushState(null, null, '#' + tabName);
+    if (updateHistory && history.pushState) {
+      if (window.location.hash !== '#' + tabName) {
+        history.pushState(null, null, '#' + tabName);
+      }
     }
   }
 
@@ -1803,19 +1577,6 @@ Marks: 5
     }
   }
 
-  function toggleEditMcqInline(qType, qId) {
-    const row = document.getElementById('edit-mcq-panel-' + qType + '-' + qId);
-    if (row) {
-      row.style.display = (row.style.display === 'none' || !row.style.display) ? 'block' : 'none';
-    }
-  }
-
-  function toggleEditCodingInline(qType, qId) {
-    const row = document.getElementById('edit-coding-panel-' + qType + '-' + qId);
-    if (row) {
-      row.style.display = (row.style.display === 'none' || !row.style.display) ? 'block' : 'none';
-    }
-  }
 
   function resetAddQuestionPanel() {
     const step1 = document.getElementById('qb-add-step1');
@@ -1826,19 +1587,73 @@ Marks: 5
     if (stepCoding) stepCoding.style.display = 'none';
   }
 
+  function updateTopicPurposeOptions() {
+    const topicSelect = document.getElementById('qb-select-topic');
+    const modeSelect = document.getElementById('qb-select-mode');
+    if (!topicSelect || !modeSelect) return;
+    const selectedOption = topicSelect.options[topicSelect.selectedIndex];
+    const topicPurpose = selectedOption ? selectedOption.dataset.purpose : 'both';
+
+    if (topicPurpose === 'practice') {
+      modeSelect.value = 'practice';
+      modeSelect.options[0].disabled = true;  // Both
+      modeSelect.options[1].disabled = false; // Practice
+      modeSelect.options[2].disabled = true;  // Exam
+    } else if (topicPurpose === 'exam') {
+      modeSelect.value = 'exam';
+      modeSelect.options[0].disabled = true;  // Both
+      modeSelect.options[1].disabled = true;  // Practice
+      modeSelect.options[2].disabled = false; // Exam
+    } else {
+      modeSelect.options[0].disabled = false; // Both
+      modeSelect.options[1].disabled = false; // Practice
+      modeSelect.options[2].disabled = false; // Exam
+    }
+  }
+
+  function updateBulkUploadPurposeOptions() {
+    const topicSelect = document.getElementById('bulk_topic_id');
+    const modeSelect = document.getElementById('bulk_purpose_select');
+    if (!topicSelect || !modeSelect) return;
+    const selectedOption = topicSelect.options[topicSelect.selectedIndex];
+    const topicPurpose = selectedOption ? selectedOption.dataset.purpose : 'both';
+
+    if (topicPurpose === 'practice') {
+      modeSelect.value = 'practice';
+      modeSelect.options[0].disabled = true;  // Both
+      modeSelect.options[1].disabled = false; // Practice
+      modeSelect.options[2].disabled = true;  // Exam
+    } else if (topicPurpose === 'exam') {
+      modeSelect.value = 'exam';
+      modeSelect.options[0].disabled = true;  // Both
+      modeSelect.options[1].disabled = true;  // Practice
+      modeSelect.options[2].disabled = false; // Exam
+    } else {
+      modeSelect.options[0].disabled = false; // Both
+      modeSelect.options[1].disabled = false; // Practice
+      modeSelect.options[2].disabled = false; // Exam
+    }
+  }
+
+
   function proceedAddQuestionForm() {
-    const mode = document.getElementById('qb-select-mode').value;
     const format = document.getElementById('qb-select-format').value;
-    const topicId = document.getElementById('qb-select-topic').value;
+    const topicSelect = document.getElementById('qb-select-topic');
+    const topicId = topicSelect.value;
 
     if (!topicId) {
       alert('Please select a target topic.');
       return;
     }
 
+    const modeSelect = document.getElementById('qb-select-mode');
+    const mode = modeSelect ? modeSelect.value : 'both';
+
     const step1 = document.getElementById('qb-add-step1');
     const stepMcq = document.getElementById('qb-add-step-mcq');
     const stepCoding = document.getElementById('qb-add-step-coding');
+
+    const modeLabel = mode === 'both' ? 'BOTH (EXAM & PRACTICE)' : mode.toUpperCase();
 
     if (format === 'mcq') {
       const topicInput = document.getElementById('mcq-create-topic-id');
@@ -1850,7 +1665,7 @@ Marks: 5
       if (stepCoding) stepCoding.style.display = 'none';
       if (topicInput) topicInput.value = topicId;
       if (typeInput) typeInput.value = mode;
-      if (badge) badge.innerText = "INLINE " + mode.toUpperCase() + " MCQ EDITOR";
+      if (badge) badge.innerText = "INLINE " + modeLabel + " MCQ EDITOR";
       const mcqForm = document.getElementById('mcq-inline-create-form');
       if (mcqForm) mcqForm.action = "{% url 'teacher_create_mcq' %}?type=" + mode;
     } else {
@@ -1863,7 +1678,7 @@ Marks: 5
       if (stepCoding) stepCoding.style.display = 'block';
       if (topicInput) topicInput.value = topicId;
       if (typeInput) typeInput.value = mode;
-      if (badge) badge.innerText = "INLINE " + mode.toUpperCase() + " CODING EDITOR";
+      if (badge) badge.innerText = "INLINE " + modeLabel + " CODING EDITOR";
       const codingForm = document.getElementById('coding-inline-create-form');
       if (codingForm) codingForm.action = "{% url 'teacher_create_coding' %}?type=" + mode;
     }
@@ -1885,10 +1700,26 @@ Marks: 5
     rows.forEach(row => {
       const rowTopic = row.getAttribute('data-topic-id');
       const rowType = row.getAttribute('data-type');
+      const rowPurpose = row.getAttribute('data-purpose');
       const rowText = row.getAttribute('data-text') || '';
 
       const matchTopic = (selectedTopic === 'all' || rowTopic === selectedTopic);
-      const matchType = (selectedType === 'all' || rowType === selectedType);
+      let matchType = false;
+      if (selectedType === 'all') {
+        matchType = true;
+      } else if (selectedType === 'both') {
+        matchType = (rowPurpose === 'both');
+      } else if (selectedType === 'practice_mcq') {
+        matchType = (rowType === 'practice_mcq' || rowType === 'both_mcq');
+      } else if (selectedType === 'exam_mcq') {
+        matchType = (rowType === 'exam_mcq' || rowType === 'both_mcq');
+      } else if (selectedType === 'practice_coding') {
+        matchType = (rowType === 'practice_coding' || rowType === 'both_coding');
+      } else if (selectedType === 'exam_coding') {
+        matchType = (rowType === 'exam_coding' || rowType === 'both_coding');
+      } else {
+        matchType = (rowType === selectedType);
+      }
       const matchSearch = (!searchText || rowText.includes(searchText));
 
       if (matchTopic && matchType && matchSearch) {
@@ -1927,6 +1758,12 @@ Marks: 5
         
         document.getElementById('student-stats-placeholder').style.display = 'none';
         document.getElementById('student-stats-widget').style.display = 'block';
+        
+        const feedBtn = document.getElementById('summary-live-feed-btn');
+        if (feedBtn) {
+          feedBtn.href = '/exam/' + examId + '/monitor/';
+          feedBtn.style.display = 'inline-block';
+        }
         
         document.getElementById('summary-total-students').innerText = data.total_students;
         document.getElementById('summary-completed-count').innerText = data.completed_count;
@@ -2096,9 +1933,42 @@ Marks: 5
     const expandedExam = urlParams.get('expanded_exam');
     const resultsExam = urlParams.get('results_exam');
     
-    if (['topics', 'questions', 'practice', 'exams', 'results'].includes(hash) || importedMcqs || importedCodings || expandedExam || resultsExam) {
-      switchTeacherTab(hash || (resultsExam ? 'results' : (expandedExam ? 'exams' : 'questions')));
-    }
+    {% if open_bulk_verify %}
+      switchTeacherTab('questions', false);
+      if (history.replaceState) {
+        history.replaceState(null, null, '#questions');
+      }
+      const bPanel = document.getElementById('bulk-upload-entry-panel');
+      if (bPanel) {
+        bPanel.style.display = 'block';
+        bPanel.scrollIntoView({ behavior: 'smooth' });
+      }
+    {% elif open_tab %}
+      switchTeacherTab('{{ open_tab }}', false);
+      if (history.replaceState) {
+        history.replaceState(null, null, '#{{ open_tab }}');
+      }
+    {% else %}
+      if (['topics', 'questions', 'practice', 'exams', 'results'].includes(hash) || importedMcqs || importedCodings || expandedExam || resultsExam) {
+        const targetTab = hash || (resultsExam ? 'results' : (expandedExam ? 'exams' : 'questions'));
+        switchTeacherTab(targetTab, false);
+        if (history.replaceState && !window.location.hash) {
+          history.replaceState(null, null, '#' + targetTab);
+        }
+      } else {
+        if (history.replaceState && !window.location.hash) {
+          history.replaceState(null, null, '#topics');
+        }
+      }
+    {% endif %}
+
+    // Listen to browser Back/Forward navigation
+    window.addEventListener('popstate', function() {
+      const currentHash = window.location.hash.replace('#', '') || 'topics';
+      if (['topics', 'questions', 'practice', 'exams', 'results'].includes(currentHash)) {
+        switchTeacherTab(currentHash, false);
+      }
+    });
 
     if (resultsExam) {
       openExamResults(resultsExam);
@@ -2108,7 +1978,6 @@ Marks: 5
       const examRow = document.getElementById('exam-detail-expand-' + expandedExam);
       if (examRow) {
         examRow.style.display = 'block';
-        switchExamSubTab(expandedExam, 'monitor');
         examRow.scrollIntoView({ behavior: 'smooth' });
       }
     }
@@ -2208,6 +2077,66 @@ Marks: 5
       cb.addEventListener('change', checkExamQuestionCount);
     });
   });
+
+  // Dynamic Test Case Row Helpers
+  function addTestCaseRow(containerId, type) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const isSample = (type === 'sample');
+    const color = isSample ? 'var(--pass-teal)' : 'var(--red-pen)';
+    const namePrefix = isSample ? 'sample' : 'hidden';
+    const labelPrefix = isSample ? 'Sample' : 'Hidden';
+    const count = container.children.length + 1;
+    
+    const div = document.createElement('div');
+    div.className = 'test-case-card';
+    div.style = 'background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 0.75rem;';
+    div.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+        <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: ${color};">${labelPrefix} Case #${count}</span>
+        <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.7rem; color: var(--red-pen); padding: 0.1rem 0.4rem;">✕ Remove</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="color: ${color}; font-size: 0.75rem;">Input</label>
+          <textarea name="${namePrefix}_inputs[]" rows="2" placeholder="${labelPrefix} input..." required></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="color: ${color}; font-size: 0.75rem;">Output</label>
+          <textarea name="${namePrefix}_outputs[]" rows="2" placeholder="Expected ${labelPrefix.toLowerCase()} output..." required></textarea>
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  }
+
+  function addBulkTestCaseRow(containerId, inNamePrefix, outNamePrefix, color) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const count = container.children.length;
+    const div = document.createElement('div');
+    div.className = 'test-case-row';
+    div.style = 'display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; align-items: center; background: rgba(0,0,0,0.02); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem;';
+    div.innerHTML = `
+      <div class="form-group" style="margin: 0;">
+        <label style="font-size: 0.68rem; color: ${color};">Input</label>
+        <textarea name="${inNamePrefix}_${count}" rows="2" style="font-size: 0.82rem; width: 100%;"></textarea>
+      </div>
+      <div class="form-group" style="margin: 0;">
+        <label style="font-size: 0.68rem; color: ${color};">Output</label>
+        <textarea name="${outNamePrefix}_${count}" rows="2" style="font-size: 0.82rem; width: 100%;"></textarea>
+      </div>
+      <button type="button" class="btn btn-ghost" onclick="removeTestCaseRow(this)" style="font-size: 0.7rem; color: var(--red-pen); padding: 0.2rem 0.4rem; height: fit-content; margin-top: 1rem;">✕</button>
+    `;
+    container.appendChild(div);
+  }
+
+  function removeTestCaseRow(btn) {
+    const card = btn.closest('.test-case-card') || btn.closest('.test-case-row');
+    if (card) {
+      card.remove();
+    }
+  }
 
   // Click-away closes visibility panels
   document.addEventListener('click', function(e) {

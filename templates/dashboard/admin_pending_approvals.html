@@ -1,0 +1,125 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Pending Approvals — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'admin_dashboard' %}">Admin Overview</a></li>
+<li><a href="{% url 'admin_classes_departments' %}">Classes &amp; Departments</a></li>
+<li class="active"><a href="#">Pending Approvals</a></li>
+<li><a href="{% url 'admin_users_directory' %}">Users Directory</a></li>
+<li><a href="{% url 'admin_onboard_users' %}">User Onboarding</a></li>
+<li><a href="{% url 'admin_bulk_upload_students' %}">Bulk Student Upload</a></li>
+<li><a href="/admin/">Django Site Admin</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div style="width: 100%;">
+
+    <!-- Top Header & Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <a href="{% url 'admin_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; margin-bottom: 0.5rem; transition: color 0.15s ease;">
+          &larr; Back to Admin Overview
+        </a>
+        <h2 class="section-title" style="margin: 0; font-size: 1.6rem;">Pending Registrations &amp; Approvals</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span class="mode-tag exam-tag" style="font-size: 0.78rem; padding: 0.3rem 0.7rem; font-weight: 600;">
+          <span id="pending-teachers-count">{{ pending_teachers.count }}</span> Pending Teachers
+        </span>
+        <span class="mode-tag practice-tag" style="font-size: 0.78rem; padding: 0.3rem 0.7rem; font-weight: 600; background-color: rgba(46,110,96,0.1); color: var(--pass-teal); border: 1px solid var(--pass-teal);">
+          <span id="pending-students-count">{{ pending_students.count }}</span> Pending Students
+        </span>
+      </div>
+    </div>
+
+    <!-- Pending Teacher Approvals Section -->
+    <div id="pending-teachers-sec">
+      <h3 class="section-title" style="color: var(--red-pen);">Pending Teacher Registrations</h3>
+      <div class="ledger" style="border-color: var(--red-pen);">
+        <div class="ledger-header" style="background-color: rgba(178, 58, 46, 0.03); border-bottom-color: var(--red-pen); grid-template-columns: 1fr 1fr 1fr auto;">
+          <span>Username</span>
+          <span>Department</span>
+          <span>Email</span>
+          <span style="text-align: right;">Action</span>
+        </div>
+        {% for pt in pending_teachers %}
+          <div class="ledger-row" style="grid-template-columns: 1fr 1fr 1fr auto; align-items: center;">
+            <strong>{{ pt.username }}</strong>
+            <span class="mono-text" style="font-size: 0.85rem;">{{ pt.department }}</span>
+            <span>{{ pt.email }}</span>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              <form action="{% url 'admin_approve_teacher' pt.id %}" method="POST" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.35rem 0.7rem; background-color: var(--pass-teal); border-color: var(--pass-teal); cursor: pointer;">Approve</button>
+              </form>
+              <form action="{% url 'admin_delete_user' pt.id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Reject and delete registration request for &quot;{{ pt.username|escapejs }}&quot;?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" style="font-size: 0.75rem; padding: 0.35rem 0.7rem; color: var(--red-pen); border-color: var(--red-pen); cursor: pointer;">Reject</button>
+              </form>
+            </div>
+          </div>
+        {% empty %}
+          <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No pending teacher registration requests.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Pending Student Approvals Section -->
+    <div id="pending-students-sec" style="margin-top: 2.5rem;">
+      <h3 class="section-title" style="color: var(--pass-teal);">Pending Student Registrations</h3>
+      <div class="ledger" style="border-color: var(--pass-teal);">
+        <div class="ledger-header" style="background-color: rgba(46, 110, 96, 0.03); border-bottom-color: var(--pass-teal); grid-template-columns: 1fr 1fr 1fr auto;">
+          <span>Username</span>
+          <span>Class Group</span>
+          <span>Email</span>
+          <span style="text-align: right;">Action</span>
+        </div>
+        {% for ps in pending_students %}
+          <div class="ledger-row" style="grid-template-columns: 1fr 1fr 1fr auto; align-items: center;">
+            <strong>{{ ps.username }}</strong>
+            <span class="mode-tag practice-tag" style="display: inline-block; width: fit-content; font-size: 0.75rem;">{{ ps.class_group.name }}</span>
+            <span>{{ ps.email }}</span>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              <form action="{% url 'admin_approve_student' ps.id %}" method="POST" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.35rem 0.7rem; background-color: var(--pass-teal); border-color: var(--pass-teal); cursor: pointer;">Approve</button>
+              </form>
+              <form action="{% url 'admin_delete_user' ps.id %}" method="POST" style="margin: 0;" onsubmit="return confirm('Reject and delete registration request for &quot;{{ ps.username|escapejs }}&quot;?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" style="font-size: 0.75rem; padding: 0.35rem 0.7rem; color: var(--red-pen); border-color: var(--red-pen); cursor: pointer;">Reject</button>
+              </form>
+            </div>
+          </div>
+        {% empty %}
+          <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No pending student registration requests.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const teacherCountElem = document.getElementById("pending-teachers-count");
+      const studentCountElem = document.getElementById("pending-students-count");
+
+      function updatePendingCount() {
+        fetch("{% url 'admin_pending_count' %}")
+          .then(response => {
+            if (!response.ok) throw new Error("HTTP error " + response.status);
+            return response.json();
+          })
+          .then(data => {
+            if (teacherCountElem) teacherCountElem.textContent = data.pending_teachers_count || 0;
+            if (studentCountElem) studentCountElem.textContent = data.pending_students_count || 0;
+          })
+          .catch(error => console.error("Error fetching pending requests count:", error));
+      }
+
+      // Check count initially on load and every 4 seconds
+      updatePendingCount();
+      setInterval(updatePendingCount, 4000);
+    });
+  </script>
+{% endblock %}

@@ -4,3 +4,25 @@ __pycache__/
 *.pyc
 db_check.ps1
 seed_data.py
+changes_list.txt
+db_structure.txt
+venv/
+admin_credentials.txt
+clear_data.py
+create_admin.py
+enter_test_data.py
+requirements.txt
+AGENTS.md
+Project draft.md
+architecture.md
+changes.md
+dataflow.md
+design.md
+new_changes.txt
+roadmap.md
+security.md
+teacher-dashboard-redesign.md
+teacher_portal_features_guide.txt
+theme.md
+user-flows.md
+working.md

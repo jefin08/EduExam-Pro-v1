@@ -1,0 +1,165 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Verify Bulk Student Upload — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'admin_dashboard' %}">Admin Overview</a></li>
+<li><a href="{% url 'admin_classes_departments' %}">Classes &amp; Departments</a></li>
+<li><a href="{% url 'admin_pending_approvals' %}">Pending Approvals</a></li>
+<li><a href="{% url 'admin_users_directory' %}">Users Directory</a></li>
+<li><a href="{% url 'admin_onboard_users' %}">User Onboarding</a></li>
+<li class="active"><a href="#">Bulk Verification</a></li>
+<li><a href="/admin/">Django Site Admin</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div style="max-width: 1100px; margin: 0 auto; width: 100%;">
+
+    <!-- Top Header & Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <a href="{% url 'admin_bulk_upload_cancel' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; margin-bottom: 0.5rem; transition: color 0.15s ease;">
+          &larr; Cancel &amp; Return to Bulk Upload
+        </a>
+        <h2 class="section-title" style="margin: 0; font-size: 1.6rem;">Department &amp; Class Verification</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span class="mode-tag exam-tag" style="font-size: 0.78rem; padding: 0.3rem 0.7rem; font-weight: 600;">
+          {{ unverified_count }} Item(s) Need Verification
+        </span>
+        <span class="mono-text" style="font-size: 0.82rem; color: var(--ink-soft); background: var(--paper); border: 1px solid var(--rule-strong); padding: 0.3rem 0.6rem; border-radius: 3px;">
+          Total: {{ total_count }} Students
+        </span>
+      </div>
+    </div>
+
+    <!-- Explanation Box -->
+    <div style="background-color: var(--paper); border-left: 4px solid var(--red-pen); border-top: 1px solid var(--rule); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 1rem 1.25rem; border-radius: 4px; margin-bottom: 1.5rem; font-size: 0.86rem; line-height: 1.5;">
+      <strong>Manual Verification Required:</strong>
+      Some student records in your upload contain a <strong>Department</strong> or <strong>Class</strong> that was not found in the database.
+      <br>
+      <span style="color: var(--ink-soft);">
+        • For items marked <span class="mode-tag exam-tag" style="font-size: 0.68rem; padding: 0.1rem 0.35rem;">⚠️ Not Found</span>, choose whether to <strong>create them as a new record</strong> or <strong>map them to an existing department/class</strong>.<br>
+        • Verified items marked <span class="mode-tag practice-tag" style="font-size: 0.68rem; padding: 0.1rem 0.35rem;">✓ Found</span> are matched automatically.
+      </span>
+    </div>
+
+    <!-- Verification Table Form -->
+    <form action="{% url 'admin_bulk_upload_confirm' %}" method="POST">
+      {% csrf_token %}
+
+      <div class="ledger" style="margin-bottom: 1.5rem;">
+        <div class="ledger-header" style="grid-template-columns: 40px 1.4fr 1.6fr 1.1fr 1.8fr 1.8fr; font-size: 0.8rem;">
+          <span>#</span>
+          <span>Student Name</span>
+          <span>Email &amp; Username</span>
+          <span>Reg No (Password)</span>
+          <span>Department</span>
+          <span>Class</span>
+        </div>
+
+        {% for s in pending_students %}
+          <div class="ledger-row" style="grid-template-columns: 40px 1.4fr 1.6fr 1.1fr 1.8fr 1.8fr; align-items: center; padding: 0.85rem 1rem; gap: 0.75rem;">
+            <!-- Index -->
+            <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft);">{{ forloop.counter }}</span>
+
+            <!-- Name -->
+            <div>
+              <strong style="font-size: 0.9rem; display: block; color: var(--ink);">{{ s.name }}</strong>
+            </div>
+
+            <!-- Email & Generated Username -->
+            <div>
+              <span style="font-size: 0.85rem; word-break: break-all; display: block;">{{ s.email }}</span>
+              <span class="mono-text" style="font-size: 0.75rem; color: var(--ink-soft);">user: <strong>{{ s.username }}</strong></span>
+            </div>
+
+            <!-- Reg No / Password -->
+            <div>
+              <span class="mono-text" style="font-size: 0.82rem; background: var(--cream); padding: 0.2rem 0.45rem; border-radius: 3px; border: 1px solid var(--rule);">
+                {{ s.reg_no|default:s.username }}
+              </span>
+            </div>
+
+            <!-- Department Verification -->
+            <div>
+              {% if s.dept_verified %}
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="mode-tag practice-tag" style="font-size: 0.75rem; padding: 0.25rem 0.55rem;">
+                    ✓ {{ s.dept_name }}
+                  </span>
+                  <input type="hidden" name="dept_{{ forloop.counter0 }}" value="existing:{{ s.dept_id }}">
+                </div>
+              {% else %}
+                <div style="margin-bottom: 0.3rem;">
+                  <span class="mode-tag exam-tag" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">
+                    ⚠️ Not Found: "{{ s.dept_name|default:'[Empty]' }}"
+                  </span>
+                </div>
+                <select name="dept_{{ forloop.counter0 }}" style="width: 100%; font-size: 0.8rem; padding: 0.35rem 0.45rem; border: 1px solid var(--red-pen); border-radius: 4px; background: white;" required>
+                  {% if s.dept_name %}
+                    <option value="create:{{ s.dept_name }}" selected>+ Create New: "{{ s.dept_name }}"</option>
+                  {% endif %}
+                  <optgroup label="Map to Existing Department:">
+                    {% for d in departments %}
+                      <option value="existing:{{ d.id }}">{{ d.name }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  {% if not s.dept_name %}
+                    <option value="none" selected>Leave Unassigned</option>
+                  {% endif %}
+                </select>
+              {% endif %}
+            </div>
+
+            <!-- Class Verification -->
+            <div>
+              {% if s.class_verified %}
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="mode-tag practice-tag" style="font-size: 0.75rem; padding: 0.25rem 0.55rem;">
+                    ✓ {{ s.class_name }}
+                  </span>
+                  <input type="hidden" name="class_{{ forloop.counter0 }}" value="existing:{{ s.class_id }}">
+                </div>
+              {% else %}
+                <div style="margin-bottom: 0.3rem;">
+                  <span class="mode-tag exam-tag" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">
+                    ⚠️ Not Found: "{{ s.class_name|default:'[Empty]' }}"
+                  </span>
+                </div>
+                <select name="class_{{ forloop.counter0 }}" style="width: 100%; font-size: 0.8rem; padding: 0.35rem 0.45rem; border: 1px solid var(--red-pen); border-radius: 4px; background: white;" required>
+                  {% if s.class_name %}
+                    <option value="create:{{ s.class_name }}" selected>+ Create New: "{{ s.class_name }}"</option>
+                  {% endif %}
+                  <optgroup label="Map to Existing Class:">
+                    {% for c in classes %}
+                      <option value="existing:{{ c.id }}">{{ c.name }}{% if c.department %} ({{ c.department.name }}){% endif %}</option>
+                    {% endfor %}
+                  </optgroup>
+                  {% if not s.class_name %}
+                    <option value="none" selected>Leave Unassigned</option>
+                  {% endif %}
+                </select>
+              {% endif %}
+            </div>
+
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 1.25rem; box-shadow: 2px 2px 0px rgba(29, 39, 51, 0.04);">
+        <a href="{% url 'admin_bulk_upload_cancel' %}" class="btn btn-outline" style="color: var(--red-pen); border-color: var(--red-pen); padding: 0.6rem 1.2rem; font-size: 0.88rem; text-decoration: none;">
+          Cancel &amp; Discard Upload
+        </a>
+        <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.6rem; font-size: 0.92rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Confirm &amp; Enroll ({{ total_count }}) Students
+        </button>
+      </div>
+
+    </form>
+  </div>
+{% endblock %}

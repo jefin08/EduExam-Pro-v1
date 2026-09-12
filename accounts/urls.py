@@ -1,16 +1,18 @@
 from django.urls import path
 from .views import (
     signup_selection_view, teacher_signup_view, student_signup_view, signin_view, signout_view,
-    admin_dashboard_view, teacher_dashboard_view, student_dashboard_view,
+    admin_dashboard_view, admin_classes_departments_view, admin_pending_approvals_view, admin_users_directory_view, admin_onboard_users_view, teacher_dashboard_view, student_dashboard_view,
     teacher_exams_view, teacher_practice_view,
     admin_create_class, admin_create_teacher, admin_create_student, admin_approve_teacher, admin_approve_student, admin_pending_count_api, admin_create_department,
+    admin_delete_class, admin_edit_class, admin_delete_department, admin_edit_department, admin_delete_user, admin_toggle_approval_requirement, admin_bulk_upload_students,
+    admin_bulk_upload_verify, admin_bulk_upload_confirm, admin_bulk_upload_cancel,
     teacher_create_topic, teacher_edit_topic, teacher_create_mcq, teacher_create_coding,
     teacher_create_practice, teacher_create_exam, student_join_exam, teacher_toggle_visibility, teacher_practice_toggle_visibility,
     teacher_edit_exam_schedule, teacher_toggle_exam_code_visibility,
     teacher_delete_mcq, teacher_delete_coding, teacher_edit_mcq, teacher_edit_coding,
     teacher_bulk_upload_view, teacher_bulk_save_view, teacher_import_practice_to_exam,
     student_profile_view, student_scheduled_exams_view, student_practice_sets_view, student_assessment_history_view,
-    teacher_profile_view
+    teacher_profile_view, teacher_students_progress_view, teacher_practice_comments_view, teacher_delete_practice_comment
 )
 
 urlpatterns = [
@@ -23,8 +25,15 @@ urlpatterns = [
     
     # Dashboards
     path('dashboard/admin/', admin_dashboard_view, name='admin_dashboard'),
+    path('dashboard/admin/classes-departments/', admin_classes_departments_view, name='admin_classes_departments'),
+    path('dashboard/admin/pending-approvals/', admin_pending_approvals_view, name='admin_pending_approvals'),
+    path('dashboard/admin/users/', admin_users_directory_view, name='admin_users_directory'),
+    path('dashboard/admin/users/onboard/', admin_onboard_users_view, name='admin_onboard_users'),
     path('dashboard/teacher/', teacher_dashboard_view, name='teacher_dashboard'),
     path('dashboard/teacher/profile/', teacher_profile_view, name='teacher_profile'),
+    path('dashboard/teacher/students-progress/', teacher_students_progress_view, name='teacher_students_progress'),
+    path('dashboard/teacher/practice/comments/', teacher_practice_comments_view, name='teacher_practice_comments'),
+    path('dashboard/teacher/practice/comments/<int:comment_id>/delete/', teacher_delete_practice_comment, name='teacher_delete_practice_comment'),
     path('dashboard/teacher/exams/', teacher_exams_view, name='teacher_exams'),
     path('dashboard/teacher/exams/code/<int:exam_code_id>/toggle/', teacher_toggle_exam_code_visibility, name='teacher_toggle_exam_code_visibility'),
     path('dashboard/teacher/practice/', teacher_practice_view, name='teacher_practice'),
@@ -35,12 +44,22 @@ urlpatterns = [
     
     # Admin Actions
     path('dashboard/admin/class/create/', admin_create_class, name='admin_create_class'),
+    path('dashboard/admin/class/<int:class_id>/edit/', admin_edit_class, name='admin_edit_class'),
+    path('dashboard/admin/class/<int:class_id>/delete/', admin_delete_class, name='admin_delete_class'),
+    path('dashboard/admin/department/create/', admin_create_department, name='admin_create_department'),
+    path('dashboard/admin/department/<int:department_id>/edit/', admin_edit_department, name='admin_edit_department'),
+    path('dashboard/admin/department/<int:department_id>/delete/', admin_delete_department, name='admin_delete_department'),
     path('dashboard/admin/teacher/create/', admin_create_teacher, name='admin_create_teacher'),
     path('dashboard/admin/teacher/<int:teacher_id>/approve/', admin_approve_teacher, name='admin_approve_teacher'),
     path('dashboard/admin/student/create/', admin_create_student, name='admin_create_student'),
     path('dashboard/admin/student/<int:student_id>/approve/', admin_approve_student, name='admin_approve_student'),
-    path('dashboard/admin/department/create/', admin_create_department, name='admin_create_department'),
+    path('dashboard/admin/user/<int:user_id>/delete/', admin_delete_user, name='admin_delete_user'),
     path('dashboard/admin/pending-count/', admin_pending_count_api, name='admin_pending_count'),
+    path('dashboard/admin/toggle-approval-requirement/', admin_toggle_approval_requirement, name='admin_toggle_approval_requirement'),
+    path('dashboard/admin/students/bulk-upload/', admin_bulk_upload_students, name='admin_bulk_upload_students'),
+    path('dashboard/admin/students/bulk-upload/verify/', admin_bulk_upload_verify, name='admin_bulk_upload_verify'),
+    path('dashboard/admin/students/bulk-upload/confirm/', admin_bulk_upload_confirm, name='admin_bulk_upload_confirm'),
+    path('dashboard/admin/students/bulk-upload/cancel/', admin_bulk_upload_cancel, name='admin_bulk_upload_cancel'),
     
     # Teacher Actions
     path('dashboard/teacher/topic/create/', teacher_create_topic, name='teacher_create_topic'),

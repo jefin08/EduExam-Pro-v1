@@ -18,16 +18,6 @@ class CustomUserManager(DjangoUserManager):
         extra_fields.setdefault('is_superuser', True)
         return super().create_superuser(username, email, password, **extra_fields)
 
-class Class(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = "Classes"
-
-    def __str__(self):
-        return self.name
-
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -36,6 +26,25 @@ class Department(models.Model):
         verbose_name_plural = "Departments"
 
     def __str__(self):
+        return self.name
+
+class Class(models.Model):
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.CASCADE,
+        related_name='classes',
+        null=True,
+        blank=True
+    )
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Classes"
+
+    def __str__(self):
+        if self.department:
+            return f"{self.name} ({self.department.name})"
         return self.name
 
 class User(AbstractUser):

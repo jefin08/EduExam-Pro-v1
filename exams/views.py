@@ -40,8 +40,14 @@ def take_exam_view(request, exam_id):
         
     # Get questions from linked topics
     topics = exam.topics.all()
-    mcq_questions = ExamMCQQuestion.objects.filter(topic__in=topics)
-    coding_questions = ExamCodingQuestion.objects.filter(topic__in=topics)
+    mcq_questions = list(ExamMCQQuestion.objects.filter(topic__in=topics))
+    coding_questions = list(ExamCodingQuestion.objects.filter(topic__in=topics))
+    
+    if exam.is_randomized:
+        import random
+        rng = random.Random(f"{grade.id}-{request.user.id}")
+        rng.shuffle(mcq_questions)
+        rng.shuffle(coding_questions)
     
     if request.method == 'POST':
         data = json.loads(request.body.decode('utf-8'))

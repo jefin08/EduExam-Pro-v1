@@ -1,0 +1,585 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Practice Comments &amp; Explanations — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}#topics">Topics</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#questions">Question bank</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#practice">Practice</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#exams">Exams</a></li>
+<li><a href="{% url 'teacher_students_progress' %}">Students Progress</a></li>
+<li class="active"><a href="{% url 'teacher_practice_comments' %}">Practice Comments</a></li>
+<li><a href="{% url 'teacher_profile' %}">My Profile</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <!-- Header Title -->
+  <div style="margin-bottom: 1.75rem;">
+    <h2 class="section-title" style="margin-bottom: 0.35rem;">Practice Explanations &amp; Comments</h2>
+    <p style="color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.85rem; margin: 0;">
+      Review student explanations and study comments published in the practice section, grouped by question or as a live feed, with active live search and moderation controls.
+    </p>
+  </div>
+
+  <!-- Filter & View Switcher Toolbar -->
+  <div class="dash-form" style="padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 6px;">
+    <form method="GET" action="{% url 'teacher_practice_comments' %}" id="commentsFilterForm" style="display: flex; flex-direction: column; gap: 1rem;">
+      <input type="hidden" name="view_mode" id="viewModeInput" value="{{ view_mode }}">
+
+      <!-- Row 1: Dropdown Filters & Search -->
+      <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;">
+        <!-- Class Filter -->
+        <div style="flex: 1; min-width: 180px;">
+          <label for="class_select" style="font-size: 0.78rem; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-mono); display: block; margin-bottom: 0.4rem;">
+            Filter by Class
+          </label>
+          <select name="class_id" id="class_select" onchange="document.getElementById('commentsFilterForm').submit()" style="width: 100%; font-size: 0.88rem; padding: 0.5rem 0.65rem; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--bg); font-family: var(--font-sans);">
+            <option value="" {% if not selected_class_id %}selected{% endif %}>-- All Classes --</option>
+            {% for cls in classes %}
+              <option value="{{ cls.id }}" {% if selected_class_id == cls.id|stringformat:"s" %}selected{% endif %}>
+                {{ cls.name }}{% if cls.department %} ({{ cls.department.name }}){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Question Filter -->
+        <div style="flex: 1.5; min-width: 240px;">
+          <label for="question_select" style="font-size: 0.78rem; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-mono); display: block; margin-bottom: 0.4rem;">
+            Filter by Question
+          </label>
+          <select name="question" id="question_select" onchange="document.getElementById('commentsFilterForm').submit()" style="width: 100%; font-size: 0.88rem; padding: 0.5rem 0.65rem; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--bg); font-family: var(--font-sans);">
+            <option value="" {% if not selected_question %}selected{% endif %}>-- All Questions with Comments --</option>
+            {% if mcq_filter_options %}
+              <optgroup label="MCQ Questions">
+                {% for q in mcq_filter_options %}
+                  <option value="mcq_{{ q.id }}" {% if selected_question == "mcq_"|add:q.id|stringformat:"s" %}selected{% endif %}>
+                    [MCQ] {{ q.question_text|truncatechars:60 }} ({{ q.topic.name }})
+                  </option>
+                {% endfor %}
+              </optgroup>
+            {% endif %}
+            {% if coding_filter_options %}
+              <optgroup label="Coding Questions">
+                {% for q in coding_filter_options %}
+                  <option value="coding_{{ q.id }}" {% if selected_question == "coding_"|add:q.id|stringformat:"s" %}selected{% endif %}>
+                    [Coding] {{ q.title }} ({{ q.topic.name }})
+                  </option>
+                {% endfor %}
+              </optgroup>
+            {% endif %}
+          </select>
+        </div>
+
+        <!-- Active Live Search Input -->
+        <div style="flex: 1.5; min-width: 240px;">
+          <label for="search_input" style="font-size: 0.78rem; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-mono); display: block; margin-bottom: 0.4rem;">
+            Search Comments / Students
+          </label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="text" name="q" id="search_input" value="{{ search_query }}" 
+                   oninput="activeLiveSearch()" 
+                   placeholder="Student name, class, question, or comment text..." 
+                   autocomplete="off" 
+                   style="width: 100%; font-size: 0.88rem; padding: 0.5rem 2rem 0.5rem 0.65rem; border: 1.5px solid var(--ink); border-radius: 4px; font-family: var(--font-sans); background: var(--bg);">
+            <button type="button" id="clearSearchInputBtn" onclick="clearLiveSearch()" 
+                    style="display: {% if search_query %}inline-flex{% else %}none{% endif %}; position: absolute; right: 8px; background: none; border: none; cursor: pointer; color: var(--ink-soft); font-size: 0.95rem; line-height: 1; padding: 2px;" 
+                    title="Clear live search">✕</button>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="submit" class="btn btn-primary" style="padding: 0.55rem 1.1rem; font-size: 0.85rem;">Filter</button>
+          {% if selected_class_id or selected_question or search_query %}
+            <a href="{% url 'teacher_practice_comments' %}?view_mode={{ view_mode }}" class="btn btn-ghost" style="padding: 0.55rem 0.9rem; font-size: 0.82rem; text-decoration: none;">Clear Filter</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Row 2: View Mode Switcher -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--rule-soft); padding-top: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">View Mode:</span>
+          
+          <button type="button" onclick="setViewMode('by_question')" class="btn {% if view_mode == 'by_question' %}btn-primary{% else %}btn-ghost{% endif %}" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <span>📁 Question with Comments</span>
+            <span id="tabBadgeQuestions" style="font-family: var(--font-mono); font-size: 0.72rem; padding: 0.1rem 0.4rem; border-radius: 10px; background: {% if view_mode == 'by_question' %}var(--paper); color: var(--ink);{% else %}var(--rule-soft); color: var(--ink-soft);{% endif %}">{{ total_questions_with_comments }}</span>
+          </button>
+
+          <button type="button" onclick="setViewMode('feed')" class="btn {% if view_mode == 'feed' %}btn-primary{% else %}btn-ghost{% endif %}" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <span>📋 All Comments Feed</span>
+            <span id="tabBadgeComments" style="font-family: var(--font-mono); font-size: 0.72rem; padding: 0.1rem 0.4rem; border-radius: 10px; background: {% if view_mode == 'feed' %}var(--paper); color: var(--ink);{% else %}var(--rule-soft); color: var(--ink-soft);{% endif %}">{{ total_comments }}</span>
+          </button>
+        </div>
+
+        <div id="liveCounterText" style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink-soft);">
+          Showing <strong style="color: var(--ink);">{{ total_comments }}</strong> comment{{ total_comments|pluralize }} across <strong style="color: var(--ink);">{{ total_questions_with_comments }}</strong> question{{ total_questions_with_comments|pluralize }}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Live No Matches Banner (shown when active search filters all elements out) -->
+  <div id="liveNoMatchesNotice" style="display: none; text-align: center; padding: 3.5rem 2rem; border: 2px dashed var(--rule-strong); border-radius: 8px; background: var(--paper); margin-bottom: 1.5rem;">
+    <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔍</div>
+    <h4 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--ink); margin: 0 0 0.5rem 0;">No Comments Match Your Search</h4>
+    <p style="color: var(--ink-soft); font-size: 0.92rem; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+      No results found matching "<strong id="noMatchQuerySpan" style="color: var(--ink);"></strong>". Try searching for another student name, class, question keyword, or clear the search.
+    </p>
+    <div style="margin-top: 1.25rem;">
+      <button type="button" onclick="clearLiveSearch()" class="btn btn-ghost" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Clear Active Search</button>
+    </div>
+  </div>
+
+  <!-- ================= VIEW 1: QUESTIONS WITH COMMENTS (DEFAULT) ================= -->
+  {% if view_mode == 'by_question' %}
+    <div id="questionsContainer" style="display: flex; flex-direction: column; gap: 1.5rem;">
+      {% for q_group in questions_grouped %}
+        <div class="dash-card question-group-card" 
+             data-question-text="{{ q_group.text|lower }} {{ q_group.description|lower }} {{ q_group.topic.name|lower }}"
+             style="padding: 0; background: var(--paper); border: 1.5px solid var(--rule-strong); border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+          
+          <!-- Question Header Section -->
+          <div style="padding: 1.25rem 1.5rem; background: var(--bg); border-bottom: 1.5px solid var(--rule-strong);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                {% if q_group.question_type == 'mcq' %}
+                  <span class="mode-tag practice-tag" style="font-size: 0.7rem; padding: 0.15rem 0.5rem; font-weight: 700;">MCQ Question</span>
+                {% else %}
+                  <span class="mode-tag exam-tag" style="font-size: 0.7rem; padding: 0.15rem 0.5rem; font-weight: 700; background: rgba(99, 102, 241, 0.1); color: #4338ca; border-color: rgba(99, 102, 241, 0.3);">Coding Question</span>
+                {% endif %}
+                
+                {% if q_group.topic %}
+                  <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft);">
+                    Topic: <strong style="color: var(--ink);">{{ q_group.topic.name }}</strong>
+                  </span>
+                {% endif %}
+              </div>
+
+              <!-- Question Comments Count Pill & Quick Filter Link -->
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span class="mode-tag question-comment-pill" style="font-size: 0.75rem; background: var(--ink); color: var(--paper); border-radius: 12px; padding: 0.2rem 0.6rem; font-family: var(--font-mono);">
+                  💬 <span class="q-visible-count">{{ q_group.comments|length }}</span> student comment{{ q_group.comments|length|pluralize }}
+                </span>
+                <a href="{% url 'teacher_practice_comments' %}?question={{ q_group.question_key }}&class_id={{ selected_class_id }}&view_mode=by_question" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; text-decoration: none;" title="Filter view to only this question">Focus Question</a>
+              </div>
+            </div>
+
+            <!-- Question Prompt / Title -->
+            <h4 style="margin: 0; font-family: var(--font-serif); font-size: 1.08rem; color: var(--ink); line-height: 1.45; font-weight: 600;">
+              {{ q_group.text }}
+            </h4>
+            {% if q_group.description %}
+              <div style="font-size: 0.85rem; color: var(--ink-soft); margin-top: 0.35rem; line-height: 1.4;">
+                {{ q_group.description|truncatechars:180 }}
+              </div>
+            {% endif %}
+
+            <!-- Official Instructor Explanation -->
+            {% if q_group.explanation %}
+              <details style="margin-top: 0.65rem; font-size: 0.82rem;">
+                <summary style="cursor: pointer; color: var(--pass-teal); font-family: var(--font-mono); font-weight: 600; user-select: none;">
+                  💡 View Official Instructor Explanation
+                </summary>
+                <div style="margin-top: 0.35rem; padding: 0.6rem 0.85rem; background: rgba(46, 110, 96, 0.05); border-left: 3px solid var(--pass-teal); border-radius: 2px; color: var(--ink); white-space: pre-wrap; line-height: 1.45;">
+                  {{ q_group.explanation }}
+                </div>
+              </details>
+            {% endif %}
+          </div>
+
+          <!-- Nested Student Comments List Under This Question -->
+          <div style="padding: 1.25rem 1.5rem; background: var(--paper);">
+            <div style="font-family: var(--font-mono); font-size: 0.78rem; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.06em; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+              <span>Student Explanations &amp; Discussion Comments (<span class="q-section-count">{{ q_group.comments|length }}</span>)</span>
+            </div>
+
+            <div class="nested-comments-list" style="display: flex; flex-direction: column; gap: 1rem;">
+              {% for comment in q_group.comments %}
+                <div class="nested-comment-item" 
+                     data-search-content="{{ comment.student.get_full_name|lower }} {{ comment.student.first_name|lower }} {{ comment.student.last_name|lower }} {{ comment.student.username|lower }} {{ comment.student.class_group.name|lower }} {{ comment.student.class_group.department.name|lower }} {{ comment.comment_text|lower }}"
+                     style="border: 1px solid var(--rule-strong); border-radius: 6px; padding: 1rem 1.15rem; background: var(--paper); transition: box-shadow 0.15s ease;">
+                  
+                  <!-- Comment Sub-Header: Student Identity, Class & Delete Option -->
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; border-bottom: 1px solid var(--rule-soft); padding-bottom: 0.65rem;">
+                    
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                      <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: 0.9rem; flex-shrink: 0;">
+                        {% if comment.student.first_name %}
+                          {{ comment.student.first_name|slice:":1"|upper }}
+                        {% else %}
+                          {{ comment.student.username|slice:":1"|upper }}
+                        {% endif %}
+                      </div>
+                      
+                      <div>
+                        <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                          <strong style="font-family: var(--font-serif); font-size: 0.98rem; color: var(--ink);">
+                            {% if comment.student.get_full_name %}
+                              {{ comment.student.get_full_name }}
+                            {% elif comment.student.first_name %}
+                              {{ comment.student.first_name }}
+                            {% else %}
+                              {{ comment.student.username }}
+                            {% endif %}
+                          </strong>
+                          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft);">
+                            @{{ comment.student.username }}
+                          </span>
+                        </div>
+
+                        <div style="margin-top: 0.2rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                          <span style="font-size: 0.75rem; color: var(--ink-soft); font-family: var(--font-mono);">Class:</span>
+                          {% if comment.student.class_group %}
+                            <span class="mode-tag practice-tag" style="font-size: 0.7rem; padding: 0.1rem 0.45rem;">
+                              {{ comment.student.class_group.name }}
+                            </span>
+                            {% if comment.student.class_group.department %}
+                              <span style="font-size: 0.72rem; color: var(--ink-soft); font-family: var(--font-mono);">
+                                · {{ comment.student.class_group.department.name }}
+                              </span>
+                            {% endif %}
+                          {% else %}
+                            <span style="font-size: 0.72rem; color: var(--ink-soft); font-style: italic;">Not assigned</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Date & Delete Action -->
+                    <div style="display: flex; align-items: center; gap: 0.85rem;">
+                      <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft);">
+                        {{ comment.created_at|date:"M d, Y · H:i" }}
+                      </span>
+
+                      <form method="POST" action="{% url 'teacher_delete_practice_comment' comment.id %}" onsubmit="return confirm('Are you sure you want to delete this comment? This action cannot be undone.');" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost" title="Delete this comment" style="color: var(--fail-red); border-color: rgba(220, 38, 38, 0.4); font-size: 0.76rem; padding: 0.25rem 0.65rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+
+                  </div>
+
+                  <!-- Student Explanation Content -->
+                  <div style="background: var(--bg); border-left: 3px solid var(--ink); padding: 0.75rem 0.9rem; border-radius: 0 4px 4px 0;">
+                    <div style="font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                      Student Explanation &amp; Notes
+                    </div>
+                    <p style="margin: 0; font-size: 0.92rem; line-height: 1.5; color: var(--ink); white-space: pre-wrap; word-break: break-word;">{{ comment.comment_text }}</p>
+                  </div>
+
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+        </div>
+      {% empty %}
+        <!-- Empty State -->
+        <div style="text-align: center; padding: 4rem 2rem; border: 2px dashed var(--rule-strong); border-radius: 8px; background: var(--paper);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">💬</div>
+          <h3 style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--ink); margin: 0 0 0.5rem 0;">No Practice Comments Found</h3>
+          <p style="color: var(--ink-soft); font-size: 0.92rem; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+            {% if selected_class_id or selected_question or search_query %}
+              No comments match your current filter settings. Try clearing filters to view all questions and comments.
+            {% else %}
+              When students draft and publish explanations or study notes on your practice questions, each question and its comments will appear here.
+            {% endif %}
+          </p>
+          {% if selected_class_id or selected_question or search_query %}
+            <div style="margin-top: 1.25rem;">
+              <a href="{% url 'teacher_practice_comments' %}?view_mode=by_question" class="btn btn-ghost" style="text-decoration: none;">Clear Filters</a>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+  <!-- ================= VIEW 2: FLAT COMMENTS FEED ================= -->
+  {% else %}
+    <div id="feedContainer" class="comments-feed" style="display: flex; flex-direction: column; gap: 1.25rem;">
+      {% for comment in comments %}
+        <div class="dash-card comment-card" 
+             data-search-content="{{ comment.student.get_full_name|lower }} {{ comment.student.first_name|lower }} {{ comment.student.last_name|lower }} {{ comment.student.username|lower }} {{ comment.student.class_group.name|lower }} {{ comment.student.class_group.department.name|lower }} {{ comment.comment_text|lower }} {{ comment.mcq_question.question_text|lower }} {{ comment.coding_question.title|lower }} {{ comment.mcq_question.topic.name|lower }} {{ comment.coding_question.topic.name|lower }}"
+             style="padding: 1.35rem 1.5rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          
+          <!-- Card Header: Student Info, Class & Delete Action -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--rule-soft); padding-bottom: 1rem; margin-bottom: 1rem;">
+            
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
+              <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: 1rem; flex-shrink: 0;">
+                {% if comment.student.first_name %}
+                  {{ comment.student.first_name|slice:":1"|upper }}
+                {% else %}
+                  {{ comment.student.username|slice:":1"|upper }}
+                {% endif %}
+              </div>
+              
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <strong style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--ink);">
+                    {% if comment.student.get_full_name %}
+                      {{ comment.student.get_full_name }}
+                    {% elif comment.student.first_name %}
+                      {{ comment.student.first_name }}
+                    {% else %}
+                      {{ comment.student.username }}
+                    {% endif %}
+                  </strong>
+                  <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft);">
+                    @{{ comment.student.username }}
+                  </span>
+                </div>
+                
+                <div style="margin-top: 0.25rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <span style="font-size: 0.78rem; color: var(--ink-soft); font-family: var(--font-mono);">Class:</span>
+                  {% if comment.student.class_group %}
+                    <span class="mode-tag practice-tag" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">
+                      {{ comment.student.class_group.name }}
+                    </span>
+                    {% if comment.student.class_group.department %}
+                      <span style="font-size: 0.75rem; color: var(--ink-soft); font-family: var(--font-mono);">
+                        · {{ comment.student.class_group.department.name }}
+                      </span>
+                    {% endif %}
+                  {% else %}
+                    <span style="font-size: 0.75rem; color: var(--ink-soft); font-style: italic;">Not assigned</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Timestamp & Delete Button -->
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="text-align: right;">
+                <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft); display: block;">
+                  {{ comment.created_at|date:"M d, Y" }}
+                </span>
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-soft);">
+                  {{ comment.created_at|date:"H:i" }}
+                </span>
+              </div>
+
+              <form method="POST" action="{% url 'teacher_delete_practice_comment' comment.id %}" onsubmit="return confirm('Are you sure you want to delete this comment? This action cannot be undone.');" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost" title="Delete this comment" style="color: var(--fail-red); border-color: rgba(220, 38, 38, 0.4); font-size: 0.8rem; padding: 0.4rem 0.8rem; display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  Delete
+                </button>
+              </form>
+            </div>
+
+          </div>
+
+          <!-- Question Context Block -->
+          <div style="background: var(--bg); border: 1px solid var(--rule-soft); border-radius: 4px; padding: 0.85rem 1rem; margin-bottom: 0.85rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; flex-wrap: wrap;">
+              {% if comment.question_type == 'mcq' %}
+                <span class="mode-tag practice-tag" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">MCQ Question</span>
+                {% if comment.mcq_question and comment.mcq_question.topic %}
+                  <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft);">
+                    Topic: <strong style="color: var(--ink);">{{ comment.mcq_question.topic.name }}</strong>
+                  </span>
+                {% endif %}
+              {% else %}
+                <span class="mode-tag exam-tag" style="font-size: 0.68rem; padding: 0.15rem 0.45rem; background: rgba(99, 102, 241, 0.1); color: #4338ca; border-color: rgba(99, 102, 241, 0.3);">Coding Question</span>
+                {% if comment.coding_question and comment.coding_question.topic %}
+                  <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft);">
+                    Topic: <strong style="color: var(--ink);">{{ comment.coding_question.topic.name }}</strong>
+                  </span>
+                {% endif %}
+              {% endif %}
+            </div>
+
+            <div style="font-size: 0.9rem; color: var(--ink); font-weight: 500; line-height: 1.45;">
+              {% if comment.mcq_question %}
+                {{ comment.mcq_question.question_text }}
+              {% elif comment.coding_question %}
+                {{ comment.coding_question.title }}
+              {% else %}
+                <span style="color: var(--ink-soft); font-style: italic;">Question no longer available</span>
+              {% endif %}
+            </div>
+
+            {% if comment.mcq_question.explanation or comment.coding_question.explanation %}
+              <details style="margin-top: 0.5rem; font-size: 0.82rem;">
+                <summary style="cursor: pointer; color: var(--pass-teal); font-family: var(--font-mono); font-weight: 600; user-select: none;">
+                  💡 View Official Instructor Explanation
+                </summary>
+                <div style="margin-top: 0.35rem; padding: 0.6rem 0.85rem; background: rgba(46, 110, 96, 0.05); border-left: 3px solid var(--pass-teal); border-radius: 2px; color: var(--ink); white-space: pre-wrap; line-height: 1.45;">
+                  {% if comment.mcq_question %}{{ comment.mcq_question.explanation }}{% else %}{{ comment.coding_question.explanation }}{% endif %}
+                </div>
+              </details>
+            {% endif %}
+          </div>
+
+          <!-- Student Explanation Content -->
+          <div style="background: var(--paper); border: 1.5px solid var(--rule-strong); border-left: 4px solid var(--ink); border-radius: 4px; padding: 1rem 1.15rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.06em; margin-bottom: 0.4rem;">
+              Student Explanation &amp; Notes
+            </div>
+            <p style="margin: 0; font-size: 0.95rem; line-height: 1.55; color: var(--ink); white-space: pre-wrap; word-break: break-word;">{{ comment.comment_text }}</p>
+          </div>
+
+        </div>
+      {% empty %}
+        <div style="text-align: center; padding: 4rem 2rem; border: 2px dashed var(--rule-strong); border-radius: 8px; background: var(--paper);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">💬</div>
+          <h3 style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--ink); margin: 0 0 0.5rem 0;">No Practice Comments Found</h3>
+          <p style="color: var(--ink-soft); font-size: 0.92rem; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+            {% if selected_class_id or selected_question or search_query %}
+              No comments match your current filter settings. Try clearing filters to view all comments.
+            {% else %}
+              When students draft and publish explanations or notes on your practice questions, they will appear here.
+            {% endif %}
+          </p>
+          {% if selected_class_id or selected_question or search_query %}
+            <div style="margin-top: 1.25rem;">
+              <a href="{% url 'teacher_practice_comments' %}?view_mode=feed" class="btn btn-ghost" style="text-decoration: none;">Clear Filters</a>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Active Live Search & Mode Switching JavaScript -->
+  <script>
+    function setViewMode(mode) {
+      document.getElementById('viewModeInput').value = mode;
+      document.getElementById('commentsFilterForm').submit();
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function clearLiveSearch() {
+      const input = document.getElementById('search_input');
+      if (input) {
+        input.value = '';
+        activeLiveSearch();
+        input.focus();
+      }
+    }
+
+    function activeLiveSearch() {
+      const input = document.getElementById('search_input');
+      const query = (input ? input.value : '').toLowerCase().trim();
+      const viewMode = document.getElementById('viewModeInput') ? document.getElementById('viewModeInput').value : 'by_question';
+      
+      const clearBtn = document.getElementById('clearSearchInputBtn');
+      if (clearBtn) {
+        clearBtn.style.display = query.length > 0 ? 'inline-flex' : 'none';
+      }
+
+      let totalVisibleComments = 0;
+      let totalVisibleQuestions = 0;
+
+      if (viewMode === 'by_question') {
+        const questionCards = document.querySelectorAll('.question-group-card');
+        questionCards.forEach(qCard => {
+          const qText = (qCard.getAttribute('data-question-text') || '').toLowerCase();
+          const commentItems = qCard.querySelectorAll('.nested-comment-item');
+          let visibleCommentsInThisQ = 0;
+
+          const qMatches = query && qText.includes(query);
+
+          commentItems.forEach(cItem => {
+            const cText = (cItem.getAttribute('data-search-content') || '').toLowerCase();
+            if (!query || qMatches || cText.includes(query)) {
+              cItem.style.display = 'block';
+              visibleCommentsInThisQ++;
+            } else {
+              cItem.style.display = 'none';
+            }
+          });
+
+          // Update per-question counter badge
+          const countPillSpan = qCard.querySelector('.q-visible-count');
+          if (countPillSpan) countPillSpan.textContent = visibleCommentsInThisQ;
+
+          const countSectionSpan = qCard.querySelector('.q-section-count');
+          if (countSectionSpan) countSectionSpan.textContent = visibleCommentsInThisQ;
+
+          if (!query || visibleCommentsInThisQ > 0) {
+            qCard.style.display = 'block';
+            totalVisibleQuestions++;
+            totalVisibleComments += visibleCommentsInThisQ;
+          } else {
+            qCard.style.display = 'none';
+          }
+        });
+
+        // Update live summary text
+        const summaryText = document.getElementById('liveCounterText');
+        if (summaryText) {
+          if (query) {
+            summaryText.innerHTML = `Found <strong style="color: var(--ink);">${totalVisibleComments}</strong> matching comment${totalVisibleComments === 1 ? '' : 's'} across <strong style="color: var(--ink);">${totalVisibleQuestions}</strong> question${totalVisibleQuestions === 1 ? '' : 's'} for "<em>${escapeHTML(query)}</em>"`;
+          } else {
+            summaryText.innerHTML = `Showing <strong style="color: var(--ink);">${totalVisibleComments}</strong> comment${totalVisibleComments === 1 ? '' : 's'} across <strong style="color: var(--ink);">${totalVisibleQuestions}</strong> question${totalVisibleQuestions === 1 ? '' : 's'}`;
+          }
+        }
+
+        // Live no matches notice
+        const noMatchesBox = document.getElementById('liveNoMatchesNotice');
+        if (noMatchesBox) {
+          noMatchesBox.style.display = (query && totalVisibleComments === 0 && questionCards.length > 0) ? 'block' : 'none';
+          const noMatchQuery = document.getElementById('noMatchQuerySpan');
+          if (noMatchQuery) noMatchQuery.textContent = query;
+        }
+
+      } else {
+        // Feed view mode
+        const commentCards = document.querySelectorAll('.comment-card');
+        commentCards.forEach(card => {
+          const content = (card.getAttribute('data-search-content') || '').toLowerCase();
+          if (!query || content.includes(query)) {
+            card.style.display = 'block';
+            totalVisibleComments++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        // Update live summary text
+        const summaryText = document.getElementById('liveCounterText');
+        if (summaryText) {
+          if (query) {
+            summaryText.innerHTML = `Found <strong style="color: var(--ink);">${totalVisibleComments}</strong> matching comment${totalVisibleComments === 1 ? '' : 's'} for "<em>${escapeHTML(query)}</em>"`;
+          } else {
+            summaryText.innerHTML = `Showing <strong style="color: var(--ink);">${totalVisibleComments}</strong> comment${totalVisibleComments === 1 ? '' : 's'}`;
+          }
+        }
+
+        // Live no matches notice
+        const noMatchesBox = document.getElementById('liveNoMatchesNotice');
+        if (noMatchesBox) {
+          noMatchesBox.style.display = (query && totalVisibleComments === 0 && commentCards.length > 0) ? 'block' : 'none';
+          const noMatchQuery = document.getElementById('noMatchQuerySpan');
+          if (noMatchQuery) noMatchQuery.textContent = query;
+        }
+      }
+    }
+
+    // Run active search on page load if query is already present in search input
+    window.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('search_input');
+      if (input && input.value.trim()) {
+        activeLiveSearch();
+      }
+    });
+  </script>
+{% endblock %}

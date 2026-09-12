@@ -12,6 +12,7 @@ class PracticeSet(models.Model):
     topics = models.ManyToManyField(Topic, related_name='practice_sets', help_text="Topics this practice set is built from")
     name = models.CharField(max_length=200)
     solution_reveal_rule = models.CharField(max_length=20, choices=REVEAL_RULES, default='immediate')
+    is_randomized = models.BooleanField(default=False, help_text="Randomize question ordering for each student")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

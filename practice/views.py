@@ -24,8 +24,14 @@ def attempt_practice_set_view(request, set_id):
         
     # Fetch questions from all linked topics
     topics = practice_set.topics.all()
-    mcq_questions = PracticeMCQQuestion.objects.filter(topic__in=topics).prefetch_related('comments__student')
-    coding_questions = PracticeCodingQuestion.objects.filter(topic__in=topics).prefetch_related('comments__student')
+    mcq_questions = list(PracticeMCQQuestion.objects.filter(topic__in=topics).prefetch_related('comments__student'))
+    coding_questions = list(PracticeCodingQuestion.objects.filter(topic__in=topics).prefetch_related('comments__student'))
+    
+    if getattr(practice_set, 'is_randomized', False):
+        import random
+        rng = random.Random(f"{practice_set.id}-{request.user.id}")
+        rng.shuffle(mcq_questions)
+        rng.shuffle(coding_questions)
     
     if request.method == 'POST':
         # Handle submission scoring

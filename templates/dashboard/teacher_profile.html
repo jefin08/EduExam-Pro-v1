@@ -3,72 +3,141 @@
 {% block title %}Teacher Profile — EduExam Pro{% endblock %}
 
 {% block sidebar_menu %}
-<li><a href="{% url 'teacher_dashboard' %}">← Back to Dashboard</a></li>
-<li class="active"><a href="#">My Profile</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#topics">Topics</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#questions">Question bank</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#practice">Practice</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#exams">Exams</a></li>
+<li><a href="{% url 'teacher_students_progress' %}">Students Progress</a></li>
+<li><a href="{% url 'teacher_practice_comments' %}">Practice Comments</a></li>
+<li class="active"><a href="{% url 'teacher_profile' %}">My Profile</a></li>
 {% endblock %}
 
 {% block main_content %}
   <div style="margin-bottom: 2rem;">
-    <h3 class="section-title" style="margin-bottom: 0.5rem;">Teacher Profile</h3>
-    <p style="color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.85rem; margin: 0;">Manage your academic and account information.</p>
+    <h2 class="section-title" style="margin-bottom: 0.5rem;">Teacher Profile</h2>
+    <p style="color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.85rem; margin: 0;">Academic identity and dashboard statistics.</p>
   </div>
 
-  <div style="display: grid; gap: 2rem;">
+  <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
     
-    <!-- Personal Information -->
-    <div class="dash-form" style="padding: 1.5rem 2rem;">
-      <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
-        Personal Information
-      </h3>
-      <div class="ledger">
-        <div class="ledger-row" style="grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--rule-strong);">
-          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Full Name</span>
-          <span style="font-weight: 500;">{% if teacher.first_name or teacher.last_name %}{{ teacher.first_name }} {{ teacher.last_name }}{% else %}&mdash;{% endif %}</span>
+    <!-- Profile Avatar & Overview Banner -->
+    <div class="dash-form" style="display: flex; align-items: center; gap: 2rem; padding: 2rem 2.5rem;">
+      <div style="width: 80px; height: 80px; min-width: 80px; border-radius: 50%; background-color: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-family: var(--font-serif); font-weight: 600;">
+        {{ teacher.first_name|first|default:teacher.username|first|upper }}
+      </div>
+      <div style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+          <h3 style="margin: 0; font-size: 1.8rem; font-family: var(--font-serif); border: none; padding: 0;">
+            {% if teacher.first_name or teacher.last_name %}
+              {{ teacher.first_name }} {{ teacher.last_name }}
+            {% else %}
+              {{ teacher.username }}
+            {% endif %}
+          </h3>
+          <span class="mode-tag practice-tag" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;">Teacher</span>
+          {% if teacher.is_approved %}
+            <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--pass-teal); border: 1px solid var(--pass-teal); padding: 0.15rem 0.5rem; border-radius: 3px; background: rgba(46,110,96,0.08);">● Approved</span>
+          {% endif %}
         </div>
-        <div class="ledger-row" style="grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--rule-strong);">
-          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Username</span>
-          <span class="mono-text" style="color: var(--ink);">{{ teacher.username }}</span>
-        </div>
-        <div class="ledger-row" style="grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--rule-strong);">
-          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Email</span>
-          <span>{% if teacher.email %}{{ teacher.email }}{% else %}&mdash;{% endif %}</span>
-        </div>
-        <div class="ledger-row" style="grid-template-columns: 150px 1fr;">
-          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Role</span>
-          <span class="mode-tag practice-tag" style="justify-self: start; font-size: 0.75rem; padding: 0.25rem 0.6rem;">{{ teacher.get_role_display }}</span>
+        <div style="display: flex; gap: 1.5rem; margin-top: 0.4rem; font-size: 0.85rem; color: var(--ink-soft); font-family: var(--font-mono); flex-wrap: wrap;">
+          <span>@{{ teacher.username }}</span>
+          {% if teacher.email %}
+            <span>{{ teacher.email }}</span>
+          {% endif %}
+          {% if teacher.department %}
+            <span>Department: <strong>{{ teacher.department }}</strong></span>
+          {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Professional Information -->
-    <div class="dash-form" style="padding: 1.5rem 2rem;">
-      <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
-        Professional Information
-      </h3>
-      <div class="ledger">
-        <div class="ledger-row" style="grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--rule-strong);">
-          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Department</span>
-          <span>{% if teacher.department %}{{ teacher.department }}{% else %}&mdash;{% endif %}</span>
-        </div>
-        <div class="ledger-row" style="grid-template-columns: 150px 1fr;">
-          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Teacher ID</span>
-          <span class="mono-text" style="color: var(--ink-soft);">#{{ teacher.id }}</span>
-        </div>
+    <!-- Teaching & Authoring Stats Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+      <div class="dash-card" style="padding: 1.25rem 1.5rem; border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px;">
+        <span style="display: block; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--ink-soft);">Topics</span>
+        <span style="display: block; font-family: var(--font-serif); font-size: 2rem; font-weight: 700; color: var(--ink); margin-top: 0.25rem;">{{ topics_count }}</span>
+      </div>
+      <div class="dash-card" style="padding: 1.25rem 1.5rem; border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px;">
+        <span style="display: block; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--ink-soft);">Questions Authored</span>
+        <span style="display: block; font-family: var(--font-serif); font-size: 2rem; font-weight: 700; color: var(--ink); margin-top: 0.25rem;">{{ total_questions_count }}</span>
+      </div>
+      <div class="dash-card" style="padding: 1.25rem 1.5rem; border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px;">
+        <span style="display: block; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--ink-soft);">Practice Sets</span>
+        <span style="display: block; font-family: var(--font-serif); font-size: 2rem; font-weight: 700; color: var(--ink); margin-top: 0.25rem;">{{ practice_sets_count }}</span>
+      </div>
+      <div class="dash-card" style="padding: 1.25rem 1.5rem; border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px;">
+        <span style="display: block; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; color: var(--ink-soft);">Scheduled Exams</span>
+        <span style="display: block; font-family: var(--font-serif); font-size: 2rem; font-weight: 700; color: var(--ink); margin-top: 0.25rem;">{{ exams_count }}</span>
       </div>
     </div>
 
-    <!-- Account Information -->
-    <div class="dash-form" style="padding: 1.5rem 2rem;">
-      <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
-        Account Information
-      </h3>
+    <!-- Details Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;">
+      
+      <!-- Personal Information -->
       <div class="ledger">
-        <div class="ledger-row" style="grid-template-columns: 150px 1fr;">
-          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); text-transform: uppercase;">Date Joined</span>
-          <span>{{ teacher.date_joined|date:"F j, Y" }}</span>
+        <div class="ledger-header">
+          Personal Information
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+          <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">First Name</strong>
+          <span>{{ teacher.first_name|default:"—" }}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+          <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Last Name</strong>
+          <span>{{ teacher.last_name|default:"—" }}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+          <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Username</strong>
+          <span class="mono-text">{{ teacher.username }}</span>
+        </div>
+        <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+          <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Email</strong>
+          <span>{{ teacher.email|default:"—" }}</span>
         </div>
       </div>
-    </div>
 
+      <!-- Professional & Account Information -->
+      <div style="display: flex; flex-direction: column; gap: 2rem;">
+        
+        <div class="ledger">
+          <div class="ledger-header">
+            Academic &amp; Department
+          </div>
+          <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+            <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Role</strong>
+            <span class="mode-tag practice-tag" style="justify-self: start; font-size: 0.72rem;">{{ teacher.get_role_display }}</span>
+          </div>
+          <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+            <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Department</strong>
+            <span style="font-weight: 600;">{{ teacher.department|default:"Not assigned" }}</span>
+          </div>
+          <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+            <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Teacher ID</strong>
+            <span class="mono-text" style="color: var(--ink-soft);">#{{ teacher.id }}</span>
+          </div>
+        </div>
+
+        <div class="ledger">
+          <div class="ledger-header">
+            Account Status
+          </div>
+          <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+            <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Joined</strong>
+            <span>{{ teacher.date_joined|date:"F j, Y" }}</span>
+          </div>
+          <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+            <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Last Login</strong>
+            <span>{% if teacher.last_login %}{{ teacher.last_login|date:"M d, Y H:i" }}{% else %}Never{% endif %}</span>
+          </div>
+          <div class="ledger-row" style="grid-template-columns: 140px 1fr;">
+            <strong style="color: var(--ink-soft); font-size: 0.8rem; font-family: var(--font-mono); text-transform: uppercase;">Status</strong>
+            <span>{% if teacher.is_active %}<span style="color: var(--pass-teal); font-weight: 600;">● Active</span>{% else %}<span style="color: var(--red-pen); font-weight: 600;">Inactive</span>{% endif %}</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
   </div>
 {% endblock %}

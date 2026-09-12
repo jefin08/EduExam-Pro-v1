@@ -22,7 +22,7 @@
         <select id="topic_select_bulk" style="margin-top: 0.5rem;" onchange="handleTopicSelection(this.value)">
           <option value="" selected disabled>-- Choose a Topic --</option>
           {% for topic in topics %}
-            <option value="{{ topic.id }}">{{ topic.name }} ({{ topic.subject }})</option>
+            <option value="{{ topic.id }}" data-purpose="{{ topic.purpose }}">{{ topic.name }} ({{ topic.subject }}) [{{ topic.get_purpose_display }}]</option>
           {% endfor %}
         </select>
       </div>
@@ -33,6 +33,15 @@
           {% csrf_token %}
           <input type="hidden" name="topic_id" id="hidden_topic_id">
           
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="bulk_purpose" style="font-weight: 600;">Question Purpose</label>
+            <select name="bulk_purpose" id="bulk_purpose" style="margin-top: 0.5rem; width: 100%;">
+              <option value="both" selected>Both (Exam &amp; Practice)</option>
+              <option value="practice">Practice Only</option>
+              <option value="exam">Exam Only</option>
+            </select>
+          </div>
+
           <div class="form-grid">
             <div class="form-group full-width">
               <label for="bulk_file" style="font-weight: 600;">Step 2: Upload TXT File OR Paste Bulk Questions below</label>
@@ -93,9 +102,32 @@ Difficulty: easy</pre>
     function handleTopicSelection(val) {
       const formContainer = document.getElementById('bulk-form-container');
       const hiddenTopicId = document.getElementById('hidden_topic_id');
+      const topicSelect = document.getElementById('topic_select_bulk');
+      const modeSelect = document.getElementById('bulk_purpose');
+
       if (val) {
         formContainer.style.display = 'block';
         hiddenTopicId.value = val;
+
+        if (topicSelect && modeSelect) {
+          const selectedOption = topicSelect.options[topicSelect.selectedIndex];
+          const topicPurpose = selectedOption ? selectedOption.dataset.purpose : 'both';
+          if (topicPurpose === 'practice') {
+            modeSelect.value = 'practice';
+            modeSelect.options[0].disabled = true;
+            modeSelect.options[1].disabled = false;
+            modeSelect.options[2].disabled = true;
+          } else if (topicPurpose === 'exam') {
+            modeSelect.value = 'exam';
+            modeSelect.options[0].disabled = true;
+            modeSelect.options[1].disabled = true;
+            modeSelect.options[2].disabled = false;
+          } else {
+            modeSelect.options[0].disabled = false;
+            modeSelect.options[1].disabled = false;
+            modeSelect.options[2].disabled = false;
+          }
+        }
       } else {
         formContainer.style.display = 'none';
         hiddenTopicId.value = '';

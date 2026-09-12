@@ -84,7 +84,7 @@ ASGI_APPLICATION = 'config.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'EduExam Pro v1 db'),
+        'NAME': os.getenv('DB_NAME', 'eduexampro_v1_db'),
         'USER': os.getenv('DB_USER', 'root'),
         'PASSWORD': os.getenv('DB_PASSWORD', '010203'),
         'HOST': os.getenv('DB_HOST', '127.0.0.1'),

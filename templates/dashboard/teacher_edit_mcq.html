@@ -1,71 +1,152 @@
 {% extends 'dashboard/base.html' %}
 
-{% block title %}Edit MCQ — EduExam Pro{% endblock %}
+{% block title %}Edit MCQ Question — EduExam Pro{% endblock %}
 
 {% block sidebar_menu %}
-<li><a href="{% url 'teacher_topic_questions' question.topic.id %}">← Back to Questions</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#topics">Topics</a></li>
+<li class="active"><a href="{% url 'teacher_dashboard' %}#questions">Question bank</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#practice">Practice</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#exams">Exams</a></li>
+<li><a href="{% url 'teacher_students_progress' %}">Students Progress</a></li>
+<li><a href="{% url 'teacher_practice_comments' %}">Practice Comments</a></li>
+<li><a href="{% url 'teacher_profile' %}">My Profile</a></li>
 {% endblock %}
 
 {% block main_content %}
-  <div class="main-panel-section">
-    <h3 class="section-title">Edit MCQ Question</h3>
+  <div style="max-width: 920px; margin: 0 auto; width: 100%;">
     
-    <div class="dash-form">
-      <form action="{% url 'teacher_edit_mcq' question.id %}" method="POST">
+    <!-- Top Header & Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <a href="{% url 'teacher_dashboard' %}#questions" style="display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; margin-bottom: 0.5rem; transition: color 0.15s ease;">
+          ← Back to Question Bank
+        </a>
+        <h2 class="section-title" style="margin: 0; font-size: 1.6rem;">Edit Multiple-Choice Question</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        {% if is_both %}
+          <span class="mode-tag both-tag" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; background-color: rgba(0,102,204,0.09); color: #0066cc; border: 1px solid #0066cc; border-radius: 3px; font-family: var(--font-mono); font-weight: 600;">BOTH MODES</span>
+        {% elif q_type == 'exam' %}
+          <span class="mode-tag exam-tag" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">EXAM ONLY</span>
+        {% else %}
+          <span class="mode-tag practice-tag" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">PRACTICE ONLY</span>
+        {% endif %}
+        <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft); background: var(--paper); border: 1px solid var(--rule-strong); padding: 0.25rem 0.55rem; border-radius: 3px;">ID #{{ question.id }}</span>
+      </div>
+    </div>
+
+    <!-- Edit Form Card -->
+    <div class="dash-form" style="background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 2rem; box-shadow: 2px 2px 0px rgba(29, 39, 51, 0.04);">
+      <form action="{% url 'teacher_edit_mcq' question.id %}?type={{ q_type }}" method="POST">
         {% csrf_token %}
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Topic</label>
-            <input type="text" value="{{ question.topic.name }} ({{ question.topic.subject }})" disabled style="background-color: rgba(0,0,0,0.02);">
+
+        <!-- Section: Configuration Grid -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--rule);">
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-bottom: 1rem;">
+            1. Settings & Classification
           </div>
-          <div class="form-group">
-            <label for="mcq_difficulty">Difficulty</label>
-            <select id="mcq_difficulty" name="difficulty" required>
-              <option value="easy" {% if question.difficulty == 'easy' %}selected{% endif %}>Easy</option>
-              <option value="medium" {% if question.difficulty == 'medium' %}selected{% endif %}>Medium</option>
-              <option value="hard" {% if question.difficulty == 'hard' %}selected{% endif %}>Hard</option>
-            </select>
-          </div>
-          <div class="form-group full-width">
-            <label for="mcq_text">Question Text</label>
-            <textarea id="mcq_text" name="question_text" rows="2" required>{{ question.question_text }}</textarea>
-          </div>
-          
-          <div class="form-group">
-            <label for="opt_0">Option A</label>
-            <input type="text" id="opt_0" name="option_0" value="{{ question.options.0 }}" required>
-          </div>
-          <div class="form-group">
-            <label for="opt_1">Option B</label>
-            <input type="text" id="opt_1" name="option_1" value="{{ question.options.1 }}" required>
-          </div>
-          <div class="form-group">
-            <label for="opt_2">Option C (Optional)</label>
-            <input type="text" id="opt_2" name="option_2" value="{% if question.options|length > 2 %}{{ question.options.2 }}{% endif %}">
-          </div>
-          <div class="form-group">
-            <label for="opt_3">Option D (Optional)</label>
-            <input type="text" id="opt_3" name="option_3" value="{% if question.options|length > 3 %}{{ question.options.3 }}{% endif %}">
-          </div>
-          <div class="form-group">
-            <label for="correct_opt">Correct Option Index</label>
-            <select id="correct_opt" name="correct_option_index" required>
-              <option value="0" {% if question.correct_option_index == 0 %}selected{% endif %}>Option A</option>
-              <option value="1" {% if question.correct_option_index == 1 %}selected{% endif %}>Option B</option>
-              <option value="2" {% if question.correct_option_index == 2 %}selected{% endif %}>Option C</option>
-              <option value="3" {% if question.correct_option_index == 3 %}selected{% endif %}>Option D</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="mcq_marks">Marks</label>
-            <input type="number" id="mcq_marks" name="marks" value="{{ question.marks }}" min="1" required>
-          </div>
-          <div class="form-group full-width">
-            <label for="mcq_explanation">Explanation (Optional)</label>
-            <textarea id="mcq_explanation" name="explanation" rows="2" placeholder="Provide solution explanation...">{{ question.explanation }}</textarea>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="mcq_topic" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Topic</label>
+              <select id="mcq_topic" name="topic_id" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+                {% for t in topics %}
+                  <option value="{{ t.id }}" {% if t.id == question.topic.id %}selected{% endif %}>{{ t.name }} ({{ t.subject }})</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="mcq_purpose" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Purpose / Target Mode</label>
+              <select id="mcq_purpose" name="purpose" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+                <option value="both" {% if is_both %}selected{% endif %}>Both (Exam &amp; Practice)</option>
+                <option value="practice" {% if not is_both and q_type == 'practice' %}selected{% endif %}>Practice Only</option>
+                <option value="exam" {% if not is_both and q_type == 'exam' %}selected{% endif %}>Exam Only</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="mcq_difficulty" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Difficulty</label>
+              <select id="mcq_difficulty" name="difficulty" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+                <option value="easy" {% if question.difficulty == 'easy' %}selected{% endif %}>Easy</option>
+                <option value="medium" {% if question.difficulty == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="hard" {% if question.difficulty == 'hard' %}selected{% endif %}>Hard</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="mcq_marks" style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">Marks</label>
+              <input type="number" id="mcq_marks" name="marks" value="{{ question.marks }}" min="1" required style="width: 100%; font-size: 0.85rem; padding: 0.5rem 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong);">
+            </div>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Save Changes</button>
+
+        <!-- Section: Question Statement -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--rule);">
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+            2. Question Statement
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <textarea id="mcq_text" name="question_text" rows="3" required style="width: 100%; font-size: 0.9rem; line-height: 1.4; padding: 0.65rem; border-radius: 4px; border: 1px solid var(--rule-strong); resize: vertical;" placeholder="Enter the complete question statement...">{{ question.question_text }}</textarea>
+          </div>
+        </div>
+
+        <!-- Section: Answer Options & Correct Indicator -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--rule);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em;">
+              3. Answer Options &amp; Correct Answer
+            </div>
+            <div style="font-size: 0.78rem; color: var(--ink-soft);">
+              Select the radio button beside the correct option
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Option A -->
+            <div style="display: flex; align-items: center; gap: 0.75rem; background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem 0.85rem;">
+              <input type="radio" id="correct_0" name="correct_option_index" value="0" {% if question.correct_option_index == 0 %}checked{% endif %} style="width: auto; cursor: pointer;" title="Mark Option A as correct">
+              <label for="correct_0" style="margin: 0; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; width: 80px; cursor: pointer; color: var(--ink);">Option A:</label>
+              <input type="text" id="opt_0" name="option_0" value="{{ question.options.0 }}" required placeholder="Option A text..." style="flex: 1; font-size: 0.85rem; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);">
+            </div>
+
+            <!-- Option B -->
+            <div style="display: flex; align-items: center; gap: 0.75rem; background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem 0.85rem;">
+              <input type="radio" id="correct_1" name="correct_option_index" value="1" {% if question.correct_option_index == 1 %}checked{% endif %} style="width: auto; cursor: pointer;" title="Mark Option B as correct">
+              <label for="correct_1" style="margin: 0; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; width: 80px; cursor: pointer; color: var(--ink);">Option B:</label>
+              <input type="text" id="opt_1" name="option_1" value="{{ question.options.1 }}" required placeholder="Option B text..." style="flex: 1; font-size: 0.85rem; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);">
+            </div>
+
+            <!-- Option C -->
+            <div style="display: flex; align-items: center; gap: 0.75rem; background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem 0.85rem;">
+              <input type="radio" id="correct_2" name="correct_option_index" value="2" {% if question.correct_option_index == 2 %}checked{% endif %} style="width: auto; cursor: pointer;" title="Mark Option C as correct">
+              <label for="correct_2" style="margin: 0; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; width: 80px; cursor: pointer; color: var(--ink);">Option C:</label>
+              <input type="text" id="opt_2" name="option_2" value="{% if question.options|length > 2 %}{{ question.options.2 }}{% endif %}" placeholder="Option C text (optional)..." style="flex: 1; font-size: 0.85rem; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);">
+            </div>
+
+            <!-- Option D -->
+            <div style="display: flex; align-items: center; gap: 0.75rem; background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0.5rem 0.85rem;">
+              <input type="radio" id="correct_3" name="correct_option_index" value="3" {% if question.correct_option_index == 3 %}checked{% endif %} style="width: auto; cursor: pointer;" title="Mark Option D as correct">
+              <label for="correct_3" style="margin: 0; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; width: 80px; cursor: pointer; color: var(--ink);">Option D:</label>
+              <input type="text" id="opt_3" name="option_3" value="{% if question.options|length > 3 %}{{ question.options.3 }}{% endif %}" placeholder="Option D text (optional)..." style="flex: 1; font-size: 0.85rem; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--rule-strong); background: var(--paper);">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Explanation (Optional) -->
+        <div style="margin-bottom: 2rem;">
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+            4. Explanation / Solution Notes (Optional)
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <textarea id="mcq_explanation" name="explanation" rows="2" style="width: 100%; font-size: 0.85rem; padding: 0.6rem; border-radius: 4px; border: 1px solid var(--rule-strong); resize: vertical;" placeholder="Provide brief rationale or solution explanation for students...">{{ question.explanation }}</textarea>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.85rem; padding-top: 1rem; border-top: 1px solid var(--rule);">
+          <a href="{% url 'teacher_dashboard' %}#questions" class="btn btn-ghost" style="padding: 0.55rem 1.25rem; font-size: 0.88rem; text-decoration: none;">Cancel</a>
+          <button type="submit" class="btn btn-primary" style="padding: 0.55rem 1.5rem; font-size: 0.88rem; font-weight: 600;">Save Changes</button>
+        </div>
       </form>
     </div>
   </div>

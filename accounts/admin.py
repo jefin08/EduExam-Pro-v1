@@ -13,6 +13,16 @@ class CustomUserAdmin(UserAdmin):
         ('Custom Profile Information', {'fields': ('role', 'class_group', 'department', 'is_approved')}),
     )
 
+class ClassAdmin(admin.ModelAdmin):
+    list_display = ['name', 'department', 'created_at']
+    list_filter = ['department']
+    search_fields = ['name', 'department__name']
+
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ['name', 'created_at']
+    search_fields = ['name']
+
 admin.site.register(User, CustomUserAdmin)
-admin.site.register(Class)
-admin.site.register(Department)
+admin.site.register(Class, ClassAdmin)
+admin.site.register(Department, DepartmentAdmin)
+

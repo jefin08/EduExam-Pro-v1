@@ -28,6 +28,14 @@ class Topic(models.Model):
     def practice_questions_count(self):
         return self.practice_mcq_questions.count() + self.practice_coding_questions.count()
 
+    @property
+    def both_questions_count(self):
+        p_mcq_texts = set(self.practice_mcq_questions.values_list('question_text', flat=True))
+        both_mcq = self.exam_mcq_questions.filter(question_text__in=p_mcq_texts).count()
+        p_code_titles = set(self.practice_coding_questions.values_list('title', flat=True))
+        both_code = self.exam_coding_questions.filter(title__in=p_code_titles).count()
+        return both_mcq + both_code
+
 class TopicClassVisibility(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='visibilities')
     class_group = models.ForeignKey('accounts.Class', on_delete=models.CASCADE, related_name='visible_topics')

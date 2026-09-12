@@ -1,0 +1,278 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}User Registration &amp; Onboarding — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'admin_dashboard' %}">Admin Overview</a></li>
+<li><a href="{% url 'admin_classes_departments' %}">Classes &amp; Departments</a></li>
+<li><a href="{% url 'admin_pending_approvals' %}">Pending Approvals</a></li>
+<li><a href="{% url 'admin_users_directory' %}">Users Directory</a></li>
+<li class="active"><a href="#">User Onboarding</a></li>
+<li><a href="{% url 'admin_bulk_upload_students' %}">Bulk Student Upload</a></li>
+<li><a href="/admin/">Django Site Admin</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div style="max-width: 960px; width: 100%;">
+
+    <!-- Top Header & Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <a href="{% url 'admin_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; margin-bottom: 0.5rem; transition: color 0.15s ease;">
+          &larr; Back to Admin Overview
+        </a>
+        <h2 class="section-title" style="margin: 0; font-size: 1.6rem;">User Registration &amp; Onboarding</h2>
+        <p style="margin: 0.35rem 0 0 0; font-size: 0.88rem; color: var(--ink-soft);">
+          Register individual teacher accounts or enroll new students with class and department assignments.
+        </p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+        <a href="{% url 'admin_users_directory' %}" class="header-action-btn secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--ink-soft);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>View Users Directory</span>
+        </a>
+        <a href="{% url 'admin_bulk_upload_students' %}" class="header-action-btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Bulk Upload Students</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Segmented Tab Switcher -->
+    <div style="display: flex; gap: 0.6rem; margin-bottom: 1.75rem; border-bottom: 2px solid var(--rule-strong); padding-bottom: 0.85rem;">
+      <button type="button" id="tab-btn-teacher" onclick="switchOnboardTab('teacher')"
+              style="padding: 0.65rem 1.4rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-radius: 4px; border: 1px solid var(--ink); background-color: var(--ink); color: var(--bg); display: inline-flex; align-items: center; gap: 0.6rem; transition: all 0.15s ease;">
+        <span>Onboard New Teacher</span>
+      </button>
+      <button type="button" id="tab-btn-student" onclick="switchOnboardTab('student')"
+              style="padding: 0.65rem 1.4rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-radius: 4px; border: 1px solid var(--rule-strong); background-color: var(--paper); color: var(--ink-soft); display: inline-flex; align-items: center; gap: 0.6rem; transition: all 0.15s ease;">
+        <span>Enroll Student</span>
+      </button>
+    </div>
+
+    <!-- ==================== FORM 1: ONBOARD NEW TEACHER ==================== -->
+    <div id="panel-teacher" class="dash-form" style="border-left: 4px solid var(--red-pen); padding: 1.75rem; background: var(--paper); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <div style="margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--rule-soft);">
+        <h3 style="margin: 0 0 0.25rem 0; font-size: 1.25rem;">Onboard New Teacher</h3>
+        <p style="margin: 0; font-size: 0.84rem; color: var(--ink-soft);">
+          Create a verified instructor account with administrative authority to conduct exams and author practice problems.
+        </p>
+      </div>
+
+      <form action="{% url 'admin_create_teacher' %}" method="POST">
+        {% csrf_token %}
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+          
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="teacher_name" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Full Name *</label>
+            <input type="text" id="teacher_name" name="name" placeholder="e.g. Dr. John Doe" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+          </div>
+
+          <div class="form-group">
+            <label for="teacher_username" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Username *</label>
+            <input type="text" id="teacher_username" name="username" placeholder="e.g. prof_john" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+          </div>
+
+          <div class="form-group">
+            <label for="teacher_email" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Email Address *</label>
+            <input type="email" id="teacher_email" name="email" placeholder="e.g. john@university.edu" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+          </div>
+
+          <div class="form-group">
+            <label for="teacher_department" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Department *</label>
+            <select id="teacher_department" name="department" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+              <option value="" disabled selected>Select department...</option>
+              {% for dept in departments %}
+                <option value="{{ dept.name }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="teacher_password" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Account Password *</label>
+            <input type="password" id="teacher_password" name="password" placeholder="Define secure password" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+          </div>
+
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; padding-top: 1rem; border-top: 1px solid var(--rule-soft);">
+          <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.6rem; font-size: 0.92rem; font-weight: 600; cursor: pointer;">
+            Register Teacher
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ==================== FORM 2: ENROLL STUDENT ==================== -->
+    <div id="panel-student" class="dash-form" style="display: none; border-left: 4px solid var(--pass-teal); padding: 1.75rem; background: var(--paper); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <div style="margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--rule-soft);">
+        <h3 style="margin: 0 0 0.25rem 0; font-size: 1.25rem;">Enroll Student</h3>
+        <p style="margin: 0; font-size: 0.84rem; color: var(--ink-soft);">
+          Create an active student record linked with an assigned class and department for taking assessments.
+        </p>
+      </div>
+
+      <form action="{% url 'admin_create_student' %}" method="POST">
+        {% csrf_token %}
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="student_name" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Full Name *</label>
+            <input type="text" id="student_name" name="name" placeholder="e.g. Alex Smith" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+          </div>
+
+          <div class="form-group">
+            <label for="student_username" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Username / Roll No. *</label>
+            <input type="text" id="student_username" name="username" placeholder="e.g. student_101 or REG2026001" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+          </div>
+
+          <div class="form-group">
+            <label for="student_email" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Email Address *</label>
+            <input type="email" id="student_email" name="email" placeholder="e.g. student101@university.edu" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+          </div>
+
+          <div class="form-group">
+            <label for="student_class" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Assign Class *</label>
+            <select id="student_class" name="class_id" required onchange="handleClassChange(this)" style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+              <option value="" disabled selected>Select class group...</option>
+              {% for cls in classes %}
+                <option value="{{ cls.id }}" data-dept="{{ cls.department.name|default:'' }}">{{ cls.name }}{% if cls.department %} ({{ cls.department.name }}){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="student_department" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Department *</label>
+            <select id="student_department" name="department" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+              <option value="" disabled selected>Select department...</option>
+              {% for dept in departments %}
+                <option value="{{ dept.name }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="student_password" style="font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft);">Account Password *</label>
+            <input type="password" id="student_password" name="password" placeholder="Define student login password" required style="font-size: 0.88rem; padding: 0.55rem 0.75rem;">
+          </div>
+
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; padding-top: 1rem; border-top: 1px solid var(--rule-soft);">
+          <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.6rem; font-size: 0.92rem; font-weight: 600; cursor: pointer;">
+            Enroll Student
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <script>
+    function switchOnboardTab(tab) {
+      const panelTeacher = document.getElementById("panel-teacher");
+      const panelStudent = document.getElementById("panel-student");
+      const btnTeacher = document.getElementById("tab-btn-teacher");
+      const btnStudent = document.getElementById("tab-btn-student");
+
+      if (!panelTeacher || !panelStudent || !btnTeacher || !btnStudent) return;
+
+      if (tab === 'student') {
+        panelTeacher.style.display = "none";
+        panelStudent.style.display = "block";
+
+        btnStudent.style.backgroundColor = "var(--ink)";
+        btnStudent.style.color = "var(--bg)";
+        btnStudent.style.borderColor = "var(--ink)";
+
+        btnTeacher.style.backgroundColor = "var(--paper)";
+        btnTeacher.style.color = "var(--ink-soft)";
+        btnTeacher.style.borderColor = "var(--rule-strong)";
+
+        if (history.replaceState) {
+          history.replaceState(null, null, '#student');
+        } else {
+          location.hash = 'student';
+        }
+      } else {
+        panelTeacher.style.display = "block";
+        panelStudent.style.display = "none";
+
+        btnTeacher.style.backgroundColor = "var(--ink)";
+        btnTeacher.style.color = "var(--bg)";
+        btnTeacher.style.borderColor = "var(--ink)";
+
+        btnStudent.style.backgroundColor = "var(--paper)";
+        btnStudent.style.color = "var(--ink-soft)";
+        btnStudent.style.borderColor = "var(--rule-strong)";
+
+        if (history.replaceState) {
+          history.replaceState(null, null, '#teacher');
+        } else {
+          location.hash = 'teacher';
+        }
+      }
+    }
+
+    // Auto-select department when class is chosen
+    function handleClassChange(selectElem) {
+      const selectedOption = selectElem.options[selectElem.selectedIndex];
+      const deptName = selectedOption.getAttribute('data-dept');
+      const deptSelect = document.getElementById('student_department');
+      if (deptName && deptSelect) {
+        for (let i = 0; i < deptSelect.options.length; i++) {
+          if (deptSelect.options[i].value.toLowerCase() === deptName.toLowerCase()) {
+            deptSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    // Check URL hash on page load
+    document.addEventListener("DOMContentLoaded", function() {
+      if (window.location.hash.includes('student')) {
+        switchOnboardTab('student');
+      } else {
+        switchOnboardTab('teacher');
+      }
+    });
+  </script>
+
+  <style>
+    .header-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      line-height: 1.2;
+    }
+    .header-action-btn.secondary {
+      color: var(--ink);
+      background-color: var(--paper);
+      border: 1px solid var(--rule-strong);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .header-action-btn.secondary:hover {
+      background-color: var(--bg);
+      border-color: var(--ink);
+      color: var(--ink);
+    }
+    .header-action-btn.primary {
+      color: var(--bg);
+      background-color: var(--ink);
+      border: 1px solid var(--ink);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .header-action-btn.primary:hover {
+      background-color: #26364a;
+      border-color: #26364a;
+      color: #ffffff;
+    }
+  </style>
+{% endblock %}

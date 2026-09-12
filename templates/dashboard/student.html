@@ -118,41 +118,4 @@
       <a href="{% url 'student_scheduled_exams' %}" class="btn btn-ghost" style="font-size: 0.85rem;">View All →</a>
     </div>
   </div>
-
-
-
-  <!-- History & Gradebook lists -->
-  <div id="history-sec">
-    <h3 class="section-title">Assessment Summary</h3>
-    
-    <div style="margin-top: 1rem;">
-
-      <!-- Exam Session Logs -->
-      <div>
-        <h4 class="serif-text" style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--red-pen);">Exam Grades</h4>
-        <div class="ledger">
-          <div class="ledger-header" style="grid-template-columns: 1.2fr 1fr;">
-            <span>Exam Paper</span>
-            <span>Date & Score</span>
-          </div>
-          {% for og in official_grades %}
-            <div class="ledger-row" style="grid-template-columns: 1.2fr 1fr; font-size: 0.85rem;">
-              <strong>{{ og.exam.name }}</strong>
-              <div>
-                <span class="mono-text" style="font-weight: 600; color: var(--red-pen);">Grade: {{ og.score }}</span>
-                <span style="display: block; font-size: 0.7rem; color: var(--ink-soft);">{{ og.submitted_at|date:"Y-m-d H:i" }}</span>
-              </div>
-            </div>
-          {% empty %}
-            <div style="padding: 1.5rem; text-align: center; color: var(--ink-soft); font-size: 0.85rem;">No exam grades recorded yet.</div>
-          {% endfor %}
-        </div>
-        <div style="text-align: right; margin-top: 1rem;">
-          <a href="{% url 'student_assessment_history' %}" class="btn btn-ghost" style="font-size: 0.85rem;">View All →</a>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
 {% endblock %}

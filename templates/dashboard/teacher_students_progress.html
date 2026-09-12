@@ -1,0 +1,344 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Students Progress — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'teacher_dashboard' %}#topics">Topics</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#questions">Question bank</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#practice">Practice</a></li>
+<li><a href="{% url 'teacher_dashboard' %}#exams">Exams</a></li>
+<li class="active"><a href="{% url 'teacher_students_progress' %}">Students Progress</a></li>
+<li><a href="{% url 'teacher_practice_comments' %}">Practice Comments</a></li>
+<li><a href="{% url 'teacher_profile' %}">My Profile</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <!-- Header Title -->
+  <div style="margin-bottom: 2rem;">
+    <h2 class="section-title" style="margin-bottom: 0.35rem;">Students Progress &amp; Performance</h2>
+    <p style="color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.85rem; margin: 0;">Class-by-class attendance, individual exam scores, and student academic progress reports.</p>
+  </div>
+
+  <!-- Class-by-Class Filter Bar -->
+  <div class="dash-form" style="padding: 1.25rem 1.5rem; margin-bottom: 2rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 6px;">
+    <form method="GET" action="{% url 'teacher_students_progress' %}" id="classFilterForm" style="display: flex; align-items: flex-end; gap: 1.25rem; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 260px;">
+        <label for="class_select" style="font-size: 0.82rem; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-mono); display: block; margin-bottom: 0.5rem;">
+          Select Class to View
+        </label>
+        <select name="class_id" id="class_select" onchange="document.getElementById('classFilterForm').submit()" style="width: 100%; font-size: 0.95rem; padding: 0.55rem 0.75rem; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--bg); font-family: var(--font-sans);">
+          <option value="" {% if not selected_class %}selected{% endif %}>-- Choose a Class --</option>
+          {% for cls in classes %}
+            <option value="{{ cls.id }}" {% if selected_class and selected_class.id == cls.id %}selected{% endif %}>
+              {{ cls.name }}{% if cls.department %} ({{ cls.department.name }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.2rem; font-size: 0.88rem;">Load Roster</button>
+      
+      {% if selected_class %}
+        <a href="{% url 'teacher_students_progress' %}" class="btn btn-ghost" style="padding: 0.6rem 1rem; font-size: 0.85rem; text-decoration: none;">Clear Filter</a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if not selected_class %}
+    <!-- Prompt when no class is selected -->
+    <div style="text-align: center; padding: 4rem 2rem; border: 2px dashed var(--rule-strong); border-radius: 8px; background: var(--paper); margin-top: 1rem;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">👥</div>
+      <h3 style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--ink); margin: 0 0 0.5rem 0;">Choose a Class Above</h3>
+      <p style="color: var(--ink-soft); font-size: 0.92rem; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+        Select a class from the dropdown filter to reveal its students, attendance statistics, exam scores, and individual progress evaluations.
+      </p>
+    </div>
+
+  {% else %}
+    <!-- Class Roster & Performance Section -->
+
+    <!-- Class Cohort Statistics Bar -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+      <div class="dash-card" style="padding: 1rem 1.25rem; border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px;">
+        <span style="display: block; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; color: var(--ink-soft);">Enrolled Students</span>
+        <span style="display: block; font-family: var(--font-serif); font-size: 1.8rem; font-weight: 700; color: var(--ink); margin-top: 0.2rem;">{{ class_stats.total_students }}</span>
+      </div>
+      <div class="dash-card" style="padding: 1rem 1.25rem; border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px;">
+        <span style="display: block; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; color: var(--ink-soft);">Class Attendance Rate</span>
+        <span style="display: block; font-family: var(--font-serif); font-size: 1.8rem; font-weight: 700; color: var(--pass-teal); margin-top: 0.2rem;">{{ class_stats.overall_attendance_pct }}%</span>
+      </div>
+      <div class="dash-card" style="padding: 1rem 1.25rem; border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px;">
+        <span style="display: block; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; color: var(--ink-soft);">Average Exam Score</span>
+        <span style="display: block; font-family: var(--font-serif); font-size: 1.8rem; font-weight: 700; color: var(--ink); margin-top: 0.2rem;">{{ class_stats.overall_avg_score }}%</span>
+      </div>
+      <div class="dash-card" style="padding: 1rem 1.25rem; border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px;">
+        <span style="display: block; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; color: var(--ink-soft);">Total Submissions</span>
+        <span style="display: block; font-family: var(--font-serif); font-size: 1.8rem; font-weight: 700; color: var(--ink); margin-top: 0.2rem;">
+          {{ class_stats.total_attended }} <span style="font-size: 0.85rem; font-weight: 400; color: var(--ink-soft);">/ {{ class_stats.total_absent }} missed</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Student Search Toolbar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;">
+      <div style="flex: 1; max-width: 380px;">
+        <input type="text" id="studentSearchInput" placeholder="Search student by name or username..." oninput="filterStudents()" style="width: 100%; font-size: 0.88rem; padding: 0.5rem 0.75rem; border: 1px solid var(--rule-strong); border-radius: 4px; font-family: var(--font-sans);">
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink-soft);">
+        Showing <span id="visibleStudentCount" style="font-weight: 700; color: var(--ink);">{{ students_data|length }}</span> of {{ students_data|length }} students in <strong>{{ selected_class.name }}</strong>
+      </div>
+    </div>
+
+    <!-- Students Accordion List -->
+    <div id="studentsRosterList">
+      {% for item in students_data %}
+        <div class="student-row-card" data-search-name="{{ item.student.get_full_name|lower }} {{ item.student.username|lower }}" style="border: 1px solid var(--rule-strong); border-radius: 6px; margin-bottom: 0.85rem; background: var(--paper); overflow: hidden; transition: box-shadow 0.2s ease;">
+          
+          <!-- Clickable Header Bar -->
+          <div onclick="toggleStudentDropdown('{{ item.student.id }}')" style="cursor: pointer; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; user-select: none;">
+            
+            <!-- Left: Avatar & Identity -->
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 42px; height: 42px; min-width: 42px; border-radius: 50%; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: var(--font-serif); font-size: 1.1rem;">
+                {{ item.student.first_name|first|default:item.student.username|first|upper }}
+              </div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <h4 style="margin: 0; font-family: var(--font-sans); font-size: 1rem; font-weight: 700; color: var(--ink);">
+                    {% if item.student.first_name or item.student.last_name %}
+                      {{ item.student.first_name }} {{ item.student.last_name }}
+                    {% else %}
+                      {{ item.student.username }}
+                    {% endif %}
+                  </h4>
+                  <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-soft);">@{{ item.student.username }}</span>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.15rem;">
+                  Class: <strong>{{ selected_class.name }}</strong>
+                  {% if item.student.email %} • {{ item.student.email }}{% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Quick Stat Badges & Toggle Button -->
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <!-- Attendance Badge -->
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 3px; background: rgba(46,110,96,0.09); color: var(--pass-teal); border: 1px solid var(--pass-teal); font-weight: 600;">
+                ✓ {{ item.attended_count }} Attended
+              </span>
+              {% if item.absent_count > 0 %}
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 3px; background: rgba(178,58,46,0.08); color: var(--red-pen); border: 1px solid var(--red-pen); font-weight: 600;">
+                  ✕ {{ item.absent_count }} Absent
+                </span>
+              {% endif %}
+
+              <!-- Avg Score -->
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--ink); padding: 0.2rem 0.5rem; background: var(--bg); border: 1px solid var(--rule-strong); border-radius: 3px;">
+                Avg: {{ item.avg_score }}%
+              </span>
+
+              <!-- Performance Tier Pill -->
+              <span style="font-family: var(--font-mono); font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 3px; font-weight: 700; text-transform: uppercase; border: 1px solid {{ item.perf_color }}; color: {{ item.perf_color }};">
+                {{ item.perf_badge }}
+              </span>
+
+              <!-- Toggle Chevron Button -->
+              <button type="button" class="btn btn-ghost" id="expand-btn-{{ item.student.id }}" style="font-size: 0.78rem; padding: 0.3rem 0.7rem; pointer-events: none;">
+                Details ▾
+              </button>
+            </div>
+          </div>
+
+          <!-- Dropdown Expandable Details Panel -->
+          <div id="student-dropdown-{{ item.student.id }}" style="display: none; border-top: 1px solid var(--rule-strong); padding: 1.5rem; background: #fafaf8;">
+            
+            <!-- 1. Small Progress Report Summary Card -->
+            <div style="background: var(--paper); border: 1px solid var(--rule-strong); border-left: 4px solid {{ item.perf_color }}; border-radius: 4px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px dashed var(--rule-strong); padding-bottom: 0.5rem;">
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink);">
+                  📊 Student Progress Report
+                </span>
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: {{ item.perf_color }};">
+                  Evaluation: {{ item.perf_badge }}
+                </span>
+              </div>
+
+              <!-- Metric Grid -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                  <span style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--ink-soft); display: block;">ATTENDANCE RATE</span>
+                  <span style="font-size: 1.15rem; font-weight: 700; font-family: var(--font-mono); color: var(--pass-teal);">{{ item.attendance_pct }}%</span>
+                  <span style="font-size: 0.7rem; color: var(--ink-soft); display: block;">({{ item.attended_count }}/{{ item.attended_count|add:item.absent_count }} scheduled)</span>
+                </div>
+                <div>
+                  <span style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--ink-soft); display: block;">AVERAGE SCORE</span>
+                  <span style="font-size: 1.15rem; font-weight: 700; font-family: var(--font-mono); color: var(--ink);">{{ item.avg_score }}%</span>
+                </div>
+                <div>
+                  <span style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--ink-soft); display: block;">HIGHEST SCORE</span>
+                  <span style="font-size: 1.15rem; font-weight: 700; font-family: var(--font-mono); color: var(--pass-teal);">{{ item.max_score }}%</span>
+                </div>
+                <div>
+                  <span style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--ink-soft); display: block;">LOWEST SCORE</span>
+                  <span style="font-size: 1.15rem; font-weight: 700; font-family: var(--font-mono); color: var(--ink-soft);">{{ item.min_score }}%</span>
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div style="height: 6px; width: 100%; border-radius: 3px; background: rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 0.75rem;">
+                <div style="width: {{ item.attendance_pct }}%; height: 100%; background: {{ item.perf_color }}; transition: width 0.4s ease;"></div>
+              </div>
+
+              <!-- Qualitative Note -->
+              <p style="margin: 0; font-size: 0.85rem; color: var(--ink); line-height: 1.45; font-style: italic;">
+                "{{ item.summary_note }}"
+              </p>
+            </div>
+
+            <!-- 2. Exams Attended Section -->
+            <div style="margin-bottom: 1.5rem;">
+              <h5 style="margin: 0 0 0.75rem 0; font-family: var(--font-sans); font-size: 0.92rem; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 0.5rem;">
+                <span>Exams Attended</span>
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; padding: 0.1rem 0.45rem; border-radius: 2px; background: rgba(46,110,96,0.1); color: var(--pass-teal);">{{ item.attended_count }}</span>
+              </h5>
+
+              {% if item.attended_exams %}
+                <div style="border: 1px solid var(--rule-strong); border-radius: 4px; overflow: hidden; background: var(--paper);">
+                  <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 1fr; padding: 0.6rem 1rem; background: var(--bg); font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; border-bottom: 1px solid var(--rule-strong);">
+                    <span>Exam Title</span>
+                    <span>Submission Date</span>
+                    <span>Total Score</span>
+                    <span>Breakdown</span>
+                    <span>Status</span>
+                  </div>
+
+                  {% for att in item.attended_exams %}
+                    <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 1fr; padding: 0.75rem 1rem; align-items: center; border-bottom: 1px solid var(--rule); font-size: 0.84rem;">
+                      <div>
+                        <strong>{{ att.exam.name }}</strong>
+                        <span style="display: block; font-size: 0.72rem; color: var(--ink-soft); font-family: var(--font-mono);">{{ att.exam.duration_minutes }} mins</span>
+                      </div>
+                      <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft);">
+                        {{ att.submitted_at|date:"Y-m-d H:i"|default:"Recently" }}
+                      </div>
+                      <div>
+                        <span style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: {% if att.score >= 75 %}var(--pass-teal){% elif att.score >= 40 %}var(--ink){% else %}var(--red-pen){% endif %};">
+                          {{ att.score }}%
+                        </span>
+                      </div>
+                      <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft);">
+                        <span>MCQ: {{ att.mcq_score }}</span><br>
+                        <span>Code: {{ att.coding_score }}</span>
+                      </div>
+                      <div>
+                        {% if att.is_submitted %}
+                          <span style="font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: var(--pass-teal); background: rgba(46,110,96,0.08); border: 1px solid var(--pass-teal); padding: 0.15rem 0.45rem; border-radius: 2px;">
+                            ● COMPLETED
+                          </span>
+                        {% else %}
+                          <span style="font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: #3b82f6; background: rgba(59,130,246,0.08); border: 1px solid #3b82f6; padding: 0.15rem 0.45rem; border-radius: 2px;">
+                            ● IN PROGRESS
+                          </span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div style="padding: 1rem; border: 1px dashed var(--rule-strong); border-radius: 4px; font-size: 0.85rem; color: var(--ink-soft); background: var(--paper); text-align: center;">
+                  No exams attended yet by this student.
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- 3. Exams Absent Section -->
+            <div>
+              <h5 style="margin: 0 0 0.75rem 0; font-family: var(--font-sans); font-size: 0.92rem; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 0.5rem;">
+                <span>Exams Absent (Missed)</span>
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; padding: 0.1rem 0.45rem; border-radius: 2px; background: rgba(178,58,46,0.1); color: var(--red-pen);">{{ item.absent_count }}</span>
+              </h5>
+
+              {% if item.absent_exams %}
+                <div style="border: 1px solid var(--rule-strong); border-radius: 4px; overflow: hidden; background: var(--paper);">
+                  <div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; padding: 0.6rem 1rem; background: var(--bg); font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; border-bottom: 1px solid var(--rule-strong);">
+                    <span>Exam Title</span>
+                    <span>Scheduled Testing Window</span>
+                    <span>Duration</span>
+                    <span>Attendance Status</span>
+                  </div>
+
+                  {% for abs in item.absent_exams %}
+                    <div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; padding: 0.75rem 1rem; align-items: center; border-bottom: 1px solid var(--rule); font-size: 0.84rem;">
+                      <div>
+                        <strong>{{ abs.exam.name }}</strong>
+                      </div>
+                      <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft);">
+                        {{ abs.start_time|date:"Y-m-d H:i" }} — {{ abs.end_time|date:"Y-m-d H:i" }}
+                      </div>
+                      <div style="font-family: var(--font-mono); font-size: 0.8rem;">
+                        {{ abs.duration_minutes }} mins
+                      </div>
+                      <div>
+                        <span style="font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: var(--red-pen); background: rgba(178,58,46,0.08); border: 1px solid var(--red-pen); padding: 0.15rem 0.45rem; border-radius: 2px;">
+                          ✕ ABSENT (MISSED)
+                        </span>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div style="padding: 0.85rem 1.25rem; border: 1px solid rgba(46,110,96,0.25); background: rgba(46,110,96,0.04); border-radius: 4px; font-size: 0.85rem; color: var(--pass-teal); display: flex; align-items: center; gap: 0.5rem;">
+                  <span>✓</span>
+                  <span><strong>Full Attendance:</strong> Student has not missed any scheduled exams for this class.</span>
+                </div>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+      {% empty %}
+        <div style="text-align: center; padding: 3rem 2rem; border: 1px dashed var(--rule-strong); border-radius: 6px; background: var(--paper);">
+          <p style="color: var(--ink-soft); font-size: 0.92rem; margin: 0;">No students are registered under class <strong>{{ selected_class.name }}</strong>.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% endif %}
+
+  <!-- JavaScript for Dropdown Expand/Collapse & Instant Search -->
+  <script>
+    function toggleStudentDropdown(studentId) {
+      const panel = document.getElementById('student-dropdown-' + studentId);
+      const btn = document.getElementById('expand-btn-' + studentId);
+      if (!panel) return;
+
+      if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+        if (btn) btn.innerText = 'Close ▴';
+      } else {
+        panel.style.display = 'none';
+        if (btn) btn.innerText = 'Details ▾';
+      }
+    }
+
+    function filterStudents() {
+      const input = document.getElementById('studentSearchInput');
+      const query = (input ? input.value : '').toLowerCase().trim();
+      const cards = document.querySelectorAll('.student-row-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const searchData = card.getAttribute('data-search-name') || '';
+        if (!query || searchData.includes(query)) {
+          card.style.display = 'block';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      const countSpan = document.getElementById('visibleStudentCount');
+      if (countSpan) countSpan.innerText = visibleCount;
+    }
+  </script>
+{% endblock %}

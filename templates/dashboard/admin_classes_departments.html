@@ -1,0 +1,194 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Classes &amp; Departments — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'admin_dashboard' %}">Admin Overview</a></li>
+<li class="active"><a href="#">Classes &amp; Departments</a></li>
+<li><a href="{% url 'admin_pending_approvals' %}">Pending Approvals</a></li>
+<li><a href="{% url 'admin_users_directory' %}">Users Directory</a></li>
+<li><a href="{% url 'admin_onboard_users' %}">User Onboarding</a></li>
+<li><a href="{% url 'admin_bulk_upload_students' %}">Bulk Student Upload</a></li>
+<li><a href="/admin/">Django Site Admin</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div style="width: 100%;">
+
+    <!-- Top Header & Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <a href="{% url 'admin_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; margin-bottom: 0.5rem; transition: color 0.15s ease;">
+          &larr; Back to Admin Overview
+        </a>
+        <h2 class="section-title" style="margin: 0; font-size: 1.6rem;">Classes &amp; Departments Management</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span class="mode-tag practice-tag" style="font-size: 0.78rem; padding: 0.3rem 0.7rem; font-weight: 600;">
+          {{ total_classes }} Active Classes
+        </span>
+        <span class="mono-text" style="font-size: 0.82rem; color: var(--ink-soft); background: var(--paper); border: 1px solid var(--rule-strong); padding: 0.3rem 0.6rem; border-radius: 3px;">
+          {{ total_departments }} Departments
+        </span>
+      </div>
+    </div>
+
+    <!-- Class Group Creation Form -->
+    <div class="dash-form">
+      <h3>Create Class / Section</h3>
+      <form action="{% url 'admin_create_class' %}" method="POST">
+        {% csrf_token %}
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr auto; align-items: end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="class_name">Class Name / Title</label>
+            <input type="text" id="class_name" name="class_name" placeholder="e.g. Grade 10 - Section A" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="class_department">Department / Stream</label>
+            <select id="class_department" name="department_id" required>
+              <option value="" disabled selected>Select Department...</option>
+              {% for dept in departments %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center;">Create Class</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Department Creation Form -->
+    <div class="dash-form">
+      <h3>Create Department</h3>
+      <form action="{% url 'admin_create_department' %}" method="POST">
+        {% csrf_token %}
+        <div class="form-grid" style="grid-template-columns: 1fr auto; align-items: end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="department_name">Department Name / Title</label>
+            <input type="text" id="department_name" name="department_name" placeholder="e.g. Computer Science" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="height: 42px; display: inline-flex; align-items: center; justify-content: center;">Create Department</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Existing Classes Ledger -->
+    <div id="classes-sec" style="margin-top: 2rem;">
+      <h3 class="section-title">Current Classes Register</h3>
+      <div class="ledger">
+        <div class="ledger-header" style="grid-template-columns: 80px 1.5fr 1fr 140px 145px;">
+          <span>ID</span>
+          <span>Class Name</span>
+          <span>Department</span>
+          <span>Enrolled Count</span>
+          <span style="text-align: right;">Action</span>
+        </div>
+        {% for class in classes %}
+          <div class="ledger-row" style="grid-template-columns: 80px 1.5fr 1fr 140px 145px; align-items: center;">
+            <span class="mono-text" style="color: var(--ink-soft);">#{{ class.id }}</span>
+            <strong>{{ class.name }}</strong>
+            <span>
+              {% if class.department %}
+                <span class="badge" style="background: rgba(37,99,235,0.1); color: var(--primary); font-weight: 500; padding: 3px 8px; border-radius: 4px;">{{ class.department.name }}</span>
+              {% else %}
+                <span style="color: var(--ink-soft);">&mdash;</span>
+              {% endif %}
+            </span>
+            <span class="mono-text">{{ class.students.count }} students</span>
+            <div style="text-align: right; display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem;">
+              <button type="button" onclick="toggleEditDrawer('class-edit-{{ class.id }}')" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; color: var(--ink); border-color: var(--rule-strong); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                Edit &#9662;
+              </button>
+              <form action="{% url 'admin_delete_class' class.id %}" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to delete class &quot;{{ class.name|escapejs }}&quot;?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; color: var(--red-pen); border-color: var(--red-pen); cursor: pointer;">Delete</button>
+              </form>
+            </div>
+          </div>
+          <!-- Dropdown Edit Extension Drawer -->
+          <div id="class-edit-{{ class.id }}" style="display: none; background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--rule-strong); padding: 0.85rem 1.25rem;">
+            <form action="{% url 'admin_edit_class' class.id %}" method="POST" style="margin: 0;">
+              {% csrf_token %}
+              <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 180px;">
+                  <label style="display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.25rem;">Class Name</label>
+                  <input type="text" name="class_name" value="{{ class.name }}" required style="font-size: 0.85rem; padding: 0.4rem 0.65rem; width: 100%;">
+                </div>
+                <div style="flex: 1; min-width: 180px;">
+                  <label style="display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.25rem;">Assigned Department</label>
+                  <select name="department_id" style="font-size: 0.85rem; padding: 0.4rem 0.65rem; width: 100%;">
+                    <option value="">-- No Department --</option>
+                    {% for dept in departments %}
+                      <option value="{{ dept.id }}" {% if class.department_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="submit" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.45rem 0.9rem; cursor: pointer;">Save</button>
+                  <button type="button" onclick="toggleEditDrawer('class-edit-{{ class.id }}')" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.45rem 0.7rem; cursor: pointer;">Cancel</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        {% empty %}
+          <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No classes registered yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Existing Departments Ledger -->
+    <div id="departments-sec" style="margin-top: 2rem;">
+      <h3 class="section-title">Current Departments Register</h3>
+      <div class="ledger">
+        <div class="ledger-header" style="grid-template-columns: 80px 1fr 145px;">
+          <span>ID</span>
+          <span>Department Name</span>
+          <span style="text-align: right;">Action</span>
+        </div>
+        {% for dept in departments %}
+          <div class="ledger-row" style="grid-template-columns: 80px 1fr 145px; align-items: center;">
+            <span class="mono-text" style="color: var(--ink-soft);">#{{ dept.id }}</span>
+            <strong>{{ dept.name }}</strong>
+            <div style="text-align: right; display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem;">
+              <button type="button" onclick="toggleEditDrawer('dept-edit-{{ dept.id }}')" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; color: var(--ink); border-color: var(--rule-strong); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                Edit &#9662;
+              </button>
+              <form action="{% url 'admin_delete_department' dept.id %}" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to delete department &quot;{{ dept.name|escapejs }}&quot;?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; color: var(--red-pen); border-color: var(--red-pen); cursor: pointer;">Delete</button>
+              </form>
+            </div>
+          </div>
+          <!-- Dropdown Edit Extension Drawer -->
+          <div id="dept-edit-{{ dept.id }}" style="display: none; background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--rule-strong); padding: 0.85rem 1.25rem;">
+            <form action="{% url 'admin_edit_department' dept.id %}" method="POST" style="margin: 0;">
+              {% csrf_token %}
+              <div style="display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 240px;">
+                  <label style="display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.25rem;">Department Name</label>
+                  <input type="text" name="department_name" value="{{ dept.name }}" required style="font-size: 0.85rem; padding: 0.4rem 0.65rem; width: 100%;">
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="submit" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.45rem 0.9rem; cursor: pointer;">Save</button>
+                  <button type="button" onclick="toggleEditDrawer('dept-edit-{{ dept.id }}')" class="btn btn-ghost" style="font-size: 0.75rem; padding: 0.45rem 0.7rem; cursor: pointer;">Cancel</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        {% empty %}
+          <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No departments created yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function toggleEditDrawer(drawerId) {
+      const drawer = document.getElementById(drawerId);
+      if (drawer) {
+        drawer.style.display = drawer.style.display === 'none' || drawer.style.display === '' ? 'block' : 'none';
+      }
+    }
+  </script>
+{% endblock %}

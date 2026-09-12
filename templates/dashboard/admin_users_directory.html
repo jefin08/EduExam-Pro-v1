@@ -1,0 +1,388 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Users Directory — EduExam Pro{% endblock %}
+
+{% block sidebar_menu %}
+<li><a href="{% url 'admin_dashboard' %}">Admin Overview</a></li>
+<li><a href="{% url 'admin_classes_departments' %}">Classes &amp; Departments</a></li>
+<li><a href="{% url 'admin_pending_approvals' %}">Pending Approvals</a></li>
+<li class="active"><a href="#">Users Directory</a></li>
+<li><a href="{% url 'admin_onboard_users' %}">User Onboarding</a></li>
+<li><a href="{% url 'admin_bulk_upload_students' %}">Bulk Student Upload</a></li>
+<li><a href="/admin/">Django Site Admin</a></li>
+{% endblock %}
+
+{% block main_content %}
+  <div style="width: 100%;">
+
+    <!-- Top Header & Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <a href="{% url 'admin_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-decoration: none; margin-bottom: 0.5rem; transition: color 0.15s ease;">
+          &larr; Back to Admin Overview
+        </a>
+        <h2 class="section-title" style="margin: 0; font-size: 1.6rem;">Users Directory &amp; Registers</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+        <span class="mode-tag exam-tag" style="font-size: 0.78rem; padding: 0.3rem 0.7rem; font-weight: 600;">
+          {{ total_teachers }} Registered Teachers
+        </span>
+        <span class="mode-tag practice-tag" style="font-size: 0.78rem; padding: 0.3rem 0.7rem; font-weight: 600; background-color: rgba(46,110,96,0.1); color: var(--pass-teal); border: 1px solid var(--pass-teal);">
+          {{ total_students }} Enrolled Students
+        </span>
+      </div>
+    </div>
+
+    <!-- Directory View Mode Switcher (Tabs) -->
+    <div style="display: flex; gap: 0.6rem; margin-bottom: 2rem; border-bottom: 2px solid var(--rule-strong); padding-bottom: 0.85rem;">
+      <button type="button" id="tab-btn-teachers" onclick="switchDirectoryTab('teachers')"
+              style="padding: 0.65rem 1.4rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-radius: 4px; border: 1px solid var(--ink); background-color: var(--ink); color: var(--bg); display: inline-flex; align-items: center; gap: 0.6rem; transition: all 0.15s ease;">
+        <span>Teachers Directory</span>
+        <span id="tab-badge-teachers" style="font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 12px; font-family: var(--mono-font, monospace); line-height: 1.2; background: rgba(255,255,255,0.22); color: #ffffff; border: 1px solid rgba(255,255,255,0.4);">{{ total_teachers }}</span>
+      </button>
+      <button type="button" id="tab-btn-students" onclick="switchDirectoryTab('students')"
+              style="padding: 0.65rem 1.4rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-radius: 4px; border: 1px solid var(--rule-strong); background-color: var(--paper); color: var(--ink-soft); display: inline-flex; align-items: center; gap: 0.6rem; transition: all 0.15s ease;">
+        <span>Students Register</span>
+        <span id="tab-badge-students" style="font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 12px; font-family: var(--mono-font, monospace); line-height: 1.2; background: rgba(0,0,0,0.08); color: var(--ink); border: 1px solid var(--rule-strong);">{{ total_students }}</span>
+      </button>
+    </div>
+
+    <!-- ==================== SECTION 1: TEACHERS DIRECTORY ==================== -->
+    <div id="teachers-sec" style="margin-bottom: 3.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 class="section-title" style="margin: 0;">Teachers Directory</h3>
+        <span class="mono-text" style="font-size: 0.78rem; color: var(--ink-soft);">
+          Showing <strong id="teachers-visible-count">{{ teachers|length }}</strong> of {{ total_teachers }} teachers
+        </span>
+      </div>
+
+      <!-- Teachers Filter Bar -->
+      <div class="dash-form" style="padding: 1rem 1.25rem; margin-bottom: 1rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px;">
+        <div style="display: grid; grid-template-columns: 2fr 1.2fr auto; gap: 0.75rem; align-items: end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="teacher-search" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--ink-soft);">Search Teachers</label>
+            <input type="text" id="teacher-search" placeholder="Search by username, name, or email..." value="{{ t_search }}" style="font-size: 0.82rem; padding: 0.45rem 0.65rem;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="teacher-dept-filter" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--ink-soft);">Department Filter</label>
+            <select id="teacher-dept-filter" style="font-size: 0.82rem; padding: 0.45rem 0.65rem;">
+              <option value="">All Departments</option>
+              {% for dept in departments %}
+                <option value="{{ dept.name|lower }}" {% if t_dept|lower == dept.name|lower %}selected{% endif %}>{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="button" id="teacher-clear-btn" class="btn btn-outline" style="font-size: 0.78rem; padding: 0.45rem 0.85rem; height: 38px;">Clear</button>
+        </div>
+      </div>
+
+      <!-- Teachers Table -->
+      <div class="ledger">
+        <div class="ledger-header" style="grid-template-columns: 1.5fr 1.2fr 1.5fr 110px 80px;">
+          <span>Username / Name</span>
+          <span>Department</span>
+          <span>Email</span>
+          <span>Date Joined</span>
+          <span style="text-align: right;">Action</span>
+        </div>
+        <div id="teachers-rows-container">
+          {% for teacher in teachers %}
+            <div class="ledger-row teacher-row" 
+                 data-search="{{ teacher.username|lower }} {{ teacher.first_name|lower }} {{ teacher.last_name|lower }} {{ teacher.email|lower }}"
+                 data-dept="{{ teacher.department|default:''|lower }}"
+                 style="grid-template-columns: 1.5fr 1.2fr 1.5fr 110px 80px; align-items: center;">
+              <div>
+                <strong>{{ teacher.username }}</strong>
+                {% if teacher.first_name or teacher.last_name %}
+                  <span style="display: block; font-size: 0.75rem; color: var(--ink-soft);">{{ teacher.first_name }} {{ teacher.last_name }}</span>
+                {% endif %}
+              </div>
+              <span class="mono-text" style="font-size: 0.85rem;">{{ teacher.department|default:"&mdash;" }}</span>
+              <span>{{ teacher.email }}</span>
+              <span class="mono-text" style="font-size: 0.8rem; color: var(--ink-soft);">{{ teacher.date_joined|date:"Y-m-d" }}</span>
+              <div style="text-align: right;">
+                <form action="{% url 'admin_delete_user' teacher.id %}" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to delete teacher &quot;{{ teacher.username|escapejs }}&quot;?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.6rem; color: var(--red-pen); border-color: var(--red-pen); cursor: pointer;">Delete</button>
+                </form>
+              </div>
+            </div>
+          {% empty %}
+            <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No active teachers registered yet.</div>
+          {% endfor %}
+        </div>
+        <div id="teachers-empty-notice" style="display: none; padding: 2rem; text-align: center; color: var(--ink-soft);">
+          No teachers match the selected filters.
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== SECTION 2: ENROLLED STUDENTS REGISTER ==================== -->
+    <div id="students-sec" style="margin-bottom: 3.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 class="section-title" style="margin: 0;">Enrolled Students Register</h3>
+        <span class="mono-text" style="font-size: 0.78rem; color: var(--ink-soft);">
+          Showing <strong id="students-visible-count">{{ students|length }}</strong> of {{ total_students }} students
+        </span>
+      </div>
+
+      <!-- Students Filter Bar -->
+      <div class="dash-form" style="padding: 1rem 1.25rem; margin-bottom: 1rem; background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 4px;">
+        <div style="display: grid; grid-template-columns: 2fr 1.2fr 1.2fr auto; gap: 0.75rem; align-items: end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="student-search" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--ink-soft);">Search Students</label>
+            <input type="text" id="student-search" placeholder="Search by username, name, or email..." value="{{ s_search }}" style="font-size: 0.82rem; padding: 0.45rem 0.65rem;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="student-class-filter" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--ink-soft);">Class Filter</label>
+            <select id="student-class-filter" style="font-size: 0.82rem; padding: 0.45rem 0.65rem;">
+              <option value="">All Classes</option>
+              {% for cls in classes %}
+                <option value="{{ cls.name|lower }}" {% if s_class|lower == cls.name|lower %}selected{% endif %}>{{ cls.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="student-dept-filter" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--ink-soft);">Department Filter</label>
+            <select id="student-dept-filter" style="font-size: 0.82rem; padding: 0.45rem 0.65rem;">
+              <option value="">All Departments</option>
+              {% for dept in departments %}
+                <option value="{{ dept.name|lower }}" {% if s_dept|lower == dept.name|lower %}selected{% endif %}>{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="button" id="student-clear-btn" class="btn btn-outline" style="font-size: 0.78rem; padding: 0.45rem 0.85rem; height: 38px;">Clear</button>
+        </div>
+      </div>
+
+      <!-- Students Table -->
+      <div class="ledger">
+        <div class="ledger-header" style="grid-template-columns: 1.5fr 1.2fr 1.5fr 80px;">
+          <span>Username / Name</span>
+          <span>Class Assignment</span>
+          <span>Email Address</span>
+          <span style="text-align: right;">Action</span>
+        </div>
+        <div id="students-rows-container">
+          {% for student in students %}
+            <div class="ledger-row student-row"
+                 data-search="{{ student.username|lower }} {{ student.first_name|lower }} {{ student.last_name|lower }} {{ student.email|lower }}"
+                 data-class="{% if student.class_group %}{{ student.class_group.name|lower }}{% endif %}"
+                 data-dept="{% if student.class_group and student.class_group.department %}{{ student.class_group.department.name|lower }}{% else %}{{ student.department|default:''|lower }}{% endif %}"
+                 style="grid-template-columns: 1.5fr 1.2fr 1.5fr 80px; align-items: center;">
+              <div>
+                <strong>{{ student.username }}</strong>
+                {% if student.first_name or student.last_name %}
+                  <span style="display: block; font-size: 0.75rem; color: var(--ink-soft);">{{ student.first_name }} {{ student.last_name }}</span>
+                {% endif %}
+              </div>
+              <div>
+                {% if student.class_group %}
+                  <span class="mode-tag practice-tag" style="display: inline-block; width: fit-content;">{{ student.class_group.name }}</span>
+                  {% if student.class_group.department %}
+                    <span style="display: block; font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.2rem;">{{ student.class_group.department.name }}</span>
+                  {% endif %}
+                {% else %}
+                  <span style="color: var(--ink-soft);">&mdash;</span>
+                {% endif %}
+              </div>
+              <span>{{ student.email }}</span>
+              <div style="text-align: right;">
+                <form action="{% url 'admin_delete_user' student.id %}" method="POST" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to delete student &quot;{{ student.username|escapejs }}&quot;?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline" style="font-size: 0.72rem; padding: 0.25rem 0.6rem; color: var(--red-pen); border-color: var(--red-pen); cursor: pointer;">Delete</button>
+                </form>
+              </div>
+            </div>
+          {% empty %}
+            <div style="padding: 2rem; text-align: center; color: var(--ink-soft);">No students enrolled yet.</div>
+          {% endfor %}
+        </div>
+        <div id="students-empty-notice" style="display: none; padding: 2rem; text-align: center; color: var(--ink-soft);">
+          No students match the selected filters.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // 1. Teachers Live Filter
+      const tSearch = document.getElementById("teacher-search");
+      const tDept = document.getElementById("teacher-dept-filter");
+      const tClear = document.getElementById("teacher-clear-btn");
+      const tRows = document.querySelectorAll(".teacher-row");
+      const tCount = document.getElementById("teachers-visible-count");
+      const tEmpty = document.getElementById("teachers-empty-notice");
+
+      function filterTeachers() {
+        const query = (tSearch.value || "").trim().toLowerCase();
+        const selectedDept = (tDept.value || "").trim().toLowerCase();
+        let visible = 0;
+
+        tRows.forEach(row => {
+          const rowText = row.getAttribute("data-search") || "";
+          const rowDept = row.getAttribute("data-dept") || "";
+
+          const matchQuery = !query || rowText.includes(query);
+          const matchDept = !selectedDept || rowDept === selectedDept;
+
+          if (matchQuery && matchDept) {
+            row.style.display = "";
+            visible++;
+          } else {
+            row.style.display = "none";
+          }
+        });
+
+        if (tCount) tCount.textContent = visible;
+        if (tEmpty) tEmpty.style.display = visible === 0 ? "block" : "none";
+      }
+
+      if (tSearch) tSearch.addEventListener("input", filterTeachers);
+      if (tDept) tDept.addEventListener("change", filterTeachers);
+      if (tClear) {
+        tClear.addEventListener("click", function() {
+          tSearch.value = "";
+          tDept.value = "";
+          filterTeachers();
+        });
+      }
+
+      // 2. Students Live Filter
+      const sSearch = document.getElementById("student-search");
+      const sClass = document.getElementById("student-class-filter");
+      const sDept = document.getElementById("student-dept-filter");
+      const sClear = document.getElementById("student-clear-btn");
+      const sRows = document.querySelectorAll(".student-row");
+      const sCount = document.getElementById("students-visible-count");
+      const sEmpty = document.getElementById("students-empty-notice");
+
+      function filterStudents() {
+        const query = (sSearch.value || "").trim().toLowerCase();
+        const selectedClass = (sClass.value || "").trim().toLowerCase();
+        const selectedDept = (sDept.value || "").trim().toLowerCase();
+        let visible = 0;
+
+        sRows.forEach(row => {
+          const rowText = row.getAttribute("data-search") || "";
+          const rowClass = row.getAttribute("data-class") || "";
+          const rowDept = row.getAttribute("data-dept") || "";
+
+          const matchQuery = !query || rowText.includes(query);
+          const matchClass = !selectedClass || rowClass === selectedClass;
+          const matchDept = !selectedDept || rowDept === selectedDept;
+
+          if (matchQuery && matchClass && matchDept) {
+            row.style.display = "";
+            visible++;
+          } else {
+            row.style.display = "none";
+          }
+        });
+
+        if (sCount) sCount.textContent = visible;
+        if (sEmpty) sEmpty.style.display = visible === 0 ? "block" : "none";
+      }
+
+      if (sSearch) sSearch.addEventListener("input", filterStudents);
+      if (sClass) sClass.addEventListener("change", filterStudents);
+      if (sDept) sDept.addEventListener("change", filterStudents);
+      if (sClear) {
+        sClear.addEventListener("click", function() {
+          sSearch.value = "";
+          sClass.value = "";
+          sDept.value = "";
+          filterStudents();
+        });
+      }
+
+      // Run initial filter in case params were set
+      filterTeachers();
+      filterStudents();
+    });
+
+    // 3. Tab Switcher
+    function switchDirectoryTab(tab) {
+      const teachersSec = document.getElementById("teachers-sec");
+      const studentsSec = document.getElementById("students-sec");
+      const btnTeachers = document.getElementById("tab-btn-teachers");
+      const btnStudents = document.getElementById("tab-btn-students");
+      const badgeTeachers = document.getElementById("tab-badge-teachers");
+      const badgeStudents = document.getElementById("tab-badge-students");
+
+      if (!teachersSec || !studentsSec || !btnTeachers || !btnStudents) return;
+
+      if (tab === 'students') {
+        teachersSec.style.display = "none";
+        studentsSec.style.display = "block";
+
+        // Students Tab Active
+        btnStudents.style.backgroundColor = "var(--ink)";
+        btnStudents.style.color = "var(--bg)";
+        btnStudents.style.borderColor = "var(--ink)";
+        if (badgeStudents) {
+          badgeStudents.style.backgroundColor = "rgba(255, 255, 255, 0.22)";
+          badgeStudents.style.color = "#ffffff";
+          badgeStudents.style.border = "1px solid rgba(255, 255, 255, 0.4)";
+        }
+
+        // Teachers Tab Inactive
+        btnTeachers.style.backgroundColor = "var(--paper)";
+        btnTeachers.style.color = "var(--ink-soft)";
+        btnTeachers.style.borderColor = "var(--rule-strong)";
+        if (badgeTeachers) {
+          badgeTeachers.style.backgroundColor = "rgba(0, 0, 0, 0.08)";
+          badgeTeachers.style.color = "var(--ink)";
+          badgeTeachers.style.border = "1px solid var(--rule-strong)";
+        }
+
+        if (history.replaceState) {
+          history.replaceState(null, null, '#students-sec');
+        } else {
+          location.hash = 'students-sec';
+        }
+      } else {
+        teachersSec.style.display = "block";
+        studentsSec.style.display = "none";
+
+        // Teachers Tab Active
+        btnTeachers.style.backgroundColor = "var(--ink)";
+        btnTeachers.style.color = "var(--bg)";
+        btnTeachers.style.borderColor = "var(--ink)";
+        if (badgeTeachers) {
+          badgeTeachers.style.backgroundColor = "rgba(255, 255, 255, 0.22)";
+          badgeTeachers.style.color = "#ffffff";
+          badgeTeachers.style.border = "1px solid rgba(255, 255, 255, 0.4)";
+        }
+
+        // Students Tab Inactive
+        btnStudents.style.backgroundColor = "var(--paper)";
+        btnStudents.style.color = "var(--ink-soft)";
+        btnStudents.style.borderColor = "var(--rule-strong)";
+        if (badgeStudents) {
+          badgeStudents.style.backgroundColor = "rgba(0, 0, 0, 0.08)";
+          badgeStudents.style.color = "var(--ink)";
+          badgeStudents.style.border = "1px solid var(--rule-strong)";
+        }
+
+        if (history.replaceState) {
+          history.replaceState(null, null, '#teachers-sec');
+        } else {
+          location.hash = 'teachers-sec';
+        }
+      }
+    }
+
+    // Check URL hash on page load
+    document.addEventListener("DOMContentLoaded", function() {
+      if (window.location.hash.includes('student')) {
+        switchDirectoryTab('students');
+      } else {
+        switchDirectoryTab('teachers');
+      }
+    });
+  </script>
+{% endblock %}
